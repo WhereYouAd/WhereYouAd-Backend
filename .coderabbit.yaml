@@ -1,0 +1,53 @@
+language: "ko-KR"
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "develop"              # main과 develop 브랜치로의 PR 리뷰
+
+  path_instructions:
+    - path: "src/main/java/**/*.java"
+      instructions: |
+        - Java 17의 최신 문법(Record, Switch Expression, Text Block 등)을 적절히 사용하는지 확인하라.
+        - Spring Boot 3.x 버전에 맞는 코드 스타일인지 점검하라.
+        - SOLID 원칙, 의존성 주입(DI), 예외 처리(GlobalExceptionHandler)가 적절한지 보라.
+        - JPA 사용 시 N+1 문제나 불필요한 쿼리가 발생하지 않는지, FetchType.LAZY가 잘 적용되었는지 체크하라.
+
+    - path: "src/test/**/*.java"
+      instructions: |
+        - JUnit5와 AssertJ를 활용한 가독성 좋은 테스트 코드인지 확인하라.
+        - Mockito 사용 시 불필요한 Stubbing이 없는지, 테스트가 독립적으로 실행되는지 체크하라.
+
+    - path: "**/*.{yml,yaml,properties}"
+      instructions: |
+        - MySQL 접속 정보, JWT Secret Key, API Key 등 민감 정보가 하드코딩 되어 있는지 철저히 확인하라. (환경 변수 사용 권장)
+
+    - path: ".github/workflows/**/*.yml"
+      instructions: |
+        - GitHub Actions 문법 오류와 들여쓰기를 확인하라.
+        - 불필요한 단계(Step)가 있거나 보안상 위험한 권한 설정이 없는지 보라.
+
+  # 리뷰 제외 파일
+  path_filters:
+    - "!**/build/**"
+    - "!**/.gradle/**"
+    - "!**/gradle/wrapper/**"
+    - "!**/gradlew*"
+    - "!**/out/**"
+    - "!**/*.class"
+    - "!**/*.jar"
+
+chat:
+  auto_reply: true # 답글 -> AI가 답변
+
+# AI 페르소나
+tone_instructions: "너는 친절하고 꼼꼼한 '시니어 백엔드 개발자'야. 버그 가능성이나 성능 이슈(특히 DB 쿼리)는 명확하게 지적하되, 잘 짠 코드는 구체적으로 칭찬해줘. 설명은 주니어 개발자도 이해하기 쉽게 예시를 들어주면 좋아."
