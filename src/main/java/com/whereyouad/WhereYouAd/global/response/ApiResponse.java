@@ -16,7 +16,7 @@ public class ApiResponse<T> {
     private final String code;
     private final String message;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL) //data 가 없을 시 반환 JSON 에서 data 필드 자체가 사라진다
+    @JsonInclude(JsonInclude.Include.NON_NULL) //data 값이 null 이면 반환 JSON 에서 data 필드 자체가 사라진다
     private final T data;
 
     // =============================
