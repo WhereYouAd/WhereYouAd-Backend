@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.user.exception;
+package com.whereyouad.WhereYouAd.domains.user.exception.code;
 
 import com.whereyouad.WhereYouAd.global.exception.BaseErrorCode;
 import lombok.AllArgsConstructor;
@@ -12,6 +12,6 @@ public enum UserErrorCode implements BaseErrorCode {
     ;
 
     private final HttpStatus httpStatus;
-    private final String customCode;
+    private final String code;
     private final String message;
 }
