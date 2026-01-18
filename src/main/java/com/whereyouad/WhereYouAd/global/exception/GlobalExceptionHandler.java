@@ -3,12 +3,15 @@ package com.whereyouad.WhereYouAd.global.exception;
 import com.whereyouad.WhereYouAd.global.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -36,6 +39,27 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = ErrorResponse.of(e.getErrorCode(), request);
         return ResponseEntity
                 .status(e.getErrorCode().getHttpStatus())
+                .body(errorResponse);
+    }
+
+    //@Valid 검사 실패(필수 파라미터가 null 또는 공백) 인 경우 예외를 잡는 핸들러
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleNotValidException(MethodArgumentNotValidException e, HttpServletRequest request) {
+        // 예시 결과: "email: 이메일 형식이 아닙니다, password: 비밀번호는 필수입니다"
+        String errorMessage = e.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
+        log.error("MethodArgumentNotValidException 발생: {}", errorMessage);
+        log.error("에러가 발생한 지점 {}, {}", request.getMethod(), request.getRequestURI());
+
+        ErrorResponse errorResponse = ErrorResponse.of(
+                ErrorCode.INVALID_PARAMETER,
+                request
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .body(errorResponse);
     }
 }
