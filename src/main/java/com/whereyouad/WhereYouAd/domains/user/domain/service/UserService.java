@@ -1,13 +1,13 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
-import com.whereyouad.WhereYouAd.domains.user.exception.UserErrorCode;
+import com.whereyouad.WhereYouAd.domains.user.exception.UserSignUpException;
+import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.application.mapper.UserConverter;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
-import com.whereyouad.WhereYouAd.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,7 @@ public class UserService {
     //회원가입 메서드
     public SignUpResponse signUpUser(SignUpRequest request) {
         if (userRepository.existsByEmail(request.email())) { //이미 이메일로 만든 계정이 존재할 시
-            throw new CustomException(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외
+            throw new UserSignUpException(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외
         }
 
         //비밀번호 암호화 -> SecurityConfig 클래스 내 에서 BCryptPasswordEncoder 를 Bean 등록한거로 사용
