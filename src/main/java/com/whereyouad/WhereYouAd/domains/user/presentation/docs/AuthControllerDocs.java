@@ -17,7 +17,7 @@ public interface AuthControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
-            @ApiResponse(responseCode = "400_1", description = "실패")
+            @ApiResponse(responseCode = "401_1", description = "실패")
     })
     public ResponseEntity<DataResponse<TokenResponse>> login(@RequestBody LoginRequest request);
 
@@ -27,8 +27,8 @@ public interface AuthControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
-            @ApiResponse(responseCode = "401", description = "실패(RefreshToken 만료, 재로그인 필요)"),
-            @ApiResponse(responseCode = "401", description = "실패(RefreshToken 옳지 않은 값)")
+            @ApiResponse(responseCode = "401_2", description = "실패(RefreshToken 만료, 재로그인 필요)"),
+            @ApiResponse(responseCode = "401_3", description = "실패(RefreshToken 옳지 않은 값)")
     })
     public ResponseEntity<DataResponse<TokenResponse>> reissue(@CookieValue(name = "refresh_token") String refreshToken);
 }
