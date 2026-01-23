@@ -1,0 +1,3 @@
+jwt:
+  secret: "rEYzQhGBcEalhSkn2Fh4KaH+7qgWC/jsHGtQkr9/6IZT5irDbSJeyIW+Iq0UV2k1vX5Z72lEL28LfcDA+szesA=="
+  #PR 빌드 통과를 위한 임의의 jwt.secret 값 -> 이 값이 아닌 추후에 협의한 랜덤값 사용
