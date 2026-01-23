@@ -30,5 +30,5 @@ public interface AuthControllerDocs {
             @ApiResponse(responseCode = "401_2", description = "실패(RefreshToken 만료, 재로그인 필요)"),
             @ApiResponse(responseCode = "401_3", description = "실패(RefreshToken 옳지 않은 값)")
     })
-    public ResponseEntity<DataResponse<TokenResponse>> reissue(@CookieValue(name = "refresh_token") String refreshToken);
+    public ResponseEntity<DataResponse<TokenResponse>> reIssue(@CookieValue(name = "refresh_token") String refreshToken);
 }

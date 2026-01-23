@@ -40,11 +40,11 @@ public class AuthController implements AuthControllerDocs {
     }
 
     @PostMapping("/reissue")
-    public ResponseEntity<DataResponse<TokenResponse>> reissue(
+    public ResponseEntity<DataResponse<TokenResponse>> reIssue(
             @CookieValue(name = "refresh_token") String refreshToken
     )
     {
-        TokenResponse tokenResponse = authService.reissue(refreshToken);
+        TokenResponse tokenResponse = authService.reIssue(refreshToken);
 
         ResponseCookie httpOnlyCookie = ResponseCookie.from("refresh_token", tokenResponse.refreshToken())
                 .httpOnly(true)

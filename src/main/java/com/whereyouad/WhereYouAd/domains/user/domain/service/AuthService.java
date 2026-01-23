@@ -54,7 +54,7 @@ public class AuthService {
 
     //기존 AccessToken 만료 시 RefreshToken을 통해 AccessToken & RefreshToken 을 재발급 받는 메서드
     @Transactional
-    public TokenResponse reissue(String refreshToken) {
+    public TokenResponse reIssue(String refreshToken) {
         jwtTokenProvider.validateToken(refreshToken); //refreshToken 자체에 문제가 있을 시 해당 부분에서 예외 발생
 
         String email = jwtTokenProvider.getSubject(refreshToken); //refreshToken 에서 사용자 email 값 추출
