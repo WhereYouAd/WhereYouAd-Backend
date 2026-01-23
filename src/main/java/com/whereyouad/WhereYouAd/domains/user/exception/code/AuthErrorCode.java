@@ -14,6 +14,8 @@ public enum AuthErrorCode implements BaseErrorCode {
 
     // 로그인 실패 (비밀번호 틀림 or 계정 없음)
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_401_3", "아이디 또는 비밀번호가 일치하지 않습니다."),
+
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_401_4", "해당 이메일의 회원이 존재하지 않습니다.")
     ;
 
     private final HttpStatus httpStatus;
