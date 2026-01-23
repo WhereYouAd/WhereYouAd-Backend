@@ -25,17 +25,17 @@ public class AuthController implements AuthControllerDocs {
 
         ResponseCookie httpOnlyCookie = ResponseCookie.from("refresh_token", tokenResponse.refreshToken())
                 .httpOnly(true)
-//                .secure(true)
-                .secure(false)
+//                .secure(true) //<-- HTTPS 에서만 쿠키 전송하도록 설정
+                .secure(false) //<-- Postman 테스트 용이를 위해 false
                 .path("/")
-                .maxAge(60 * 60 * 24 * 7)
-//                .sameSite("None")
-                .sameSite("Strict")
+                .maxAge(60 * 60 * 24 * 7) // 7일
+//                .sameSite("None") //<-- 크로스 사이트 전송 정책, 프론트와 연동시 해당 코드 활성화
+                .sameSite("Strict") //<-- 개발 or 테스트 or Postman 을 위해 임시 Strict
                 .build();
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, httpOnlyCookie.toString())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponse.accessToken())
+                .header(HttpHeaders.SET_COOKIE, httpOnlyCookie.toString()) //생성한 RefreshToken 쿠키를 헤더에 설정
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponse.accessToken()) //AccessToken 을 Authorization 헤더에도 추가(편의사항)
                 .body(DataResponse.from(tokenResponse));
     }
 
@@ -49,7 +49,7 @@ public class AuthController implements AuthControllerDocs {
         ResponseCookie httpOnlyCookie = ResponseCookie.from("refresh_token", tokenResponse.refreshToken())
                 .httpOnly(true)
 //                .secure(true)
-                .secure(false) // HTTPS 적용 시 true로 변경
+                .secure(false)
                 .path("/")
                 .maxAge(60 * 60 * 24 * 7) // 7일
 //                .sameSite("None")
@@ -57,8 +57,8 @@ public class AuthController implements AuthControllerDocs {
                 .build();
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, httpOnlyCookie.toString())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponse.accessToken())
+                .header(HttpHeaders.SET_COOKIE, httpOnlyCookie.toString()) //생성한 RefreshToken 쿠키를 헤더에 설정
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponse.accessToken()) //AccessToken 을 Authorization 헤더에도 추가(편의사항)
                 .body(DataResponse.from(tokenResponse));
     }
 }

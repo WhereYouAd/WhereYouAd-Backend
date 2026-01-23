@@ -26,17 +26,19 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) //CSRF 보호 비활성화
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) //세션 관리 정책을 STATELESS -> JWT 사용하므로
                 )
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                        .accessDeniedHandler(jwtAccessDeniedHandler)
+                .exceptionHandling(exception -> exception //예외 처리
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint) //인증 실패 시(로그인 미진행, 토큰 만료 등)
+                        .accessDeniedHandler(jwtAccessDeniedHandler) //인가 실패 시(권한 부족등)(현재 로직에서는 동작 X -> 모두 ROLE_USER 이므로)
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() //swagger 접근 허용
                         .requestMatchers("/api/users/signup", "/api/auth/**").permitAll() //로그인, 회원가입 접근 허용
                         .anyRequest().authenticated() //이외 접근은 인증 필요
                 )
+                //Spring Security 의 기본 UsernamePasswordAuthenticationFilter 앞에 JwtAuthenticationFilter 등록
+                //Spring Security 가 기본 로그인을 수행하기 전에, JWT 토큰을 먼저 검사해서 유효하면 바로 인증 처리 하기 위해
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
