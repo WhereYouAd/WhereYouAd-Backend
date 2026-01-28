@@ -43,4 +43,4 @@ spring:
 # JWT 또는 기타 커스텀 설정 (필요시)
 jwt:
   secret: ${JWT_SECRET}
-  expiration: 86400000
+#  expiration: 86400000
