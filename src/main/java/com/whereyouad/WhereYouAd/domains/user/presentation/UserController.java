@@ -1,7 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.presentation;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailVerifyRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.UserService;
@@ -34,7 +33,7 @@ public class UserController implements UserControllerDocs {
     }
 
     @PostMapping("/email-send")
-    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmail(@RequestBody @Valid EmailRequest request) {
+    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmail(@RequestBody @Valid EmailRequest.Send request) {
         EmailSentResponse emailSentResponse = emailService.sendEmail(request.email());
         return ResponseEntity.ok(
                 DataResponse.from(emailSentResponse)
@@ -42,7 +41,7 @@ public class UserController implements UserControllerDocs {
     }
 
     @PostMapping("/email-verify")
-    public ResponseEntity<DataResponse<String>> verifyEmail(@RequestBody @Valid EmailVerifyRequest request) {
+    public ResponseEntity<DataResponse<String>> verifyEmail(@RequestBody @Valid EmailRequest.Verify request) {
         emailService.verifyEmailCode(request.email(), request.authCode());
 
         return ResponseEntity.ok(

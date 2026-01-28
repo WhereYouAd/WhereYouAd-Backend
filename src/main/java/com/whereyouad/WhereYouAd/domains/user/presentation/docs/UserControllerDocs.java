@@ -1,7 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.presentation.docs;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailVerifyRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
@@ -33,7 +32,7 @@ public interface UserControllerDocs {
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "400_3", description = "이메일 전송실패(이메일 오타 등)")
     })
-    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmail(@RequestBody @Valid EmailRequest request);
+    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmail(@RequestBody @Valid EmailRequest.Send request);
 
     @Operation(
             summary = "이메일 인증코드 인증 API",
@@ -43,5 +42,5 @@ public interface UserControllerDocs {
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "400_4", description = "실패(인증코드 불일치)")
     })
-    public ResponseEntity<DataResponse<String>> verifyEmail(@RequestBody @Valid EmailVerifyRequest request);
+    public ResponseEntity<DataResponse<String>> verifyEmail(@RequestBody @Valid EmailRequest.Verify request);
 }
