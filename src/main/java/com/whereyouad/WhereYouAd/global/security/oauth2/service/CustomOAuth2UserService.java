@@ -1,7 +1,6 @@
 package com.whereyouad.WhereYouAd.global.security.oauth2.service;
 
-import com.whereyouad.WhereYouAd.global.security.oauth2.dto.OAuth2UserInfo;
-import com.whereyouad.WhereYouAd.global.security.oauth2.dto.CustomOAuth2User;
+import com.whereyouad.WhereYouAd.global.security.oauth2.dto.*;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.exception.UserSignUpException;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
@@ -11,9 +10,6 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.mapper.AuthAccountConv
 import com.whereyouad.WhereYouAd.domains.user.persistence.mapper.UserConverter;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.AuthProviderAccountRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
-import com.whereyouad.WhereYouAd.global.security.oauth2.dto.GoogleResponse;
-import com.whereyouad.WhereYouAd.global.security.oauth2.dto.NaverResponse;
-import com.whereyouad.WhereYouAd.global.security.oauth2.dto.OAuth2Response;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -51,6 +47,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             oAuth2Response = new NaverResponse(oAuth2User.getAttributes());
         } else if (provider == Provider.GOOGLE) {
             oAuth2Response = new GoogleResponse(oAuth2User.getAttributes());
+        } else if (provider == Provider.KAKAO){
+            oAuth2Response = new KaKaoResponse(oAuth2User.getAttributes());
         } else {
             throw new UserSignUpException(UserErrorCode.NOT_PROVIDE_SOCIAL);
         }
