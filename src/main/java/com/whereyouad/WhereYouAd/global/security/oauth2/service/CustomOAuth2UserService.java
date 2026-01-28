@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -31,6 +32,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 
         // 소셜 로그인 사용자 정보 불러오기
@@ -56,21 +58,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 사용자 소셜 로그인 고유 id (제공자 + 소셜 발급 id) -> (중복 회원 가입 방지)
         String providerId = oAuth2Response.getProvider() + "_" + oAuth2Response.getProviderId();
 
-        OAuth2UserInfo authUserDTO = OAuth2UserInfo.builder()
-                .email(oAuth2Response.getEmail())
-                .name(oAuth2Response.getName())
-                .role("ROLE_USER") // 유저로 설정
-                .provider(provider)
-                .providerId(providerId)
-                .build();
-
         AuthProviderAccount existAccount = authProviderAccountRepository.findByProviderId(providerId);
 
+        User user;
+
         // 해당 소셜로 한번도 로그인 하지 않은 경우 -> DB에 저장
-        if(existAccount == null){
+        if (existAccount == null) {
 
             Optional<User> userOptional = userRepository.findUserByEmail(oAuth2Response.getEmail());
-            User user;
 
             if (userOptional.isPresent()) {
                 user = userOptional.get();
@@ -81,6 +76,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             }
             // 신규 유저(기존 email X, 소셜 로그인 처음) -> DB에 저장
             else {
+                OAuth2UserInfo authUserDTO = OAuth2UserInfo.builder()
+                        .email(oAuth2Response.getEmail())
+                        .name(oAuth2Response.getName())
+                        .role("ROLE_USER")
+                        .provider(oAuth2Response.getProvider())
+                        .providerId(providerId)
+                        .build();
                 User newUser = UserConverter.toSocialUser(authUserDTO);
                 user = userRepository.save(newUser);
             }
@@ -88,16 +90,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             // 소셜 로그인 정보 저장 (AuthProviderAccount 객체)
             AuthProviderAccount account = AuthAccountConverter.toAuthProviderAccount(provider, providerId, user);
             authProviderAccountRepository.save(account);
-
-            return new CustomOAuth2User(authUserDTO);
         }
         // 해당 소셜로 로그인 한 정보가 있다면 -> 유저 정보(소셜 이름) 갱신
         else {
-            User user = existAccount.getUser();
+            user = existAccount.getUser();
             user.updateProfile(oAuth2Response.getName());
-
-            authUserDTO = UserConverter.toOAuth2UserInfo(user, oAuth2Response);
-            return new CustomOAuth2User(authUserDTO);
         }
+
+        // 공통: OAuth2UserInfo 생성 및 반환
+        OAuth2UserInfo authUserDTO = UserConverter.toOAuth2UserInfo(user, oAuth2Response);
+        return new CustomOAuth2User(authUserDTO);
     }
 }

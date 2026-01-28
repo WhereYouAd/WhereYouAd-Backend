@@ -8,7 +8,7 @@ import com.whereyouad.WhereYouAd.global.security.oauth2.dto.OAuth2Response;
 public class UserConverter {
 
     // dto -> entity
-    public static User toSocialUser(OAuth2UserInfo authUserResponseDTO){
+    public static User toSocialUser(OAuth2UserInfo authUserResponseDTO) {
         return User.builder()
                 .email(authUserResponseDTO.getEmail())
                 .name(authUserResponseDTO.name)
@@ -22,6 +22,7 @@ public class UserConverter {
         return OAuth2UserInfo.builder()
                 .email(user.getEmail())
                 .name(user.getName())
+                .role("ROLE_USER")
                 .providerId(oAuth2Response.getProviderId())
                 .provider(oAuth2Response.getProvider())
                 .build();
