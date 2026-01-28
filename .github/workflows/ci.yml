@@ -44,8 +44,11 @@ jobs:
         run: ./gradlew build
         # CI용, 환경변수로 DB 설정
         env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/where_you_ad?serverTimezone=Asia/Seoul
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: root
-          SPRING_DATA_REDIS_HOST: localhost
-          SPRING_DATA_REDIS_PORT: 6379
+          DB_URL: jdbc:mysql://localhost:3306/where_you_ad?serverTimezone=Asia/Seoul
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          MAIL_USERNAME: test@example.com
+          MAIL_PASSWORD: test_password
+          JWT_SECRET: dGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS1mb3ItY2ktdGVzdC1wdXJwb3Nlcw==
