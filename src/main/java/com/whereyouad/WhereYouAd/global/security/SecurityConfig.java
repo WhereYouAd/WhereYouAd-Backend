@@ -40,7 +40,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() //swagger 접근 허용
-                        .requestMatchers("/api/users/signup", "/api/auth/**").permitAll() //로그인, 회원가입 접근 허용
+                        .requestMatchers("/api/users/**", "/api/auth/**").permitAll() //로그인, 회원가입, 이메일 인증 접근 허용
                         .anyRequest().authenticated() //이외 접근은 인증 필요
                 )
                 //Spring Security 의 기본 UsernamePasswordAuthenticationFilter 앞에 JwtAuthenticationFilter 등록

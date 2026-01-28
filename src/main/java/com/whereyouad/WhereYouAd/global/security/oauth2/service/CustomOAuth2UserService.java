@@ -69,7 +69,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 user = userOptional.get();
                 // 기존 이메일에 해당하는 유저가 존재하지만 이메일 인증이 안된 경우 -> 연동 불가
                 if (!user.isEmailVerified()) {
-                    throw new UserSignUpException(UserErrorCode.EMAIL_NOT_VERIFIED);
+                    throw new UserSignUpException(UserErrorCode.USER_EMAIL_NOT_VERIFIED);
                 }
             }
             // 신규 유저(기존 email X, 소셜 로그인 처음) -> DB에 저장
