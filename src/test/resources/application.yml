@@ -1,3 +1,18 @@
+spring:
+
+  #이메일 인증 관련 설정
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: "dummy-email@example.com"
+    password: "dummy-password"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 jwt:
-  secret: "rEYzQhGBcEalhSkn2Fh4KaH+7qgWC/jsHGtQkr9/6IZT5irDbSJeyIW+Iq0UV2k1vX5Z72lEL28LfcDA+szesA=="
+  secret: "this-is-dummy-secret-key-for-test-environment-must-be-very-long-enough-for-hs512-algorithm-pass"
   #PR 빌드 통과를 위한 임의의 jwt.secret 값 -> 이 값이 아닌 추후에 협의한 랜덤값 사용
