@@ -42,4 +42,8 @@ public class User extends BaseEntity {
     @Column(nullable = false, name = "status")
     @ColumnDefault("'ACTIVE'")  //기본값 ACTIVE
     private UserStatus status;  //ACTIVE, SUSPENDED, DELETED
+
+    public void resetPassword(String newPassword) {
+        this.password = newPassword;
+    }
 }
