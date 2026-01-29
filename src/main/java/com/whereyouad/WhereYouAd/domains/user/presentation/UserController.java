@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.user.presentation;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailRequest;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.UserService;
@@ -46,6 +47,24 @@ public class UserController implements UserControllerDocs {
 
         return ResponseEntity.ok(
                 DataResponse.from("이메일 인증이 성공적으로 완료되었습니다.")
+        );
+    }
+
+    @PostMapping("/pwd-reset/email")
+    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request) {
+        EmailSentResponse emailSentResponse = emailService.sendEmailForPwd(request.email());
+
+        return ResponseEntity.ok(
+                DataResponse.created(emailSentResponse)
+        );
+    }
+
+    @PostMapping("/pwd-reset")
+    public ResponseEntity<DataResponse<String>> resetPassword(@RequestBody @Valid PwdResetRequest request) {
+        userService.passwordReset(request.email(), request.password());
+
+        return ResponseEntity.ok(
+                DataResponse.from("비밀번호 변경이 완료되었습니다.")
         );
     }
 }
