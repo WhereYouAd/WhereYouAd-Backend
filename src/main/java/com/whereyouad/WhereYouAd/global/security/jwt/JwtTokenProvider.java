@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.global.security.jwt;
 
 import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
+import com.whereyouad.WhereYouAd.global.security.oauth2.dto.CustomOAuth2User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -39,6 +40,21 @@ public class JwtTokenProvider {
 
     //AccessToken, RefreshToken 생성 메서드
     public TokenResponse generateToken(Authentication authentication) {
+
+        // 로그인 종류에 따라 이메일(식별자) 추출
+        String email;
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof CustomOAuth2User) {
+            // 소셜 로그인: CustomOAuth2User에서 이메일 추출
+            email = ((CustomOAuth2User) principal).getEmail();
+        } else if (principal instanceof CustomUserDetails) {
+            // 일반 로그인: UserDetails의 username(email) 추출
+            email = ((CustomUserDetails) principal).getUsername();
+        } else {
+            // 그 외의 경우 (기본값)
+            email = authentication.getName();
+        }
         //사용자 권한(ROLE_USER) 가져와서 문자열로 반환
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -49,7 +65,7 @@ public class JwtTokenProvider {
 
         //AccessToken 생성
         String accessToken = Jwts.builder()
-                .setSubject(authentication.getName()) // Payload "sub": 유저의 이메일(ID)
+                .setSubject(email) // Payload "sub": 유저의 이메일(ID)
                 .claim(AUTHORITIES_KEY, authorities)  // Payload "auth": "ROLE_USER"
                 .setExpiration(accessTokenExpireIn) // Payload "exp": 만료 시간
                 .signWith(key, SignatureAlgorithm.HS512) // Header "alg": HS512 알고리즘으로 서명
@@ -59,7 +75,7 @@ public class JwtTokenProvider {
         Date refreshTokenExpireIn = new Date(now + REFRESH_TOKEN_EXPIRE_TIME);
         //RefreshToken 은 권한 정보(claims) 는 담지 않고, 누구인지 구별하기 위한 Subject(email) 만 추가
         String refreshToken = Jwts.builder()
-                .setSubject(authentication.getName()) //sub: email
+                .setSubject(email) //sub: email
                 .setExpiration(refreshTokenExpireIn)
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
@@ -78,7 +94,7 @@ public class JwtTokenProvider {
             //서명 키(Key) 통한 토큰 복호화
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
         } catch (ExpiredJwtException e) {
-            // 만료된 토큰인 경우: 재발급(reissue)을 위해 구체적인 예외 덩지기
+            // 만료된 토큰인 경우: 재발급(reissue)을 위해 구체적인 예외 던지기
             throw e;
 
         } catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
