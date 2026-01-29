@@ -1,7 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
-import com.whereyouad.WhereYouAd.domains.user.exception.UserSignUpException;
+import com.whereyouad.WhereYouAd.domains.user.exception.UserException;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
@@ -31,8 +31,21 @@ public class EmailService {
     //인증코드 이메일 발송 로직
     public EmailSentResponse sendEmail(String toEmail) {
 
+        return emailSendTemplate(toEmail);
+    }
+
+    public EmailSentResponse sendEmailForPwd(String toEmail) {
+        if (userRepository.existsByEmail(toEmail)) {
+            return emailSendTemplate(toEmail);
+        } else {
+            throw new UserException(UserErrorCode.EMAIL_USER_NOT_FOUND);
+        }
+    }
+
+    //기존 이메일 발송 로직 템플릿 화
+    private EmailSentResponse emailSendTemplate(String toEmail) {
         if (userRepository.existsByEmail(toEmail)) { //이미 해당 이메일로 생성한 계정이 있으면
-            throw new UserSignUpException(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외(회원가입 시 사용했던 예외)
+            throw new UserException(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외(회원가입 시 사용했던 예외)
         }
 
         //인증코드 재전송 로직 -> 이미 Redis 에 해당 이메일 인증코드가 있을시 삭제
@@ -64,7 +77,7 @@ public class EmailService {
 
                 emailSender.send(message); //만약 실제 존재하는 이메일인데 사용자가 오타를 냈다면
             } catch (MailException e) { //예외 발생
-                throw new UserSignUpException(UserErrorCode.USER_EMAIL_NOT_VALID); //통합 응답 처리 예외로 반환
+                throw new UserException(UserErrorCode.USER_EMAIL_NOT_VALID); //통합 응답 처리 예외로 반환
             }
 
         }
@@ -85,7 +98,7 @@ public class EmailService {
 
         //만약 인증코드가 없거나 잘못 입력했다면,
         if (savedCode == null || !savedCode.equals(inputCode)) {
-            throw new UserSignUpException(UserErrorCode.USER_EMAIL_AUTH_INVALID); //예외 발생(BAD_REQUEST)
+            throw new UserException(UserErrorCode.USER_EMAIL_AUTH_INVALID); //예외 발생(BAD_REQUEST)
         }
 
         //정상적으로 인증코드를 입력했다면,
