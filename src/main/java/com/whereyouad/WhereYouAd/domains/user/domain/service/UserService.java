@@ -58,7 +58,9 @@ public class UserService {
         return UserConverter.toSignInResponse(savedUser);
     }
 
+    //이미 회원가입 된 회원의 비밀번호 재설정 메서드
     public void passwordReset(String email, String password) {
+        //이메일 인증이 되어있는지 확인
         String isEmailVerified = redisUtil.getData("VERIFIED:" + email);
 
         //인증이 안되었다면,
@@ -67,17 +69,17 @@ public class UserService {
         }
 
         //기존 비밀번호와 새 비밀번호가 일치할 시 예외 발생
-        String newPassword = passwordEncoder.encode(password);
-
         User user = userRepository.findUserByEmail(email)
-                .orElseThrow(() -> new UserException(UserErrorCode.EMAIL_USER_NOT_FOUND));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         String oldPassword = user.getPassword();
 
-        if (passwordEncoder.matches(newPassword, oldPassword)) { //이전 비밀번호 == 새로운 비밀번호이면
+        if (passwordEncoder.matches(password, oldPassword)) { //새로운 비밀번호 == 이전 비밀번호이면
             throw new UserException(UserErrorCode.USER_PASSWORD_SAME_AS_OLD); //예외 발생
         }
 
+        //새 비밀번호 암호화 & 저장
+        String newPassword = passwordEncoder.encode(password);
         //비밀번호 변경 (JPA Dirty Checking)
         user.resetPassword(newPassword);
 
