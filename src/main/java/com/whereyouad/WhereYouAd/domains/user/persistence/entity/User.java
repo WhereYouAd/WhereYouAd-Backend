@@ -31,7 +31,7 @@ public class User extends BaseEntity {
     @Column(name = "profile_image_url", length = 1024)
     private String profileImageUrl;
 
-    @Column(nullable = false, name = "phone_number", length = 32)
+    @Column(name = "phone_number", length = 32)
     private String phoneNumber;
 
     @Column(nullable = false, name = "is_email_verified")
@@ -43,7 +43,8 @@ public class User extends BaseEntity {
     @ColumnDefault("'ACTIVE'")  //기본값 ACTIVE
     private UserStatus status;  //ACTIVE, SUSPENDED, DELETED
 
-    public void resetPassword(String newPassword) {
-        this.password = newPassword;
+    // 소셜 로그인 시 유저 프로필 최신화
+    public void updateProfile(String name){
+        this.name = name;
     }
 }

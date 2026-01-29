@@ -1,6 +1,10 @@
 package com.whereyouad.WhereYouAd.global.security;
 
-import com.whereyouad.WhereYouAd.global.security.jwt.*;
+import com.whereyouad.WhereYouAd.global.security.jwt.JwtAccessDeniedHandler;
+import com.whereyouad.WhereYouAd.global.security.jwt.JwtAuthenticationEntryPoint;
+import com.whereyouad.WhereYouAd.global.security.jwt.JwtAuthenticationFilter;
+import com.whereyouad.WhereYouAd.global.security.oauth2.handler.OAuth2AuthenticationSuccessHandler;
+import com.whereyouad.WhereYouAd.global.security.oauth2.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +24,8 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -39,7 +45,12 @@ public class SecurityConfig {
                 )
                 //Spring Security 의 기본 UsernamePasswordAuthenticationFilter 앞에 JwtAuthenticationFilter 등록
                 //Spring Security 가 기본 로그인을 수행하기 전에, JWT 토큰을 먼저 검사해서 유효하면 바로 인증 처리 하기 위해
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // OAuth2 소셜 로그인 설정
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
+                                .userService(customOAuth2UserService))
+                        .successHandler(oAuth2AuthenticationSuccessHandler));
 
         return http.build();
     }
