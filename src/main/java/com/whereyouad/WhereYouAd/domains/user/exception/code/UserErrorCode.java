@@ -13,6 +13,7 @@ public enum UserErrorCode implements BaseErrorCode {
     USER_EMAIL_NOT_VALID(HttpStatus.BAD_REQUEST, "USER_400_2", "해당 이메일로 메일 전송에 실패했습니다."),
     USER_EMAIL_AUTH_INVALID(HttpStatus.BAD_REQUEST, "USER_400_3", "인증 코드가 올바르지 않습니다."),
     NOT_PROVIDE_SOCIAL(HttpStatus.BAD_REQUEST, "USER_400_4", "지원하지 않는 소셜 로그인 방식입니다."),
+    USER_PASSWORD_SAME_AS_OLD(HttpStatus.BAD_REQUEST, "USER_400_5", "이전 비밀번호와 동일한 비밀번호로 바꿀 수 없습니다."),
 
     // 401
     USER_EMAIL_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, "USER_401_1", "이메일 인증이 진행되지 않았습니다."),
