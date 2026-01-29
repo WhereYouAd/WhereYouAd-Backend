@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.user.persistence.mapper;
+package com.whereyouad.WhereYouAd.domains.user.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.AuthProviderAccount;

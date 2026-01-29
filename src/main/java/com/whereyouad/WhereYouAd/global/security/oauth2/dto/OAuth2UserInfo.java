@@ -8,9 +8,9 @@ import lombok.Getter;
 @Getter
 public class OAuth2UserInfo {
 
-    public String name;
-    public String email;
-    public String role;
-    public Provider provider;
-    public String providerId;
+    private String name;
+    private String email;
+    private String role;
+    private Provider provider;
+    private String providerId;
 }
