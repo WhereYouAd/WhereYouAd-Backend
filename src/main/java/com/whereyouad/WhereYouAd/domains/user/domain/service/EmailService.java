@@ -28,25 +28,26 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String senderEmail;
 
-    //인증코드 이메일 발송 로직
+    //인증코드 이메일 발송 로직 (최초 회원가입 시)
     public EmailSentResponse sendEmail(String toEmail) {
+        if (userRepository.existsByEmail(toEmail)) { //이미 해당 이메일로 생성한 계정이 있으면
+            throw new UserException(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외(회원가입 시 사용했던 예외)
+        }
 
         return emailSendTemplate(toEmail);
     }
 
+    //비밀번호 재설정을 위한 인증코드 이메일 발송 로직 (이미 회원가입 된 상태에서 비밀번호 재설정)
     public EmailSentResponse sendEmailForPwd(String toEmail) {
-        if (userRepository.existsByEmail(toEmail)) {
-            return emailSendTemplate(toEmail);
-        } else {
-            throw new UserException(UserErrorCode.EMAIL_USER_NOT_FOUND);
+        if (!userRepository.existsByEmail(toEmail)) { //이미 회원가입 되어있는 것이 확인되면
+            return emailSendTemplate(toEmail); //정상적으로 이메일 발송
+        } else { //만약 회원가입 되어있지 않다면
+            throw new UserException(UserErrorCode.USER_NOT_FOUND); //예외발생
         }
     }
 
     //기존 이메일 발송 로직 템플릿 화
     private EmailSentResponse emailSendTemplate(String toEmail) {
-        if (userRepository.existsByEmail(toEmail)) { //이미 해당 이메일로 생성한 계정이 있으면
-            throw new UserException(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외(회원가입 시 사용했던 예외)
-        }
 
         //인증코드 재전송 로직 -> 이미 Redis 에 해당 이메일 인증코드가 있을시 삭제
         String redisKey = "CODE:" + toEmail;
