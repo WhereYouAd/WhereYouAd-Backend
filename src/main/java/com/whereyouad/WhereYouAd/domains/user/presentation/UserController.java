@@ -50,7 +50,7 @@ public class UserController implements UserControllerDocs {
         );
     }
 
-    @PostMapping("/pwd-reset/email")
+    @PostMapping("/password-reset/request")
     public ResponseEntity<DataResponse<EmailSentResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request) {
         EmailSentResponse emailSentResponse = emailService.sendEmailForPwd(request.email());
 
@@ -59,7 +59,7 @@ public class UserController implements UserControllerDocs {
         );
     }
 
-    @PostMapping("/pwd-reset")
+    @PostMapping("/password-reset/confirm")
     public ResponseEntity<DataResponse<String>> resetPassword(@RequestBody @Valid PwdResetRequest request) {
         userService.passwordReset(request.email(), request.password());
 
