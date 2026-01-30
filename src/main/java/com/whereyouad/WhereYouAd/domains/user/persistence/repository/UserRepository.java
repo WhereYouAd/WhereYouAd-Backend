@@ -14,6 +14,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select u from User u where u.phoneNumber = :phoneNum")
     Optional<User> findUserByPhoneNumber(@Param("phoneNumber") String phoneNum);
 
-    //이메일 중복 예외 처리를 위한 이메일로 조회 메서드
+    boolean existsByPhoneNumber(String phoneNumber);
+
+    // 이메일 중복 예외 처리를 위한 이메일로 조회 메서드
     boolean existsByEmail(String email);
 }

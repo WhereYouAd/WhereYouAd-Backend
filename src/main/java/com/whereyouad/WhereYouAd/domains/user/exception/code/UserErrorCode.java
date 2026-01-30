@@ -20,6 +20,7 @@ public enum UserErrorCode implements BaseErrorCode {
 
     // 404
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "이메일에 해당하는 사용자를 찾을 수 없습니다."),
+    USER_NOT_FOUND_BY_PHONE(HttpStatus.NOT_FOUND, "USER_404_2", "해당 전화번호를 가진 사용자를 찾을 수 없습니다."),
 
     // 500
     SMS_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "USER_500_1", "문자 전송에 실패했습니다.");

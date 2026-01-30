@@ -37,6 +37,11 @@ public class SmsService {
 
     // SMS 전송
     public SmsResponse.SmsSentResponse sendSms(String phoneNumber) {
+        // 이메일 찾기 기능: 가입된 유저인지 확인
+        if (!userRepository.existsByPhoneNumber(phoneNumber)) {
+            throw new UserHandler(UserErrorCode.USER_NOT_FOUND_BY_PHONE);
+        }
+
         Message message = new Message();
         String verificationCode = generateCode();
 
