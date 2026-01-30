@@ -16,6 +16,7 @@ public enum UserErrorCode implements BaseErrorCode {
 
     // 401
     USER_EMAIL_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, "USER_401_1", "이메일 인증이 진행되지 않았습니다."),
+    USER_SMS_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, "USER_401_2", "휴대폰 인증이 진행되지 않았습니다."),
 
     // 404
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "이메일에 해당하는 사용자를 찾을 수 없습니다.")
