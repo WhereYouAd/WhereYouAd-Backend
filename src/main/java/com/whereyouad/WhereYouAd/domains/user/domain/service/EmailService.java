@@ -39,7 +39,7 @@ public class EmailService {
 
     //비밀번호 재설정을 위한 인증코드 이메일 발송 로직 (이미 회원가입 된 상태에서 비밀번호 재설정)
     public EmailSentResponse sendEmailForPwd(String toEmail) {
-        if (!userRepository.existsByEmail(toEmail)) { //이미 회원가입 되어있는 것이 확인되면
+        if (userRepository.existsByEmail(toEmail)) { //이미 회원가입 되어있는 것이 확인되면
             return emailSendTemplate(toEmail); //정상적으로 이메일 발송
         } else { //만약 회원가입 되어있지 않다면
             throw new UserException(UserErrorCode.USER_NOT_FOUND); //예외발생
