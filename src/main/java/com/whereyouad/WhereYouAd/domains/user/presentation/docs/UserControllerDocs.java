@@ -37,7 +37,7 @@ public interface UserControllerDocs {
         })
         public ResponseEntity<DataResponse<String>> verifyEmail(@RequestBody @Valid EmailRequest.Verify request);
 
-        @Operation(summary = "SMS 인증 번호 전송 API", description = "입력받은 전화번호로 인증 번호를 전송합니다.")
+        @Operation(summary = "이메일 찾기 - SMS 인증 번호 전송 API", description = "입력받은 전화번호로 인증 번호를 전송합니다.")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "성공"),
                         @ApiResponse(responseCode = "400", description = "실패")
@@ -45,7 +45,7 @@ public interface UserControllerDocs {
         public ResponseEntity<DataResponse<SmsResponse.SmsSentResponse>> sendSms(
                         @RequestBody @Valid SmsRequest.SmsSendRequest request);
 
-        @Operation(summary = "SMS 인증 번호 확인 API", description = "전화번호와 인증 코드를 받아 맞는지 검증합니다.")
+        @Operation(summary = "이메일 찾기 - SMS 인증 번호 확인 API", description = "전화번호와 인증 코드를 받아 맞는지 검증합니다.")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "성공"),
                         @ApiResponse(responseCode = "400", description = "실패")
