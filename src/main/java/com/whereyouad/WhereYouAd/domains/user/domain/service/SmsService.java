@@ -85,7 +85,7 @@ public class SmsService {
     public String isPhoneVerified(String phoneNumber, String insertedNum) {
         if (verifyCode(phoneNumber, insertedNum)) {
             User user = userRepository.findUserByPhoneNumber(phoneNumber)
-                    .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+                    .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND_BY_PHONE));
             return user.getEmail();
         } else
             throw new UserHandler(UserErrorCode.USER_SMS_NOT_VERIFIED);
