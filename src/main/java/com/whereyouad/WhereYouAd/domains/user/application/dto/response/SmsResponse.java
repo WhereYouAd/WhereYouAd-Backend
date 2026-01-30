@@ -10,6 +10,7 @@ public class SmsResponse {
 
         public record SmsVerifiedResponse(
                         boolean isVerified,
-                        String verificationMessage) {
+                        String verificationMessage,
+                        String email) {
         }
 }

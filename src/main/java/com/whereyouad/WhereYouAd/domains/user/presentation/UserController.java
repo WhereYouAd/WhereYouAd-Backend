@@ -60,12 +60,7 @@ public class UserController implements UserControllerDocs {
     @PostMapping("/sms-verify")
     public ResponseEntity<DataResponse<SmsResponse.SmsVerifiedResponse>> verifySms(
             @RequestBody @Valid SmsRequest.SmsVerifyRequest request) {
-        boolean isVerified = smsService.verifyCode(request.phoneNumber(), request.verificationCode());
-        if (isVerified) {
-            return ResponseEntity.ok(DataResponse.from(new SmsResponse.SmsVerifiedResponse(true, "인증 성공")));
-        } else {
-            return ResponseEntity.badRequest()
-                    .body(DataResponse.from(new SmsResponse.SmsVerifiedResponse(false, "인증 실패")));
-        }
+        String email = smsService.isPhoneVerified(request.phoneNumber(), request.verificationCode());
+        return ResponseEntity.ok(DataResponse.from(new SmsResponse.SmsVerifiedResponse(true, "이메일 찾기 성공", email)));
     }
 }
