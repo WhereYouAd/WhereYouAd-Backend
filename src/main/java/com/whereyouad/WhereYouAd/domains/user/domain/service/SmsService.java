@@ -47,7 +47,12 @@ public class SmsService {
         // redis 저장
         redisUtil.setDataExpire(phoneNumber, verificationCode, 180); // 유효 기간 3분
 
-        this.defaultMessageService.sendOne(new SingleMessageSendingRequest(message));
+        try {
+            this.defaultMessageService.sendOne(new SingleMessageSendingRequest(message));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new UserHandler(UserErrorCode.SMS_SEND_FAILED);
+        }
 
         return new SmsResponse.SmsSentResponse("인증번호가 전송되었습니다.", phoneNumber, 180L);
     }
