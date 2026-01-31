@@ -1,6 +1,6 @@
 package com.whereyouad.WhereYouAd.global.security.oauth2.service;
 
-import com.whereyouad.WhereYouAd.domains.user.exception.UserException;
+import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.*;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
@@ -50,7 +50,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         } else if (provider == Provider.KAKAO){
             oAuth2Response = new KaKaoResponse(oAuth2User.getAttributes());
         } else {
-            throw new UserException(UserErrorCode.NOT_PROVIDE_SOCIAL);
+            throw new UserHandler(UserErrorCode.NOT_PROVIDE_SOCIAL);
         }
 
         // 사용자 소셜 로그인 고유 id (제공자 + 소셜 발급 id) -> (중복 회원 가입 방지)
@@ -69,7 +69,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 user = userOptional.get();
                 // 기존 이메일에 해당하는 유저가 존재하지만 이메일 인증이 안된 경우 -> 연동 불가
                 if (!user.isEmailVerified()) {
-                    throw new UserException(UserErrorCode.USER_EMAIL_NOT_VERIFIED);
+                    throw new UserHandler(UserErrorCode.USER_EMAIL_NOT_VERIFIED);
                 }
             }
             // 신규 유저(기존 email X, 소셜 로그인 처음) -> DB에 저장

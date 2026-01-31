@@ -31,7 +31,7 @@ public class EmailService {
     //인증코드 이메일 발송 로직 (최초 회원가입 시)
     public EmailSentResponse sendEmail(String toEmail) {
         if (userRepository.existsByEmail(toEmail)) { //이미 해당 이메일로 생성한 계정이 있으면
-            throw new UserException(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외(회원가입 시 사용했던 예외)
+            throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외(회원가입 시 사용했던 예외)
         }
 
         return emailSendTemplate(toEmail);
@@ -42,7 +42,7 @@ public class EmailService {
         if (userRepository.existsByEmail(toEmail)) { //이미 회원가입 되어있는 것이 확인되면
             return emailSendTemplate(toEmail); //정상적으로 이메일 발송
         } else { //만약 회원가입 되어있지 않다면
-            throw new UserException(UserErrorCode.USER_NOT_FOUND); //예외발생
+            throw new UserHandler(UserErrorCode.USER_NOT_FOUND); //예외발생
         }
     }
 
@@ -78,7 +78,7 @@ public class EmailService {
 
                 emailSender.send(message); //만약 실제 존재하는 이메일인데 사용자가 오타를 냈다면
             } catch (MailException e) { //예외 발생
-                throw new UserException(UserErrorCode.USER_EMAIL_NOT_VALID); //통합 응답 처리 예외로 반환
+                throw new UserHandler(UserErrorCode.USER_EMAIL_NOT_VALID); //통합 응답 처리 예외로 반환
             }
 
         }
@@ -99,7 +99,7 @@ public class EmailService {
 
         //만약 인증코드가 없거나 잘못 입력했다면,
         if (savedCode == null || !savedCode.equals(inputCode)) {
-            throw new UserException(UserErrorCode.USER_EMAIL_AUTH_INVALID); //예외 발생(BAD_REQUEST)
+            throw new UserHandler(UserErrorCode.USER_EMAIL_AUTH_INVALID); //예외 발생(BAD_REQUEST)
         }
 
         //정상적으로 인증코드를 입력했다면,

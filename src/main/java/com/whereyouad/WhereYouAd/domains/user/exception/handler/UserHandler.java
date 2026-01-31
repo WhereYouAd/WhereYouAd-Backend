@@ -1,10 +1,10 @@
-package com.whereyouad.WhereYouAd.domains.user.exception;
+package com.whereyouad.WhereYouAd.domains.user.exception.handler;
 
 import com.whereyouad.WhereYouAd.global.exception.AppException;
 import com.whereyouad.WhereYouAd.global.exception.BaseErrorCode;
 
-public class UserException extends AppException {
-    public UserException(BaseErrorCode errorCode) {
+public class UserHandler extends AppException {
+    public UserHandler(BaseErrorCode errorCode) {
         super(errorCode);
     }
 }
