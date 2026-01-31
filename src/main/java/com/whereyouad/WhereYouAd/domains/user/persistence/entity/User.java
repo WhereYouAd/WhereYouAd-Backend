@@ -47,4 +47,9 @@ public class User extends BaseEntity {
     public void updateProfile(String name){
         this.name = name;
     }
+
+
+    public void resetPassword(String password) {
+        this.password = password;
+    }
 }

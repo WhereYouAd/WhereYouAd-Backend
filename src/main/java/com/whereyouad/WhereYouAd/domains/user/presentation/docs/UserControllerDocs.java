@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.user.presentation.docs;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailRequest;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
@@ -19,7 +20,7 @@ public interface UserControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
-            @ApiResponse(responseCode = "400_2", description = "이메일 중복 회원 존재")
+            @ApiResponse(responseCode = "400_1", description = "이메일 중복 회원 존재")
     })
     public ResponseEntity<DataResponse<SignUpResponse>> signUp(@RequestBody @Valid SignUpRequest request);
 
@@ -30,7 +31,7 @@ public interface UserControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
-            @ApiResponse(responseCode = "400_3", description = "이메일 전송실패(이메일 오타 등)")
+            @ApiResponse(responseCode = "400_2", description = "이메일 전송실패(이메일 오타 등)")
     })
     public ResponseEntity<DataResponse<EmailSentResponse>> sendEmail(@RequestBody @Valid EmailRequest.Send request);
 
@@ -40,7 +41,30 @@ public interface UserControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
-            @ApiResponse(responseCode = "400_4", description = "실패(인증코드 불일치)")
+            @ApiResponse(responseCode = "400_3", description = "실패(인증코드 불일치)")
     })
     public ResponseEntity<DataResponse<String>> verifyEmail(@RequestBody @Valid EmailRequest.Verify request);
+
+    @Operation(
+            summary = "사용자 비밀번호 재설정을 위한 이메일 인증코드 전송 API",
+            description = "회원의 이메일을 입력받아 해당 이메일로 인증코드를 전송합니다(인증코드 검증은 기존 /email-verify 로 진행)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "400_2", description = "이메일 전송실패(이메일 오타 등)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 이메일로 가입한 회원 존재하지 않음")
+    })
+    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request);
+
+    @Operation(
+            summary = "사용자 비밀번호 재설정 API",
+            description = "회원의 이메일과 재설정할 비밀번호를 입력받아 비밀번호를 재설정(이전과 같은 비밀번호 일 경우 예외 발생)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "400_5", description = "이전 비밀번호와 동일 비밀번호로 변경 불가"),
+            @ApiResponse(responseCode = "401_1", description = "이메일 인증 진행되지 않음"),
+            @ApiResponse(responseCode = "404_1", description = "해당 이메일로 가입한 회원 존재하지 않음")
+    })
+    public ResponseEntity<DataResponse<String>> resetPassword(@RequestBody @Valid PwdResetRequest request);
 }

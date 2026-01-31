@@ -1,6 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.constant;
 
-import com.whereyouad.WhereYouAd.domains.user.exception.UserSignUpException;
+import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +22,6 @@ public enum Provider {
         return Arrays.stream(Provider.values())
                 .filter(socialType -> socialType.getRegistrationId().equals(registrationId))
                 .findFirst()
-                .orElseThrow(() -> new UserSignUpException(UserErrorCode.NOT_PROVIDE_SOCIAL));
+                .orElseThrow(() -> new UserHandler(UserErrorCode.NOT_PROVIDE_SOCIAL));
     }
 }

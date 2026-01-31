@@ -1,6 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
-import com.whereyouad.WhereYouAd.domains.user.exception.UserSignUpException;
+import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.application.mapper.UserConverter;
@@ -26,7 +26,7 @@ public class UserService {
     //회원가입 메서드
     public SignUpResponse signUpUser(SignUpRequest request) {
         if (userRepository.existsByEmail(request.email())) { //이미 이메일로 만든 계정이 존재할 시
-            throw new UserSignUpException(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외
+            throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외
         }
 
         //추가 : 이메일 인증되었는지 확인 -> 악의적 공격자가 이메일 인증을 건너뛰고 회원가입 URL 등으로 바로 들어왔을 경우
@@ -35,7 +35,7 @@ public class UserService {
 
         //인증이 안되었다면,
         if (isEmailVerified == null || !isEmailVerified.equals("TRUE")) {
-            throw new UserSignUpException(UserErrorCode.USER_EMAIL_NOT_VERIFIED); //예외 발생(UNAUTHORIZED)
+            throw new UserHandler(UserErrorCode.USER_EMAIL_NOT_VERIFIED); //예외 발생(UNAUTHORIZED)
         }
 
         //비밀번호 암호화 -> SecurityConfig 클래스 내 에서 BCryptPasswordEncoder 를 Bean 등록한거로 사용
@@ -56,5 +56,33 @@ public class UserService {
 
         //Response DTO 로 변환 및 반환
         return UserConverter.toSignInResponse(savedUser);
+    }
+
+    //이미 회원가입 된 회원의 비밀번호 재설정 메서드
+    public void passwordReset(String email, String password) {
+        //이메일 인증이 되어있는지 확인
+        String isEmailVerified = redisUtil.getData("VERIFIED:" + email);
+
+        //인증이 안되었다면,
+        if (isEmailVerified == null || !isEmailVerified.equals("TRUE")) {
+            throw new UserHandler(UserErrorCode.USER_EMAIL_NOT_VERIFIED); //예외 발생
+        }
+
+        //기존 비밀번호와 새 비밀번호가 일치할 시 예외 발생
+        User user = userRepository.findUserByEmail(email)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        String oldPassword = user.getPassword();
+
+        if (passwordEncoder.matches(password, oldPassword)) { //새로운 비밀번호 == 이전 비밀번호이면
+            throw new UserHandler(UserErrorCode.USER_PASSWORD_SAME_AS_OLD); //예외 발생
+        }
+
+        //새 비밀번호 암호화 & 저장
+        String newPassword = passwordEncoder.encode(password);
+        //비밀번호 변경 (JPA Dirty Checking)
+        user.resetPassword(newPassword);
+
+        redisUtil.deleteData("VERIFIED:" + email);
     }
 }
