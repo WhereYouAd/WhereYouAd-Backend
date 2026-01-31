@@ -1,7 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
-import com.whereyouad.WhereYouAd.domains.user.exception.UserException;
+import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
@@ -34,20 +34,23 @@ public class EmailService {
             throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE); //이메일 중복 예외(회원가입 시 사용했던 예외)
         }
 
-        return emailSendTemplate(toEmail);
+        String type = "회원가입";
+
+        return emailSendTemplate(toEmail, type);
     }
 
     //비밀번호 재설정을 위한 인증코드 이메일 발송 로직 (이미 회원가입 된 상태에서 비밀번호 재설정)
     public EmailSentResponse sendEmailForPwd(String toEmail) {
         if (userRepository.existsByEmail(toEmail)) { //이미 회원가입 되어있는 것이 확인되면
-            return emailSendTemplate(toEmail); //정상적으로 이메일 발송
+            String type = "비밀번호 재설정";
+            return emailSendTemplate(toEmail, type); //정상적으로 이메일 발송
         } else { //만약 회원가입 되어있지 않다면
             throw new UserHandler(UserErrorCode.USER_NOT_FOUND); //예외발생
         }
     }
 
     //기존 이메일 발송 로직 템플릿 화
-    private EmailSentResponse emailSendTemplate(String toEmail) {
+    private EmailSentResponse emailSendTemplate(String toEmail, String type) {
 
         //인증코드 재전송 로직 -> 이미 Redis 에 해당 이메일 인증코드가 있을시 삭제
         String redisKey = "CODE:" + toEmail;
@@ -73,7 +76,8 @@ public class EmailService {
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setTo(toEmail);
                 message.setSubject("whereyouad 회원가입 인증번호");
-                message.setText("인증번호: " + authCode);
+                //어떤 유형의 인증(최초 회원가입 or 비밀번호 재설정) 인지 구분하여 인증코드 발송
+                message.setText("[Where You Ad] " + type +  "\n 인증 번호는 [" + authCode + "] 입니다.");
                 message.setFrom(senderEmail);
 
                 emailSender.send(message); //만약 실제 존재하는 이메일인데 사용자가 오타를 냈다면
@@ -83,12 +87,12 @@ public class EmailService {
 
         }
 
-        //Redis에 저장 (Key: "CODE:이메일", Value: "123456", 유효시간: 300초(5분))
+        //Redis에 저장 (Key: "CODE:이메일", Value: "123456", 유효시간: 180초(3분))
         //테스트 계정도 인증은 해야하니 Redis 에 코드가 저장 되어야 함.
         //테스트 계정의 인증은 서버 로그를 통해 인증코드를 얻어 입력.
-        redisUtil.setDataExpire("CODE:" + toEmail, authCode, 60 * 5L);
+        redisUtil.setDataExpire("CODE:" + toEmail, authCode, 60 * 3L);
 
-        return new EmailSentResponse("인증코드를 이메일로 전송했습니다.", toEmail, 300L);
+        return new EmailSentResponse("인증코드를 이메일로 전송했습니다.", toEmail, 180L);
     }
 
     //인증코드 검증 메서드
