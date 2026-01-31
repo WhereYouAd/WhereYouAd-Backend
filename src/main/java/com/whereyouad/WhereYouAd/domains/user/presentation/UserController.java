@@ -55,7 +55,7 @@ public class UserController implements UserControllerDocs {
         EmailSentResponse emailSentResponse = emailService.sendEmailForPwd(request.email());
 
         return ResponseEntity.ok(
-                DataResponse.created(emailSentResponse)
+                DataResponse.from(emailSentResponse)
         );
     }
 
