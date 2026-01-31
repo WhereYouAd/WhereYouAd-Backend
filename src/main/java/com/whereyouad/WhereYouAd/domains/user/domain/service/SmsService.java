@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import net.nurigo.sdk.NurigoApp;
 import net.nurigo.sdk.message.model.Message;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
@@ -18,6 +19,7 @@ import java.util.Random;
 
 @Service
 @Transactional
+@Slf4j
 public class SmsService {
     private final RedisUtil redisUtil;
     private final UserRepository userRepository;
@@ -55,7 +57,7 @@ public class SmsService {
         try {
             this.defaultMessageService.sendOne(new SingleMessageSendingRequest(message));
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             throw new UserHandler(UserErrorCode.SMS_SEND_FAILED);
         }
 

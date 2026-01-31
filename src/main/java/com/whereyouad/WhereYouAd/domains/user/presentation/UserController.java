@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.user.presentation;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SmsRequest;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
@@ -32,14 +33,16 @@ public class UserController implements UserControllerDocs {
     public ResponseEntity<DataResponse<SignUpResponse>> signUp(@RequestBody @Valid SignUpRequest request) {
         SignUpResponse signUpResponse = userService.signUpUser(request);
         return ResponseEntity.ok(
-                DataResponse.created(signUpResponse));
+                DataResponse.created(signUpResponse)
+        );
     }
 
     @PostMapping("/email-send")
     public ResponseEntity<DataResponse<EmailSentResponse>> sendEmail(@RequestBody @Valid EmailRequest.Send request) {
         EmailSentResponse emailSentResponse = emailService.sendEmail(request.email());
         return ResponseEntity.ok(
-                DataResponse.from(emailSentResponse));
+                DataResponse.from(emailSentResponse)
+        );
     }
 
     @PostMapping("/email-verify")
@@ -62,5 +65,23 @@ public class UserController implements UserControllerDocs {
             @RequestBody @Valid SmsRequest.SmsVerifyRequest request) {
         String email = smsService.isPhoneVerified(request.phoneNumber(), request.verificationCode());
         return ResponseEntity.ok(DataResponse.from(new SmsResponse.SmsVerifiedResponse(true, "이메일 찾기 성공", email)));
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request) {
+        EmailSentResponse emailSentResponse = emailService.sendEmailForPwd(request.email());
+
+        return ResponseEntity.ok(
+                DataResponse.from(emailSentResponse)
+        );
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<DataResponse<String>> resetPassword(@RequestBody @Valid PwdResetRequest request) {
+        userService.passwordReset(request.email(), request.password());
+
+        return ResponseEntity.ok(
+                DataResponse.from("비밀번호 변경이 완료되었습니다.")
+        );
     }
 }
