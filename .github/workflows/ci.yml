@@ -52,3 +52,6 @@ jobs:
           MAIL_USERNAME: test@example.com
           MAIL_PASSWORD: test_password
           JWT_SECRET: dGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS1mb3ItY2ktdGVzdC1wdXJwb3Nlcw==
+          SMS_API_KEY: test_api_key
+          SMS_SECRET_KEY: test_secret_key
+          SMS_SENDER_NUMBER: 01000000000

@@ -1,9 +1,11 @@
 package com.whereyouad.WhereYouAd.domains.user.presentation.docs;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailRequest;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SmsRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -67,4 +69,20 @@ public interface UserControllerDocs {
             @ApiResponse(responseCode = "404_1", description = "해당 이메일로 가입한 회원 존재하지 않음")
     })
     public ResponseEntity<DataResponse<String>> resetPassword(@RequestBody @Valid PwdResetRequest request);
+
+    @Operation(summary = "이메일 찾기 - SMS 인증 번호 전송 API", description = "입력받은 전화번호로 인증 번호를 전송합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "400", description = "실패")
+    })
+    public ResponseEntity<DataResponse<SmsResponse.SmsSentResponse>> sendSms(
+            @RequestBody @Valid SmsRequest.SmsSendRequest request);
+
+    @Operation(summary = "이메일 찾기 - SMS 인증 번호 확인 API", description = "전화번호와 인증 코드를 받아 맞는지 검증합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "400", description = "실패")
+    })
+    public ResponseEntity<DataResponse<SmsResponse.SmsVerifiedResponse>> verifySms(
+            @RequestBody @Valid SmsRequest.SmsVerifyRequest request);
 }
