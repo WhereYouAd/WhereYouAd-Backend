@@ -75,8 +75,8 @@ public class EmailService {
                 //실제 인증 코드가 담긴 이메일 전송
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setTo(toEmail);
-                message.setSubject("whereyouad 회원가입 인증번호");
                 //어떤 유형의 인증(최초 회원가입 or 비밀번호 재설정) 인지 구분하여 인증코드 발송
+                message.setSubject("whereyouad " + type + " 인증번호");
                 message.setText("[Where You Ad] " + type +  "\n 인증 번호는 [" + authCode + "] 입니다.");
                 message.setFrom(senderEmail);
 
