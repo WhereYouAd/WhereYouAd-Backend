@@ -1,0 +1,79 @@
+name: CI/CD Pipeline
+
+# develop 브랜치에 push 될 때마다 실행
+on:
+  push:
+    branches: [ "develop" ]
+
+env:
+  DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/where-you-ad-backend
+  # Private EC2 IP
+  PRIVATE_IP: 10.0.129.20
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKER_IMAGE_NAME }}:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Private EC2 via Bastion
+        uses: appleboy/ssh-action@master
+        with:
+          # 목적지: Private EC2 (여기에 배포)
+          host: ${{ env.PRIVATE_IP }}
+          username: ${{ secrets.EC2_SSH_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          # 경유지: Public EC2
+          proxy_host: ${{ secrets.EC2_HOST }}
+          proxy_username: ${{ secrets.EC2_SSH_USER }}
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+
+          # 3. 실행
+          script: |
+            cd ~/WhereYouAd-Backend
+            
+            # 최신 파일(docker-compose.yml 등) pull
+            git pull origin develop
+            
+            # GitHub Secrets에 저장된 .env 내용을 파일로 생성 (덮어쓰기)
+            echo "${{ secrets.PROD_ENV_FILE }}" > .env
+            
+            # Docker Hub에서 최신 이미지 pull
+            sudo docker-compose pull
+            
+            # 컨테이너 재실행
+            sudo docker-compose up -d
+            
+            # 불필요한 이미지 삭제 (용량 관리)
+            sudo docker image prune -f
