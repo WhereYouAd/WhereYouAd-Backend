@@ -62,7 +62,7 @@ services:
       - where-you-ad-network
     restart: always
     ports:
-      - "127.0.0.1:3306:3306" # 외부 노출 차단 (SSH 터널링용 localhost 바인딩)
+      - "3306:3306"
 
   # 3. Redis
   redis:
@@ -72,7 +72,7 @@ services:
       - where-you-ad-network
     restart: always
     ports:
-      - "127.0.0.1:6379:6379" # 외부 노출 차단
+      - "6379:6379"
 
 networks:
   where-you-ad-network:
