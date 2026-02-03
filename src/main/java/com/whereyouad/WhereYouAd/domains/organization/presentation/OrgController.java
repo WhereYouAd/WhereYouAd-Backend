@@ -3,7 +3,6 @@ package com.whereyouad.WhereYouAd.domains.organization.presentation;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
-import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgServiceImpl;
 import com.whereyouad.WhereYouAd.domains.organization.presentation.docs.OrgControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Hidden;
