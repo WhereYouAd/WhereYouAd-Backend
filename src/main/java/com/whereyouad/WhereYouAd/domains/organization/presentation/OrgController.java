@@ -29,34 +29,34 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
-    @GetMapping("/read")
-    public ResponseEntity<DataResponse<OrgResponse.Read>> getOrganizations(
-            @AuthenticationPrincipal(expression = "userId") Long userId
-    ) {
-        OrgResponse.Read response = orgService.getOrganization(userId);
-        return ResponseEntity.ok(
-                DataResponse.from(response)
-        );
-    }
-
-    @PatchMapping("/{orgId}")
-    public ResponseEntity<Void> modifyOrganization(
-            @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId,
-            @RequestBody OrgRequest.Update request
-    )
-    {
-        orgService.modifyOrganization(userId, orgId, request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{orgId}")
-    public ResponseEntity<Void> removeOrganization(
-            @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId
-    )
-    {
-        orgService.removeOrganization(userId, orgId);
-        return ResponseEntity.noContent().build();
-    }
+//    @GetMapping("/read")
+//    public ResponseEntity<DataResponse<OrgResponse.Read>> getOrganizations(
+//            @AuthenticationPrincipal(expression = "userId") Long userId
+//    ) {
+//        OrgResponse.Read response = orgService.getOrganization(userId);
+//        return ResponseEntity.ok(
+//                DataResponse.from(response)
+//        );
+//    }
+//
+//    @PatchMapping("/{orgId}")
+//    public ResponseEntity<Void> modifyOrganization(
+//            @AuthenticationPrincipal(expression = "userId") Long userId,
+//            @PathVariable Long orgId,
+//            @RequestBody OrgRequest.Update request
+//    )
+//    {
+//        orgService.modifyOrganization(userId, orgId, request);
+//        return ResponseEntity.noContent().build();
+//    }
+//
+//    @DeleteMapping("/{orgId}")
+//    public ResponseEntity<Void> removeOrganization(
+//            @AuthenticationPrincipal(expression = "userId") Long userId,
+//            @PathVariable Long orgId
+//    )
+//    {
+//        orgService.removeOrganization(userId, orgId);
+//        return ResponseEntity.noContent().build();
+//    }
 }
