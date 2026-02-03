@@ -23,7 +23,7 @@ import java.util.List;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class OrgCRUDService {
+public class OrgServiceImpl implements OrgService{
 
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
