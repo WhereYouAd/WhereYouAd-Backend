@@ -3,8 +3,7 @@ package com.whereyouad.WhereYouAd.domains.organization.domain.service;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgConverter;
-import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
-import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
+import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgMemberConverter;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
@@ -19,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -49,21 +47,10 @@ public class OrgCRUDService {
         }
 
         //조직 생성
-        Organization organization = Organization.builder()
-                .name(request.name())
-                .description(request.description())
-                .logoUrl(request.logoUrl())
-                .ownerUserId(userId)
-                .status(OrgStatus.ACTIVE)
-                .build();
+        Organization organization = OrgConverter.toOrganization(userId, request);
 
         //OrgMember 생성
-        OrgMember orgMember = OrgMember.builder()
-                .user(user)
-                .organization(organization)
-                .joinedAt(LocalDateTime.now())
-                .role(OrgRole.ADMIN) //생성한 사람은 ADMIN
-                .build();
+        OrgMember orgMember = OrgMemberConverter.toOrgMemberADMIN(user, organization);
 
         orgRepository.save(organization);
         orgMemberRepository.save(orgMember);
