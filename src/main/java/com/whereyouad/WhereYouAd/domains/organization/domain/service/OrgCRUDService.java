@@ -31,19 +31,24 @@ public class OrgCRUDService {
     private final OrgMemberRepository orgMemberRepository;
     private final UserRepository userRepository;
 
+    //조직(워크스페이스) 생성 메서드
     public OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request) {
 
+        //유저 정보 추출
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
         //만약 해당 User 가 이미 같은 name 을 가진 Organization 에 속해있으면 예외처리
+        //해당 User 의 OrgMember 를 모두 추출해서,
         List<OrgMember> orgMemberByUser = orgMemberRepository.findOrgMemberByUser(user);
         for (OrgMember orgMember : orgMemberByUser) {
+            //OrgMember 내부 Organization 의 name 이 생성하려는 request 의 name 과 같으면
             if (orgMember.getOrganization().getName().equals(request.name())) {
-                throw new OrgHandler(OrgErrorCode.ORG_NAME_DUPLICATE);
+                throw new OrgHandler(OrgErrorCode.ORG_NAME_DUPLICATE); //예외처리
             }
         }
 
+        //조직 생성
         Organization organization = Organization.builder()
                 .name(request.name())
                 .description(request.description())
@@ -52,11 +57,12 @@ public class OrgCRUDService {
                 .status(OrgStatus.ACTIVE)
                 .build();
 
+        //OrgMember 생성
         OrgMember orgMember = OrgMember.builder()
                 .user(user)
                 .organization(organization)
                 .joinedAt(LocalDateTime.now())
-                .role(OrgRole.ADMIN)
+                .role(OrgRole.ADMIN) //생성한 사람은 ADMIN
                 .build();
 
         orgRepository.save(organization);
