@@ -64,15 +64,8 @@ public class OrgServiceImpl implements OrgService{
     }
 
     public void modifyOrganization(Long userId, Long orgId, OrgRequest.Update request) {
-        Organization organization = orgRepository.findById(orgId)
-                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+        //TODO
 
-        //만약 조직 정보 수정을 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
-        if (!organization.getOwnerUserId().equals(userId)) {
-            throw new OrgHandler(OrgErrorCode.ORG_UPDATE_FORBIDDEN); //예외처리
-        }
-
-        organization.modifyInfo(request);
     }
 
     public void removeOrganization(Long userId, Long orgId) {
