@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 public interface OrgControllerDocs {
@@ -22,4 +23,19 @@ public interface OrgControllerDocs {
     })
     public ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(@AuthenticationPrincipal(expression = "userId") Long userId,
                                                                                @RequestBody @Valid OrgRequest.Create request);
+
+    @Operation(
+            summary = "조직 정보 수정 API",
+            description = "새로운 조직 이름, 설명, 로고 이미지 URL 을 받아 저장(해당 조직을 생성한 회원만 정보 변경 가능)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "성공(응답X)"),
+            @ApiResponse(responseCode = "403_1", description = "허가되지 않은 회원의 요청(조직 생성 회원 X)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
+    })
+    public ResponseEntity<Void> modifyOrganization(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody @Valid OrgRequest.Update request
+    );
 }
