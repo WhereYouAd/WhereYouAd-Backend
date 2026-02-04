@@ -16,10 +16,7 @@ public class OrgRequest {
     ) {}
 
     public record Update (
-            @NotBlank(message = "조직 이름은 필수입니다.")
-            String name,
-            String description,
-            String logoUrl
+        //TODO
     ) {}
 
     public record Delete (
