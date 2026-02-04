@@ -41,11 +41,12 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
+    @Hidden
     @PatchMapping("/{orgId}")
     public ResponseEntity<Void> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestBody @Valid OrgRequest.Update request
+            @RequestBody OrgRequest.Update request
     )
     {
         orgService.modifyOrganization(userId, orgId, request);
