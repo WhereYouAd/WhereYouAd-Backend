@@ -9,10 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 public interface OrgControllerDocs {
     @Operation(
@@ -39,6 +36,22 @@ public interface OrgControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid OrgRequest.Update request
+    );
+
+    @Operation(
+            summary = "조직 복구 API",
+            description = "Soft Delete 로 임시삭제한 조직을 다시 활성화 합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "403_1", description = "허가되지 않은 회원의 요청(조직 생성 회원 X)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X"),
+            @ApiResponse(responseCode = "409_1", description = "이미 활성화 상태인 조직")
+    })
+    @PatchMapping("/{orgId}/restore")
+    public ResponseEntity<DataResponse<OrgResponse.Delete>> restoreOrganization(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
     );
 
 

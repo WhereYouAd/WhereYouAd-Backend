@@ -55,6 +55,19 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
+    @PatchMapping("/{orgId}/restore")
+    public ResponseEntity<DataResponse<OrgResponse.Delete>> restoreOrganization(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    )
+    {
+        OrgResponse.Delete response = orgService.restoreOrganization(userId, orgId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
     @DeleteMapping("/{orgId}")
     public ResponseEntity<Void> removeOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
