@@ -46,4 +46,8 @@ public class Organization extends BaseEntity {
     public void softDelete() {
         this.status = OrgStatus.DELETED;
     }
+
+    public void restoreDelete() {
+        this.status = OrgStatus.ACTIVE;
+    }
 }
