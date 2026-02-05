@@ -12,6 +12,14 @@ public class OrgConverter {
         return new OrgResponse.Create(organization.getId(), organization.getCreatedAt());
     }
 
+    public static OrgResponse.Update toUpdatedResponse(Organization organization) {
+        return new OrgResponse.Update(organization.getId(),
+                organization.getName(),
+                organization.getDescription(),
+                organization.getLogoUrl(),
+                organization.getUpdatedAt());
+    }
+
     //DTO -> Entity
     public static Organization toOrganization(Long userId, OrgRequest.Create request) {
         return Organization.builder()

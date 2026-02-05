@@ -63,9 +63,21 @@ public class OrgServiceImpl implements OrgService{
         return null;
     }
 
-    public void modifyOrganization(Long userId, Long orgId, OrgRequest.Update request) {
-        //TODO
+    //조직 정보 수정 메서드
+    public OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request) {
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
+        //만약 조직 정보 수정을 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
+        if (!organization.getOwnerUserId().equals(userId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_UPDATE_FORBIDDEN); //예외처리
+        }
+
+        //조직 정보 수정
+        organization.modifyInfo(request);
+
+        //변환 된 필드값과 해당 조직의 Id, updatedAt 가 포함된 DTO 로 반환
+        return OrgConverter.toUpdatedResponse(organization);
     }
 
     public void removeOrganization(Long userId, Long orgId) {

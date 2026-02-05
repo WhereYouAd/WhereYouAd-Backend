@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.organization.persistence.entity;
 
+import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -35,4 +36,10 @@ public class Organization extends BaseEntity {
     @Column(nullable = false, name = "status")
     @ColumnDefault("'ACTIVE'") //기본값 ACTIVE
     private OrgStatus status; //ACTIVE, SUSPENDED, DELETED
+
+    public void modifyInfo(OrgRequest.Update request) {
+        this.name = request.name();
+        this.description = request.description();
+        this.logoUrl = request.logoUrl();
+    }
 }
