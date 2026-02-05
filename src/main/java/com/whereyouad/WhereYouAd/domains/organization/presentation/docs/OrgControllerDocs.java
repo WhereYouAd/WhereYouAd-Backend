@@ -29,11 +29,11 @@ public interface OrgControllerDocs {
             description = "새로운 조직 이름, 설명, 로고 이미지 URL 을 받아 저장(해당 조직을 생성한 회원만 정보 변경 가능)"
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "성공(응답X)"),
+            @ApiResponse(responseCode = "200", description = "성공(변경된 필드 값들과 조직Id, 변경 시각 반환)"),
             @ApiResponse(responseCode = "403_1", description = "허가되지 않은 회원의 요청(조직 생성 회원 X)"),
             @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
     })
-    public ResponseEntity<Void> modifyOrganization(
+    public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid OrgRequest.Update request

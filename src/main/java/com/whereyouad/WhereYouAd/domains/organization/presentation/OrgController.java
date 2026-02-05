@@ -43,14 +43,16 @@ public class OrgController implements OrgControllerDocs {
 
 
     @PatchMapping("/{orgId}")
-    public ResponseEntity<Void> modifyOrganization(
+    public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid OrgRequest.Update request
     )
     {
-        orgService.modifyOrganization(userId, orgId, request);
-        return ResponseEntity.noContent().build();
+        OrgResponse.Update response = orgService.modifyOrganization(userId, orgId, request);
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
     }
 
     @Hidden
