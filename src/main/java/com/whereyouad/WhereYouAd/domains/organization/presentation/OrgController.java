@@ -55,14 +55,19 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
-    @Hidden
     @DeleteMapping("/{orgId}")
     public ResponseEntity<Void> removeOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId
+            @PathVariable Long orgId,
+            @RequestParam(defaultValue = "false") boolean isHard
     )
     {
-        orgService.removeOrganization(userId, orgId);
+        if (isHard) { //true 로 하여 Hard Delete 시
+            orgService.removeOrganization(userId, orgId); //Hard Delete
+        } else { //기본값(false) 이면
+            orgService.removeOrganizationSoft(userId, orgId); //Soft Delete
+        }
+
         return ResponseEntity.noContent().build();
     }
 }

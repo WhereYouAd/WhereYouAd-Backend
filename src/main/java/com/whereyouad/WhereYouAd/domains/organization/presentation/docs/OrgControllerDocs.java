@@ -9,8 +9,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface OrgControllerDocs {
     @Operation(
@@ -37,5 +39,23 @@ public interface OrgControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid OrgRequest.Update request
+    );
+
+
+    @Operation(
+            summary = "조직 삭제 API",
+            description = "조직 Id 를 PathVariable 로 받아 해당 조직 삭제(해당 조직을 생성한 회원만 삭제 가능) \n\n" +
+                    "param 인 isHard = true 이면 Hard Delete (DB에서 삭제), isHard = false 이면 Soft Delete (status 만 DELETED 로 변경)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "성공(반환X)"),
+            @ApiResponse(responseCode = "403_1", description = "허가되지 않은 회원의 요청(조직 생성 회원 X)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
+    })
+    @DeleteMapping("/{orgId}")
+    public ResponseEntity<Void> removeOrganization(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(defaultValue = "false") boolean isHard
     );
 }
