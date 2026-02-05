@@ -22,7 +22,4 @@ public class OrgRequest {
             String logoUrl
     ) {}
 
-    public record Delete (
-        //TODO
-    ) {}
 }
