@@ -21,4 +21,10 @@ public class OrgResponse {
             LocalDateTime updatedAt
     ) {}
 
+    //Soft Delete 복구 시 응답값
+    public record Delete (
+            Long orgId,
+            String message
+    ) {}
+
 }
