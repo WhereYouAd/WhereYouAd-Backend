@@ -9,7 +9,7 @@ public interface OrgService {
 
     OrgResponse.Read getOrganization(Long userId);
 
-    void modifyOrganization(Long userId, Long orgId, OrgRequest.Update request);
+    OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request);
 
     void removeOrganization(Long userId, Long orgId);
 }
