@@ -70,7 +70,7 @@ public class OrgServiceImpl implements OrgService{
 
         //만약 조직 정보 수정을 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
         if (!organization.getOwnerUserId().equals(userId)) {
-            throw new OrgHandler(OrgErrorCode.ORG_UPDATE_FORBIDDEN); //예외처리
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); //예외처리
         }
 
         //조직 정보 수정
@@ -80,8 +80,36 @@ public class OrgServiceImpl implements OrgService{
         return OrgConverter.toUpdatedResponse(organization);
     }
 
+    //조직 삭제 메서드 -> Hard Delete (DB 에서 완전히 제거)
     public void removeOrganization(Long userId, Long orgId) {
-        //TODO
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
+        //만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
+        if (!organization.getOwnerUserId().equals(userId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); //예외처리
+        }
+
+        //해당 조직에 가입된 모든 회원들의 가입 정보 삭제
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
+
+        orgMemberRepository.deleteAll(orgMembers);
+
+        //조직 실제 삭제
+        orgRepository.delete(organization);
+    }
+
+    //조직 삭제 메서드 -> Soft Delete (status 만 DELETED 로 변경)
+    public void removeOrganizationSoft(Long userId, Long orgId) {
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        //만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
+        if (!organization.getOwnerUserId().equals(userId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN);
+        }
+
+        //조직 status 만 DELETED 로 변경 후 종료
+        organization.softDelete();
     }
 }
