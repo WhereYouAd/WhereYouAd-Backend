@@ -48,7 +48,6 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X"),
             @ApiResponse(responseCode = "409_1", description = "이미 활성화 상태인 조직")
     })
-    @PatchMapping("/{orgId}/restore")
     public ResponseEntity<DataResponse<OrgResponse.Delete>> restoreOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId
@@ -65,7 +64,6 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "403_1", description = "허가되지 않은 회원의 요청(조직 생성 회원 X)"),
             @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
     })
-    @DeleteMapping("/{orgId}")
     public ResponseEntity<Void> removeOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
