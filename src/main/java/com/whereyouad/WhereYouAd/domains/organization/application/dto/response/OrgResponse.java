@@ -13,4 +13,12 @@ public class OrgResponse {
         //TODO
     ) {}
 
+    public record Update (
+            Long orgId,
+            String name,
+            String description,
+            String logoUrl,
+            LocalDateTime updatedAt
+    ) {}
+
 }
