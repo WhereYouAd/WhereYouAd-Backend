@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.Or
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgConverter;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgMemberConverter;
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
@@ -78,6 +79,25 @@ public class OrgServiceImpl implements OrgService{
 
         //변환 된 필드값과 해당 조직의 Id, updatedAt 가 포함된 DTO 로 반환
         return OrgConverter.toUpdatedResponse(organization);
+    }
+
+    public OrgResponse.Delete restoreOrganization(Long userId, Long orgId) {
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        //만약 조직 복구 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
+        if (!organization.getOwnerUserId().equals(userId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); //예외처리
+        }
+
+        //조직이 이미 활성화 상태라면,
+        if (organization.getStatus() == OrgStatus.ACTIVE) {
+            throw new OrgHandler(OrgErrorCode.ORG_ALREADY_ACTIVE); //예외처리
+        }
+
+        organization.restoreDelete(); //조직 Soft Delete 복구
+
+        return OrgConverter.toRestoredResponse(organization);
     }
 
     //조직 삭제 메서드 -> Hard Delete (DB 에서 완전히 제거)
