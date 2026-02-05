@@ -16,6 +16,9 @@ public enum OrgErrorCode implements BaseErrorCode {
 
     //404
     ORG_NOT_FOUND(HttpStatus.NOT_FOUND, "ORG_404_1", "해당 id 의 조직이 존재하지 않습니다."),
+
+    //409
+    ORG_ALREADY_ACTIVE(HttpStatus.CONFLICT, "ORG_409_1", "해당 조직은 이미 활성화 상태 입니다.")
     ;
     private final HttpStatus httpStatus;
     private final String code;
