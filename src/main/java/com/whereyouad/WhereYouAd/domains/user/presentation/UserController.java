@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailReque
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SmsRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.SmsService;
@@ -15,10 +16,8 @@ import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -82,6 +81,15 @@ public class UserController implements UserControllerDocs {
 
         return ResponseEntity.ok(
                 DataResponse.from("비밀번호 변경이 완료되었습니다.")
+        );
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<DataResponse<MyPageResponse>> getMyPage(@AuthenticationPrincipal(expression = "userId") Long userId) {
+        MyPageResponse response = userService.getMyPage(userId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
         );
     }
 }

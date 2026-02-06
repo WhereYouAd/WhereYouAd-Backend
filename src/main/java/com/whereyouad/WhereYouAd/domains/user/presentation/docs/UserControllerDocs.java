@@ -5,6 +5,7 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SmsRequest
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 
 public interface UserControllerDocs {
@@ -85,4 +87,15 @@ public interface UserControllerDocs {
     })
     public ResponseEntity<DataResponse<SmsResponse.SmsVerifiedResponse>> verifySms(
             @RequestBody @Valid SmsRequest.SmsVerifyRequest request);
+
+    @Operation(
+            summary = "마이페이지 API",
+            description = "Authorization : Bearer \\<AccessToken\\> 을 헤더로 받아 현재 로그인한 회원의 정보를 조회합니다.\n\n" +
+                    "회원 DB id,이메일, 이름, 프로필 이미지 URL, 전화번호, 이메일 인증 여부(true / false) 를 반환합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404_1", description = "해당 사용자 존재하지 않음")
+    })
+    public ResponseEntity<DataResponse<MyPageResponse>> getMyPage(@AuthenticationPrincipal(expression = "userId") Long userId);
 }
