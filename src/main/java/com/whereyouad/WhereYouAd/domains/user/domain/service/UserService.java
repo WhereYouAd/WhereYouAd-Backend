@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
@@ -10,6 +11,7 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,5 +86,20 @@ public class UserService {
         user.resetPassword(newPassword);
 
         redisUtil.deleteData("VERIFIED:" + email);
+    }
+
+    /**
+     * 마이페이지 메서드 Redis 캐싱 적용
+     * 동작 방식: Redis에서 'user:profile::{userId}' 키를 먼저 조회,
+     * 데이터가 존재하면 메서드를 실행하지 않고(DB 조회 X) 캐시된 데이터를 즉시 반환
+     * 데이터가 없으면 DB에서 조회 후 반환, 결과값을 자동으로 Redis에 저장
+     */
+    @Cacheable(value = "user:profile", key = "#userId", unless = "#result == null")
+    @Transactional(readOnly = true)
+    public MyPageResponse getMyPage(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        return UserConverter.toMyPageResponse(user);
     }
 }
