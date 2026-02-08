@@ -69,7 +69,7 @@ public class OrgController implements OrgControllerDocs {
     }
 
     @DeleteMapping("/{orgId}")
-    public ResponseEntity<Void> removeOrganization(
+    public ResponseEntity<DataResponse<String>> removeOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestParam(defaultValue = "false") boolean isHard
@@ -81,6 +81,8 @@ public class OrgController implements OrgControllerDocs {
             orgService.removeOrganizationSoft(userId, orgId); //Soft Delete
         }
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(
+                DataResponse.from("조직이 정상적으로 삭제 처리 되었습니다.")
+        );
     }
 }

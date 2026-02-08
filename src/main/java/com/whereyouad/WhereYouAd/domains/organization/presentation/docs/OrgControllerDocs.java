@@ -60,11 +60,11 @@ public interface OrgControllerDocs {
                     "param 인 isHard = true 이면 Hard Delete (DB에서 삭제), isHard = false 이면 Soft Delete (status 만 DELETED 로 변경)"
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "성공(반환X)"),
+            @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "403_1", description = "허가되지 않은 회원의 요청(조직 생성 회원 X)"),
             @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
     })
-    public ResponseEntity<Void> removeOrganization(
+    public ResponseEntity<DataResponse<String>> removeOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestParam(defaultValue = "false") boolean isHard
