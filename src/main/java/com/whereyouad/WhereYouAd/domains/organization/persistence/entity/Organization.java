@@ -35,11 +35,19 @@ public class Organization extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "status")
     @ColumnDefault("'ACTIVE'") //기본값 ACTIVE
-    private OrgStatus status; //ACTIVE, SUSPENDED, DELETED
+    private OrgStatus status; //ACTIVE, DELETED
 
     public void modifyInfo(OrgRequest.Update request) {
         this.name = request.name();
         this.description = request.description();
         this.logoUrl = request.logoUrl();
+    }
+
+    public void softDelete() {
+        this.status = OrgStatus.DELETED;
+    }
+
+    public void restoreDelete() {
+        this.status = OrgStatus.ACTIVE;
     }
 }
