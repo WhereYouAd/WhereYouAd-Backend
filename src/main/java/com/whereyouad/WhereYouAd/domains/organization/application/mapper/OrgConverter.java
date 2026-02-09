@@ -20,6 +20,11 @@ public class OrgConverter {
                 organization.getUpdatedAt());
     }
 
+    public static OrgResponse.Delete toRestoredResponse(Organization organization) {
+        return new OrgResponse.Delete(organization.getId(),
+                "해당 조직이 활성화 되었습니다");
+    }
+
     //DTO -> Entity
     public static Organization toOrganization(Long userId, OrgRequest.Create request) {
         return Organization.builder()
