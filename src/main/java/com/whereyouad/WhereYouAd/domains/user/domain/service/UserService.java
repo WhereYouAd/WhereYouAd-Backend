@@ -89,17 +89,19 @@ public class UserService {
     }
 
     /**
-     * 마이페이지 메서드 Redis 캐싱 적용
-     * 동작 방식: Redis에서 'user:profile::{userId}' 키를 먼저 조회,
-     * 데이터가 존재하면 메서드를 실행하지 않고(DB 조회 X) 캐시된 데이터를 즉시 반환
-     * 데이터가 없으면 DB에서 조회 후 반환, 결과값을 자동으로 Redis에 저장
+     * 마이페이지 조회
+     * 파라미터 추가: userId 외에 'provider'(로그인 유형) 도 받기
+     * 캐시 키 수정: key = "#userId + ':' + #provider"
+     * 같은 유저(userId=1)라도 '구글'로 로그인했을 때와 '이메일'로 로그인했을 때
+     * 응답 데이터(MyPageResponse의 provider 필드)가 다르므로 캐시를 구분해야 합니다.
+     * 예) user:profile::1:GOOGLE / user:profile::1:EMAIL 로 따로 저장됨.
      */
-    @Cacheable(value = "user:profile", key = "#userId", unless = "#result == null")
+    @Cacheable(value = "user:profile", key = "#userId + ':' + #provider", unless = "#result == null")
     @Transactional(readOnly = true)
-    public MyPageResponse getMyPage(Long userId) {
+    public MyPageResponse getMyPage(Long userId, String provider) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
-        return UserConverter.toMyPageResponse(user);
+        return UserConverter.toMyPageResponse(user, provider);
     }
 }
