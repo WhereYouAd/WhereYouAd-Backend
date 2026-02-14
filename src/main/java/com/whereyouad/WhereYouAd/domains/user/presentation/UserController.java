@@ -88,7 +88,6 @@ public class UserController implements UserControllerDocs {
     @GetMapping("/my")
     public ResponseEntity<DataResponse<MyPageResponse>> getMyPage(@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        System.out.println(userDetails.getProvider().name());
         MyPageResponse response = userService.getMyPage(
                 userDetails.getUserId(),
                 userDetails.getProvider().name()
