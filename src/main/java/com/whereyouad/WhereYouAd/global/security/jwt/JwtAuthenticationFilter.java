@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.global.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.AuthErrorCode;
 import com.whereyouad.WhereYouAd.global.response.ErrorResponse;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -44,13 +45,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 //토큰에서 email 값 추출
                 String email = jwtTokenProvider.getSubject(token);
+                String providerStr = jwtTokenProvider.getProvider(token);
                 //& email 값으로 DB 내 해당 email 로 가입한 회원 존재하는지 확인
-                UserDetails userDetails = customUserDetailService.loadUserByUsername(email);
+                CustomUserDetails userDetails = (CustomUserDetails) customUserDetailService.loadUserByUsername(email);
+
+                CustomUserDetails finalUserDetails = new CustomUserDetails(
+                        userDetails.getUser(),
+                        Provider.valueOf(providerStr)
+                );
 
                 //Spring Security 가 인식 가능한 인증 객체(Authentication) 생성
                 //이미 인증된 상태에서 Security 가 인식 가능하게 만드는 것 임으로 비밀번호(credentials) 필드는 null
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(finalUserDetails, null, finalUserDetails.getAuthorities());
 
                 //SecurityContextHolder 에 인증 객체 저장
                 SecurityContextHolder.getContext().setAuthentication(authentication);
