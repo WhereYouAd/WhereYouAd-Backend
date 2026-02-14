@@ -97,6 +97,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         // 공통: OAuth2UserInfo 생성 및 반환
         OAuth2UserInfo authUserDTO = UserConverter.toOAuth2UserInfo(user, oAuth2Response);
-        return new CustomOAuth2User(authUserDTO);
+        return new CustomOAuth2User(authUserDTO, provider);
     }
 }
