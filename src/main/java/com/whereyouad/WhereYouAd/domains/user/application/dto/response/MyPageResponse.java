@@ -6,6 +6,7 @@ public record MyPageResponse(
         String name,
         String profileImageUrl,
         String phoneNumber,
-        boolean isEmailVerified
+        boolean isEmailVerified,
+        String providerType
 ) {
 }
