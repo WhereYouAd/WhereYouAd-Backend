@@ -9,6 +9,7 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageRes
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -91,11 +92,11 @@ public interface UserControllerDocs {
     @Operation(
             summary = "마이페이지 API",
             description = "Authorization : Bearer \\<AccessToken\\> 을 헤더로 받아 현재 로그인한 회원의 정보를 조회합니다.\n\n" +
-                    "회원 DB id,이메일, 이름, 프로필 이미지 URL, 전화번호, 이메일 인증 여부(true / false) 를 반환합니다."
+                    "회원 DB id,이메일, 이름, 프로필 이미지 URL, 전화번호, 이메일 인증 여부(true / false), 로그인 Provider(EMAIL, KAKAO, NAVER, GOOGLE) 를 반환합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "404_1", description = "해당 사용자 존재하지 않음")
     })
-    public ResponseEntity<DataResponse<MyPageResponse>> getMyPage(@AuthenticationPrincipal(expression = "userId") Long userId);
+    public ResponseEntity<DataResponse<MyPageResponse>> getMyPage(@AuthenticationPrincipal CustomUserDetails userDetails);
 }

@@ -13,6 +13,7 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequ
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.domains.user.presentation.docs.UserControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -85,8 +86,13 @@ public class UserController implements UserControllerDocs {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<DataResponse<MyPageResponse>> getMyPage(@AuthenticationPrincipal(expression = "userId") Long userId) {
-        MyPageResponse response = userService.getMyPage(userId);
+    public ResponseEntity<DataResponse<MyPageResponse>> getMyPage(@AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        System.out.println(userDetails.getProvider().name());
+        MyPageResponse response = userService.getMyPage(
+                userDetails.getUserId(),
+                userDetails.getProvider().name()
+        );
 
         return ResponseEntity.ok(
                 DataResponse.from(response)
