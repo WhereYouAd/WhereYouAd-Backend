@@ -8,6 +8,7 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMemb
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.global.utils.cursor.CursorUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -43,6 +44,7 @@ public class OrgQueryServiceImpl implements OrgQueryService{
         // Slice 조회 (자동으로 hasNext 계산)
         Slice<OrgMember> slice = orgMemberRepository.findByOrganizationIdWithCursor(
                 orgId,
+                UserStatus.ACTIVE,
                 cursor,
                 PageRequest.of(0, pageSize));
 
@@ -64,7 +66,7 @@ public class OrgQueryServiceImpl implements OrgQueryService{
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         // 전체 멤버 수 조회
-        int totalCount = orgMemberRepository.countByOrganizationId(orgId);
+        int totalCount = orgMemberRepository.countByOrganizationIdAndUserStatus(orgId, UserStatus.ACTIVE);
 
         return new OrgResponse.OrgMemberCountDTO(totalCount);
     }

@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.organization.persistence.repository;
 
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -22,16 +23,25 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
 
     // 조직 멤버 조회 (무한 스크롤 - Slice 반환)
     @Query("SELECT m FROM OrgMember m " +
-            "JOIN FETCH m.user " +
+            "JOIN FETCH m.user u " +
             "WHERE m.organization.id = :orgId " +
+            "AND u.status = :status " +
             "AND (:cursor IS NULL OR m.id > :cursor) " +
             "ORDER BY m.id ASC")
     Slice<OrgMember> findByOrganizationIdWithCursor(
             @Param("orgId") Long orgId,
+            @Param("status") UserStatus status,
             @Param("cursor") Long cursor,
             Pageable pageable
     );
 
     // 조직의 전체 멤버 수 조회
-    int countByOrganizationId(Long orgId);
+    @Query("SELECT COUNT(m) FROM OrgMember m " +
+            "JOIN m.user u " +
+            "WHERE m.organization.id = :orgId " +
+            "AND u.status = :status")
+    int countByOrganizationIdAndUserStatus(
+            @Param("orgId") Long orgId,
+            @Param("status") UserStatus status
+    );
 }
