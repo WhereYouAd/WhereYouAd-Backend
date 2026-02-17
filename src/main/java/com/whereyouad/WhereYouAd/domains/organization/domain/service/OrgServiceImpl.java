@@ -16,9 +16,12 @@ import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -59,9 +62,56 @@ public class OrgServiceImpl implements OrgService{
         return OrgConverter.toCreatedResponse(organization);
     }
 
-    public OrgResponse.Read getOrganization(Long userId) {
-        //TODO
-        return null;
+    //로그인한 회원이 속한 조직 모두 조회 메서드
+    public OrgResponse.MyOrganizations getMyOrganizations(Long userId, Pageable pageable) {
+        //회원 id 로 OrgMember 모두 조회
+        Page<OrgMember> orgMemberPage = orgMemberRepository.findOrgMemberByUserId(userId, pageable);
+
+        //OrgMember 에서 Organization 추출하여 각각의 Organization 정보를 DTO 로 변환
+        Page<OrgResponse.SimpleInfo> dtoPage = orgMemberPage.map(om ->
+                OrgConverter.toOrgSimpleInfo(om.getOrganization(), userId));
+
+        //마지막 반환 DTO 로 변환
+        return OrgConverter.toMyOrganizations(dtoPage);
+    }
+
+    //하나의 조직에 대한 세부 사항(ID, 이름, 설명, logoUrl, createdAt)
+    // + 해당 조직에 속한 모든 회원의 간략한 정보(ID, 이름, 이메일, role(ADMIN/MEMBER)) 조회 메서드
+    public OrgResponse.OrgDetail getOrganizationDetail(Long orgId) {
+        //1. 해당 조직 id 로 Organization 조회
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        if (organization.getStatus() == OrgStatus.DELETED) {
+            throw new OrgHandler(OrgErrorCode.ORG_SOFT_DELETED);
+        }
+
+        //2. 해당 Organization 에 속한 회원들을 List<OrgMember> 로 조회
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
+
+        //3. List<OrgMember> -> List<User> 로 변환
+        List<User> members = new ArrayList<>();
+        for (OrgMember orgMember : orgMembers) {
+            members.add(orgMember.getUser());
+        }
+
+        //4. DTO 로 변환 과정
+        List<OrgResponse.OrgMembers> orgMembersDTOs = new ArrayList<>();
+        for (User member : members) {
+            OrgResponse.OrgMembers orgMembersDTO = OrgConverter.toOrgMembers(member, organization);
+            orgMembersDTOs.add(orgMembersDTO);
+        }
+
+        return OrgConverter.toOrgDetail(organization, orgMembersDTOs);
+    }
+
+    //조직 이름을 입력받아 해당 문자열이 이름에 포함되는 모든 조직 조회(DB 에서 like %name% 으로 조회)
+    public OrgResponse.OrgSearchList getOrganizationList(String name, Pageable pageable) {
+        Page<Organization> orgPage = orgRepository.findOrganizationsByName(name, pageable);
+
+        Page<OrgResponse.ListInfo> dtoPage = orgPage.map(OrgConverter::toListInfo);
+
+        return OrgConverter.toOrgSearchList(name, dtoPage);
     }
 
     //조직 정보 수정 메서드
