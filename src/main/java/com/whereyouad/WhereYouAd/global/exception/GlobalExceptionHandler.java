@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -55,6 +56,27 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
 
         log.error("MethodArgumentNotValidException 발생: {}", errorMessage);
+        log.error("에러가 발생한 지점 {}, {}", request.getMethod(), request.getRequestURI());
+
+        ErrorResponse errorResponse = ErrorResponse.of(
+                ErrorCode.INVALID_PARAMETER,
+                request
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
+
+    /**
+     * 필수 파라미터(@RequestParam)가 누락되었을 때 발생하는 예외 처리
+     * 예: /api/org/search 요청 시 name 파라미터 없음
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParams(MissingServletRequestParameterException e, HttpServletRequest request) {
+        String message = "파라미터가 누락되었습니다: " + e.getParameterName();
+
+        log.error("필수 파라미터 누락: {}", message);
         log.error("에러가 발생한 지점 {}, {}", request.getMethod(), request.getRequestURI());
 
         ErrorResponse errorResponse = ErrorResponse.of(
