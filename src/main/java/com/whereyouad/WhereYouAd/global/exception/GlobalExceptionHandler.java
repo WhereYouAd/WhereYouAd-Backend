@@ -2,12 +2,14 @@ package com.whereyouad.WhereYouAd.global.exception;
 
 import com.whereyouad.WhereYouAd.domains.user.exception.code.AuthErrorCode;
 import com.whereyouad.WhereYouAd.global.response.ErrorResponse;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -64,6 +66,37 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
+
+    //reissue API 호출 시 쿠키 값이 아예 없는 경우(삭제된 경우) 예외처리
+    @ExceptionHandler(MissingRequestCookieException.class)
+    public ResponseEntity<ErrorResponse> handleMissingCookieException(MissingRequestCookieException e, HttpServletRequest request) {
+        log.error("reissue 요청에 쿠키 누락: {}", e.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.of(
+                AuthErrorCode.TOKEN_NOT_FOUND,
+                request
+        );
+
+        return ResponseEntity
+                .status(AuthErrorCode.TOKEN_NOT_FOUND.getHttpStatus())
+                .body(errorResponse);
+
+    }
+
+    //reissue API 호출 시 만료된 refreshToken 값으로 접근 시도한 경우 예외 처리
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ResponseEntity<ErrorResponse> handleExpiredJwtException(ExpiredJwtException e, HttpServletRequest request) {
+        log.warn("만료된 JWT refreshToken 입니다: {}", e.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.of(
+                AuthErrorCode.TOKEN_EXPIRED, // 만료 전용 에러 코드 사용
+                request
+        );
+
+        return ResponseEntity
+                .status(AuthErrorCode.TOKEN_EXPIRED.getHttpStatus())
                 .body(errorResponse);
     }
 

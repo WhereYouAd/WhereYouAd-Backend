@@ -12,4 +12,8 @@ public interface OrgService {
     OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request);
 
     void removeOrganization(Long userId, Long orgId);
+
+    void removeOrganizationSoft(Long userId, Long orgId);
+
+    OrgResponse.Delete restoreOrganization(Long userId, Long orgId);
 }

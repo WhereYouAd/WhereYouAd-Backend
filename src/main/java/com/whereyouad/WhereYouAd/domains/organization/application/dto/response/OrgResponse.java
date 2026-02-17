@@ -22,6 +22,12 @@ public class OrgResponse {
             LocalDateTime updatedAt
     ) {}
 
+    //Soft Delete 복구 시 응답값
+    public record Delete (
+            Long orgId,
+            String message
+    ) {}
+
     // 조직 멤버 조회 응답 (무한 스크롤 - Slice 기반)
     public record OrgMemberSliceDTO(
             boolean hasNext,

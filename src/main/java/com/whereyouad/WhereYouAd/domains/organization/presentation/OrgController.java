@@ -57,15 +57,35 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
-    @Hidden
-    @DeleteMapping("/{orgId}")
-    public ResponseEntity<Void> removeOrganization(
+    @PatchMapping("/{orgId}/restore")
+    public ResponseEntity<DataResponse<OrgResponse.Delete>> restoreOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId
     )
     {
-        orgService.removeOrganization(userId, orgId);
-        return ResponseEntity.noContent().build();
+        OrgResponse.Delete response = orgService.restoreOrganization(userId, orgId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
+    @DeleteMapping("/{orgId}")
+    public ResponseEntity<DataResponse<String>> removeOrganization(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(defaultValue = "false") boolean isHard
+    )
+    {
+        if (isHard) { //true 로 하여 Hard Delete 시
+            orgService.removeOrganization(userId, orgId); //Hard Delete
+        } else { //기본값(false) 이면
+            orgService.removeOrganizationSoft(userId, orgId); //Soft Delete
+        }
+
+        return ResponseEntity.ok(
+                DataResponse.from("조직이 정상적으로 삭제 처리 되었습니다.")
+        );
     }
 
     @GetMapping("/members/{orgId}")
