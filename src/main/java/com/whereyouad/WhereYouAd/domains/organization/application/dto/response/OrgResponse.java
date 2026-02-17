@@ -29,6 +29,11 @@ public class OrgResponse {
             List<OrgMemberDTO> members
     ) {}
 
+    // 조직 멤버 전체 수 조회 응답
+    public record OrgMemberCountDTO(
+            int totalCount
+    ) {}
+
     public record OrgMemberDTO(
             String name,
             String email,

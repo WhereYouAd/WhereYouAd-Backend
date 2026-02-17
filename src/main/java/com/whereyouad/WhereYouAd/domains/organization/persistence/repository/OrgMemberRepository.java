@@ -27,4 +27,6 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
             Pageable pageable
     );
 
+    // 조직의 전체 멤버 수 조회
+    int countByOrganizationId(Long orgId);
 }

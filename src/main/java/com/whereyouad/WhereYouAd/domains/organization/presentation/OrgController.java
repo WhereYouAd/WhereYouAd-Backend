@@ -78,4 +78,11 @@ public class OrgController implements OrgControllerDocs {
         return ResponseEntity.ok(DataResponse.from(response));
     }
 
+    @GetMapping("/members/{orgId}/count")
+    public ResponseEntity<DataResponse<OrgResponse.OrgMemberCountDTO>> getOrgMembersCount(
+            @PathVariable Long orgId
+    ) {
+        OrgResponse.OrgMemberCountDTO response = orgQueryService.getOrgMembersCount(orgId);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
 }
