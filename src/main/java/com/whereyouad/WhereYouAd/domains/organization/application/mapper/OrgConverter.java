@@ -4,7 +4,6 @@ import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.Or
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
-import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import org.springframework.data.domain.Page;
