@@ -7,6 +7,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +25,45 @@ public interface OrgControllerDocs {
     })
     public ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(@AuthenticationPrincipal(expression = "userId") Long userId,
                                                                                @RequestBody @Valid OrgRequest.Create request);
+
+    @Operation(
+            summary = "내가 속한 조직 전체 조회 API",
+            description = "로그인한 회원이 속한 조직들의 DB id, 이름, 설명, 로고URL, 내 역할(ADMIN/MEMBER) 을 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401_3", description = "토큰 없이 접근 시 실패")
+    })
+    public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getMyOrganizations(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PageableDefault(size = 10) Pageable pageable
+    );
+
+    @Operation(
+            summary = "조직 하나의 세부정보 조회 API",
+            description = "조직 id 를 param 으로 받아 해당 조직의 id, 이름, 설명, 로고URL, 조직 생성 시각, \n\n" +
+                    "해당 조직에 속한 회원들(members) 의 id, 이름, 이메일, 해당 조직에서의 role(ADMIN/MEMBER) 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 값 조직 존재 X")
+    })
+    public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId);
+
+
+    @Operation(
+            summary = "조직 이름으로 검색 API",
+            description = "조회하려는 조직 이름을 query 로 받아 해당 문자열이 이름에 포함된 조직을 모두 검색"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401_3", description = "토큰 없이 접근 시 실패"),
+            @ApiResponse(responseCode = "400", description = "param 이 없거나 공백일 경우 오류")
+    })
+    public ResponseEntity<DataResponse<OrgResponse.OrgSearchList>> searchOrganizations(
+            @RequestParam String name,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    );
 
     @Operation(
             summary = "조직 정보 수정 API",
