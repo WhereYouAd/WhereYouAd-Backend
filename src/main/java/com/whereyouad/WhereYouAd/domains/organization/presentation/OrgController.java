@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.organization.presentation;
 
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
+import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgQueryService;
 import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
 import com.whereyouad.WhereYouAd.domains.organization.presentation.docs.OrgControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrgController implements OrgControllerDocs {
 
     private final OrgService orgService;
+    private final OrgQueryService orgQueryService;
 
     @PostMapping("/create")
     public ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(
@@ -65,4 +67,15 @@ public class OrgController implements OrgControllerDocs {
         orgService.removeOrganization(userId, orgId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/members/{orgId}")
+    public ResponseEntity<DataResponse<OrgResponse.OrgMemberSliceDTO>> getOrgMembers(
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        OrgResponse.OrgMemberSliceDTO response = orgQueryService.getOrgMembers(orgId, cursor, size);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
+
 }
