@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface OrgControllerDocs {
     @Operation(
@@ -37,5 +38,32 @@ public interface OrgControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid OrgRequest.Update request
+    );
+
+    @Operation(
+            summary = "조직 멤버 조회 API (무한 스크롤 - Slice 기반)",
+            description = "조직에 속한 멤버를 조회합니다. cursor와 size 파라미터를 통해 무한 스크롤을 지원합니다. cursor는 Base64로 인코딩된 문자열입니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공 (hasNext: 다음 페이지 존재 여부, nextCursor: 다음 페이지 커서, members: 멤버 리스트)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X"),
+            @ApiResponse(responseCode = "400", description = "잘못된 커서 형식")
+    })
+    ResponseEntity<DataResponse<OrgResponse.OrgMemberSliceDTO>> getOrgMembers(
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size
+    );
+
+    @Operation(
+            summary = "조직 전체 멤버 수 조회 API",
+            description = "조직의 전체 멤버 수를 조회합니다. 무한 스크롤 초기 로딩 시 1회만 호출하는 것을 권장합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공 (totalCount: 전체 멤버 수)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
+    })
+    ResponseEntity<DataResponse<OrgResponse.OrgMemberCountDTO>> getOrgMembersCount(
+            @PathVariable Long orgId
     );
 }
