@@ -17,4 +17,6 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
     //특정 Organization 에 속한 OrgMember 모두 추출하는 메서드
     @Query("select om from OrgMember om where om.organization = :organization")
     List<OrgMember> findOrgMemberByOrg(@Param(value = "organization") Organization organization);
+
+    Boolean existsByUser(User user);
 }

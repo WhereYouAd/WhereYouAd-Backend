@@ -27,4 +27,9 @@ public class OrgResponse {
             String message
     ) {}
 
+    public record OrgInvitationResponse(
+            Long orgId,
+            String message,
+            String email
+    ) {}
 }

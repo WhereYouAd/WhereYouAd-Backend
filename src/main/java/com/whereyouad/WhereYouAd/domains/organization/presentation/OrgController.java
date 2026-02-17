@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.Or
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
 import com.whereyouad.WhereYouAd.domains.organization.presentation.docs.OrgControllerDocs;
+import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
@@ -84,5 +85,11 @@ public class OrgController implements OrgControllerDocs {
         return ResponseEntity.ok(
                 DataResponse.from("조직이 정상적으로 삭제 처리 되었습니다.")
         );
+    }
+
+    @PostMapping("/members/{orgId}/invitation")
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(@PathVariable Long orgId, @RequestBody String email) {
+        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.sendOrgInvitation(orgId, email);
+        return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
     }
 }

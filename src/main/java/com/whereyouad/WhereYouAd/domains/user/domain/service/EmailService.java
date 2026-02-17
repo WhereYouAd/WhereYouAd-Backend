@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
@@ -47,6 +48,10 @@ public class EmailService {
         } else { //만약 회원가입 되어있지 않다면
             throw new UserHandler(UserErrorCode.USER_NOT_FOUND); //예외발생
         }
+    }
+
+    // 조직 멤버 초대 이메일 발송
+    public void sendEmailForOrgInvitation(String email) {
     }
 
     //기존 이메일 발송 로직 템플릿 화

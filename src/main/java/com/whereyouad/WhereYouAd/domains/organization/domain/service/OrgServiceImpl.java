@@ -11,6 +11,7 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMemb
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
+import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
@@ -29,6 +30,8 @@ public class OrgServiceImpl implements OrgService{
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final UserRepository userRepository;
+
+    private final EmailService emailService;
 
     //조직(워크스페이스) 생성 메서드
     public OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request) {
@@ -131,5 +134,30 @@ public class OrgServiceImpl implements OrgService{
 
         //조직 status 만 DELETED 로 변경 후 종료
         organization.softDelete();
+    }
+
+    @Override
+    public OrgResponse.OrgInvitationResponse sendOrgInvitation(Long orgId, String email) {
+        Organization organization = orgRepository.findById(orgId).orElseThrow(() ->
+            new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 유저 회원 가입 유무
+        User user = userRepository.findUserByEmail(email).orElseThrow(() ->
+                new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 회원 가입 미완료 (유저가 아닐 시)
+        if (user == null) {
+            emailService.sendEmailForOrgInvitation(email);
+        }
+
+        // 회원 가입 완료 (이미 존재하는 유저)
+        else {
+            // 이미 초대 완료
+            if (orgMemberRepository.existsByUser(user))
+                new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
+
+            else emailService.sendEmailForOrgInvitation(email);
+        }
+        return new OrgResponse.OrgInvitationResponse(orgId, "조직 멤버 초대 이메일을 전송하였습니다.", email);
     }
 }
