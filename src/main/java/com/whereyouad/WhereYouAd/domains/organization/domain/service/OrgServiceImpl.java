@@ -175,9 +175,10 @@ public class OrgServiceImpl implements OrgService {
             throw new OrgHandler(OrgErrorCode.ORG_INVITATION_INVALID);
         }
 
-        String email = value.split(":")[1];
+        String[] valueForSplit = value.split(":");
+        String email = valueForSplit[1];
 
-        Organization organization = orgRepository.findById(Long.parseLong(value.split(":")[0]))
+        Organization organization = orgRepository.findById(Long.parseLong(valueForSplit[0]))
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         User user = userRepository.findUserByEmail(email).orElseThrow(() ->
