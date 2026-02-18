@@ -2,10 +2,7 @@ package com.whereyouad.WhereYouAd.domains.organization.application.dto.response;
 
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 
-import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
-
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.List;
 
 public class OrgResponse {
