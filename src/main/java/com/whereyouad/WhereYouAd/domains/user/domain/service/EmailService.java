@@ -1,6 +1,5 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
-import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
@@ -28,6 +27,9 @@ public class EmailService {
     // application.yml 적용 필요
     @Value("${spring.mail.username}")
     private String senderEmail;
+
+    @Value("${spring.application.base-url}")
+    private String baseUrl;
 
     // 인증코드 이메일 발송 로직 (최초 회원가입 시)
     public EmailSentResponse sendEmail(String toEmail) {
@@ -58,7 +60,7 @@ public class EmailService {
             message.setTo(toEmail);
 
             message.setSubject("[Where You Ad] 조직 " + orgName + "에 초대 되었습니다.");
-            message.setText("http://localhost:3000/invitations/"+ token);
+            message.setText(baseUrl + "/api/org/invitations/" + token);
             message.setFrom(senderEmail);
 
             emailSender.send(message);
