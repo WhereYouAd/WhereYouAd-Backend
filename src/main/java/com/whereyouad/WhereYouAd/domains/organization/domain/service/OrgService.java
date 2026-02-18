@@ -16,4 +16,7 @@ public interface OrgService {
     void removeOrganizationSoft(Long userId, Long orgId);
 
     OrgResponse.Delete restoreOrganization(Long userId, Long orgId);
+
+    // orgId 조직에서 memberId에 해당하는 맴버 제거
+    void removeMemberFromOrg(Long userId, Long orgId, Long memberId);
 }
