@@ -30,51 +30,18 @@ public class OrgConverter {
                 "해당 조직이 활성화 되었습니다");
     }
 
-    public static OrgResponse.ListInfo toListInfo(Organization organization) {
-        return new OrgResponse.ListInfo(organization.getId(),
-                organization.getName(),
-                organization.getDescription(),
-                organization.getLogoUrl()
-        );
-    }
-
-    public static OrgResponse.MyOrganizations toMyOrganizations(Page<OrgResponse.SimpleInfo> page) {
+    public static OrgResponse.MyOrganizations toMyOrganizations(List<OrgResponse.SimpleInfo> infos) {
         return new OrgResponse.MyOrganizations(
-                page.getContent(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.hasNext()
+                infos
         );
     }
 
-    public static OrgResponse.OrgSearchList toOrgSearchList(String query, Page<OrgResponse.ListInfo> page) {
-        return new OrgResponse.OrgSearchList(
-                query,
-                page.getContent(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.hasNext()
-        );
-    }
-
-    public static OrgResponse.OrgMembers toOrgMembers(User user, Organization organization) {
-        OrgRole role;
-
-        if (organization.getOwnerUserId().equals(user.getId())) {
-            role = OrgRole.ADMIN;
-        } else {
-            role = OrgRole.MEMBER;
-        }
-        return new OrgResponse.OrgMembers(user.getId(), user.getName(), user.getEmail(), role);
-    }
-
-    public static OrgResponse.OrgDetail toOrgDetail(Organization organization, List<OrgResponse.OrgMembers> orgMembers) {
+    public static OrgResponse.OrgDetail toOrgDetail(Organization organization) {
         return new OrgResponse.OrgDetail(organization.getId(),
                 organization.getName(),
                 organization.getDescription(),
                 organization.getLogoUrl(),
-                organization.getCreatedAt(),
-                orgMembers
+                organization.getCreatedAt()
         );
     }
 
