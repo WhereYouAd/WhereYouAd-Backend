@@ -2,17 +2,14 @@ package com.whereyouad.WhereYouAd.domains.organization.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
-import org.springframework.data.domain.Pageable;
 
 public interface OrgService {
 
     OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request);
 
-    OrgResponse.MyOrganizations getMyOrganizations(Long userId, Pageable pageable);
+    OrgResponse.MyOrganizations getMyOrganizations(Long userId);
 
     OrgResponse.OrgDetail getOrganizationDetail(Long orgId);
-
-    OrgResponse.OrgSearchList getOrganizationList(String name, Pageable pageable);
 
     OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request);
 
