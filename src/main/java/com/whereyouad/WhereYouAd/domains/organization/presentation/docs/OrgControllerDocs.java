@@ -104,6 +104,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "409", description = "이미 조직에 가입된 사용자")
     })
     public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid OrgRequest.Invite request
     );

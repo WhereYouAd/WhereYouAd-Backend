@@ -17,7 +17,7 @@ public interface OrgService {
 
     OrgResponse.Delete restoreOrganization(Long userId, Long orgId);
 
-    OrgResponse.OrgInvitationResponse sendOrgInvitation(Long orgId, String email);
+    OrgResponse.OrgInvitationResponse sendOrgInvitation(Long userId, Long orgId, String email);
 
     OrgResponse.OrgInvitationResponse acceptOrgInvitation(Long userId, String token);
 }

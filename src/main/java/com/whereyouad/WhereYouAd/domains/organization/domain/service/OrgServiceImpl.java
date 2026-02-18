@@ -141,14 +141,24 @@ public class OrgServiceImpl implements OrgService {
 
     @Override
     // 조직 초대 이메일 보내기
-    public OrgResponse.OrgInvitationResponse sendOrgInvitation(Long orgId, String email) {
+    public OrgResponse.OrgInvitationResponse sendOrgInvitation(Long userId, Long orgId, String email) {
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
+        // 초대자와 조직 관계 검증 (초대자가 조직의 멤버인지 확인)
+        User sender = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        if (!orgMemberRepository.existsByUserAndOrganization(sender, organization)) {
+            // 초대자가 조직 멤버가 아님 -> 권한 없음
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN);
+        }
+
         // 초대 완료 여부 확인, 가입 여부에 상관 없이 이메일 발송
         userRepository.findUserByEmail(email).ifPresent(user -> {
-            if (orgMemberRepository.existsByUser(user))
-                new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
+            if (orgMemberRepository.existsByUserAndOrganization(user, organization)) {
+                throw new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
+            }
         });
 
         // Redis key = 임의의 UUID 토큰(조직 초대 이메일 내 링크를 구별)
@@ -191,7 +201,7 @@ public class OrgServiceImpl implements OrgService {
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         // 이미 멤버인지 중복 체크
-        if (orgMemberRepository.existsByUser(user))
+        if (orgMemberRepository.existsByUserAndOrganization(user, organization))
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
 
         orgMemberRepository.save(OrgMemberConverter.toOrgMemberADMIN(user, organization));

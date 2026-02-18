@@ -45,5 +45,5 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
             @Param("status") UserStatus status
     );
 
-    Boolean existsByUser(User user);
+        Boolean existsByUserAndOrganization(User user, Organization organization);
 }
