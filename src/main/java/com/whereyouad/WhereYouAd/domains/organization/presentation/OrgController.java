@@ -43,7 +43,6 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
-
     @PatchMapping("/{orgId}")
     public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
@@ -115,7 +114,7 @@ public class OrgController implements OrgControllerDocs {
         return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
     }
 
-    @PostMapping("invitations/{token}")
+    @PostMapping("/invitations/{token}")
     public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(
             @AuthenticationPrincipal(expression = "userId") Long userId, @PathVariable String token) {
         OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.acceptOrgInvitation(userId, token);

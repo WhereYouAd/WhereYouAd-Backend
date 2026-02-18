@@ -100,6 +100,8 @@ public interface OrgControllerDocs {
     @Operation(summary = "조직 초대 이메일 발송 API", description = "조직 관리자가 이메일을 입력하여 새로운 멤버를 초대합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "403", description = "조직 멤버가 아닌 사용자의 요청"),
             @ApiResponse(responseCode = "404", description = "조직을 찾을 수 없음"),
             @ApiResponse(responseCode = "409", description = "이미 조직에 가입된 사용자")
     })
