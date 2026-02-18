@@ -165,19 +165,33 @@ public class OrgServiceImpl implements OrgService {
     @Override
     // 조직 초대 수락 (이메일 내 링크 클릭 시)
     public OrgResponse.OrgInvitationResponse acceptOrgInvitation(String token) {
+        // 링크 만료 또는 유효하지 않을 시
+        if (token == null)
+            throw new OrgHandler(OrgErrorCode.ORG_INVITATION_INVALID);
+
         // Redis 내 UUID(key)에 대한 email(value) 비교
-        String email = redisUtil.getData(token).split(":")[1];
-        Organization organization = orgRepository.findById(Long.parseLong(redisUtil.getData(token).split(":")[0]))
+        String value = redisUtil.getData("INVITE:" + token);
+        if (value == null) {
+            throw new OrgHandler(OrgErrorCode.ORG_INVITATION_INVALID);
+        }
+
+        String email = value.split(":")[1];
+
+        Organization organization = orgRepository.findById(Long.parseLong(value.split(":")[0]))
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         User user = userRepository.findUserByEmail(email).orElseThrow(() ->
                 // 회원이 아닐 시
                 new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
+        // 이미 멤버인지 중복 체크
+        if (orgMemberRepository.existsByUser(user))
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
+
         orgMemberRepository.save(OrgMemberConverter.toOrgMemberADMIN(user, organization));
 
         // Redis 사용 토큰 삭제
-        redisUtil.deleteData(token);
+        redisUtil.deleteData("INVITE:" + token);
 
         return new OrgResponse.OrgInvitationResponse(organization.getId(), "조직 멤버 초대 이메일을 수락하였습니다.", email);
     }

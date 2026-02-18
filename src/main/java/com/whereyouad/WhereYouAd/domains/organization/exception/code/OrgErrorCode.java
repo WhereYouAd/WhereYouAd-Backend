@@ -21,7 +21,9 @@ public enum OrgErrorCode implements BaseErrorCode {
     ORG_ALREADY_ACTIVE(HttpStatus.CONFLICT, "ORG_409_1", "해당 조직은 이미 활성화 상태 입니다."),
 
     // 409
-    ORG_MEMBER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "ORG_MEMBER_409_1", "이미 해당 조직에 초대되어있습니다.");
+    ORG_MEMBER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "ORG_MEMBER_409_1", "이미 해당 조직에 초대되어있습니다."),
+
+    ORG_INVITATION_INVALID(HttpStatus.BAD_REQUEST, "ORG_INVITATION_400" , "조직 초대 토큰이 만료되었거나 유효하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
