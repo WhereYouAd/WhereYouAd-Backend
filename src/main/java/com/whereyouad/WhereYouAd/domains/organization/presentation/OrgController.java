@@ -88,8 +88,8 @@ public class OrgController implements OrgControllerDocs {
     }
 
     @PostMapping("/members/{orgId}/invitation")
-    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(@PathVariable Long orgId, @RequestBody String email) {
-        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.sendOrgInvitation(orgId, email);
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(@PathVariable Long orgId, @RequestBody @Valid OrgRequest.Invite request) {
+        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.sendOrgInvitation(orgId, request.email());
         return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
     }
 

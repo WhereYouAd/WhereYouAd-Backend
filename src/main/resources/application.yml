@@ -4,8 +4,8 @@ server:
 spring:
   application:
     name: WhereYouAd
-  # 서버 기본 주소
-  base-url: ${BASE_URL:http://localhost:8080}
+    # 서버 기본 주소
+    base-url: ${BASE_URL:http://localhost:8080}
 
   # 1. 데이터베이스 설정
   datasource:

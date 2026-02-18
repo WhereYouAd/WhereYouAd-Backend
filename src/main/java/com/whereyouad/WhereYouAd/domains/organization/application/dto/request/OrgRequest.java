@@ -22,4 +22,8 @@ public class OrgRequest {
             String logoUrl
     ) {}
 
+    public record Invite(
+            @NotBlank(message = "이메일은 필수입니다.")
+            String email
+    ) {}
 }
