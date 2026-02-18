@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.Or
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 
 import java.util.List;
@@ -68,5 +69,27 @@ public class OrgConverter {
                 .ownerUserId(userId)
                 .status(OrgStatus.ACTIVE)
                 .build();
+    }
+
+    // 조직 멤버 Slice DTO 변환 (무한 스크롤)
+    public static OrgResponse.OrgMemberSliceDTO toOrgMemberSliceDTO(
+            boolean hasNext,
+            String nextCursor,
+            List<OrgMember> orgMembers
+    ) {
+        List<OrgResponse.OrgMemberDTO> memberDTOs = orgMembers.stream()
+                .map(m -> new OrgResponse.OrgMemberDTO(
+                        m.getUser().getName(),
+                        m.getUser().getEmail(),
+                        m.getUser().getProfileImageUrl(),
+                        m.getRole().name()
+                ))
+                .toList();
+
+        return new OrgResponse.OrgMemberSliceDTO(
+                hasNext,
+                nextCursor,
+                memberDTOs
+        );
     }
 }
