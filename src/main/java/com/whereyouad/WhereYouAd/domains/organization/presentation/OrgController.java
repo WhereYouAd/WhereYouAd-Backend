@@ -4,7 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.Or
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
 import com.whereyouad.WhereYouAd.domains.organization.presentation.docs.OrgControllerDocs;
-import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
+
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
@@ -94,8 +94,8 @@ public class OrgController implements OrgControllerDocs {
     }
 
     @GetMapping("invitations/{token}")
-    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(@PathVariable String token) {
-        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.acceptOrgInvitation(token);
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(@AuthenticationPrincipal(expression = "userId") Long userId, @PathVariable String token) {
+        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.acceptOrgInvitation(userId, token);
         return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
     }
 }

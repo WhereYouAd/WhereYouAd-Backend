@@ -164,7 +164,7 @@ public class OrgServiceImpl implements OrgService {
 
     @Override
     // 조직 초대 수락 (이메일 내 링크 클릭 시)
-    public OrgResponse.OrgInvitationResponse acceptOrgInvitation(String token) {
+    public OrgResponse.OrgInvitationResponse acceptOrgInvitation(Long userId, String token) {
         // 링크 만료 또는 유효하지 않을 시
         if (token == null)
             throw new OrgHandler(OrgErrorCode.ORG_INVITATION_INVALID);
@@ -178,12 +178,17 @@ public class OrgServiceImpl implements OrgService {
         String[] valueForSplit = value.split(":");
         String email = valueForSplit[1];
 
+        // 로그인한 사용자 검증
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 초대된 이메일과 현재 로그인한 사용자의 이메일이 일치하는지 확인
+        if (!user.getEmail().equals(email)) {
+            throw new OrgHandler(OrgErrorCode.ORG_INVITATION_INVALID);
+        }
+
         Organization organization = orgRepository.findById(Long.parseLong(valueForSplit[0]))
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
-
-        User user = userRepository.findUserByEmail(email).orElseThrow(() ->
-                // 회원이 아닐 시
-                new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
         // 이미 멤버인지 중복 체크
         if (orgMemberRepository.existsByUser(user))

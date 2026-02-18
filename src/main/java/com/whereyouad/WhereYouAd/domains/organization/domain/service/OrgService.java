@@ -19,5 +19,5 @@ public interface OrgService {
 
     OrgResponse.OrgInvitationResponse sendOrgInvitation(Long orgId, String email);
 
-    OrgResponse.OrgInvitationResponse acceptOrgInvitation(String token);
+    OrgResponse.OrgInvitationResponse acceptOrgInvitation(Long userId, String token);
 }
