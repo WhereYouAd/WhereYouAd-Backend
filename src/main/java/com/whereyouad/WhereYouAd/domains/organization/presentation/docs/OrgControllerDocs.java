@@ -70,6 +70,33 @@ public interface OrgControllerDocs {
             @RequestParam(defaultValue = "false") boolean isHard
     );
 
+    @Operation(
+            summary = "조직 멤버 조회 API (무한 스크롤 - Slice 기반)",
+            description = "조직에 속한 멤버를 조회합니다. cursor와 size 파라미터를 통해 무한 스크롤을 지원합니다. cursor는 Base64로 인코딩된 문자열입니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공 (hasNext: 다음 페이지 존재 여부, nextCursor: 다음 페이지 커서, members: 멤버 리스트)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X"),
+            @ApiResponse(responseCode = "400", description = "잘못된 커서 형식")
+    })
+    ResponseEntity<DataResponse<OrgResponse.OrgMemberSliceDTO>> getOrgMembers(
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size
+    );
+
+    @Operation(
+            summary = "조직 전체 멤버 수 조회 API",
+            description = "조직의 전체 멤버 수를 조회합니다. 무한 스크롤 초기 로딩 시 1회만 호출하는 것을 권장합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공 (totalCount: 전체 멤버 수)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
+    })
+    ResponseEntity<DataResponse<OrgResponse.OrgMemberCountDTO>> getOrgMembersCount(
+            @PathVariable Long orgId
+    );
+
     @Operation(summary = "조직 초대 이메일 발송 API", description = "조직 관리자가 이메일을 입력하여 새로운 멤버를 초대합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),

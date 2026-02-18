@@ -2,9 +2,9 @@ package com.whereyouad.WhereYouAd.domains.organization.presentation;
 
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
+import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgQueryService;
 import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
 import com.whereyouad.WhereYouAd.domains.organization.presentation.docs.OrgControllerDocs;
-
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrgController implements OrgControllerDocs {
 
     private final OrgService orgService;
+    private final OrgQueryService orgQueryService;
 
     @PostMapping("/create")
     public ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(
@@ -85,6 +86,24 @@ public class OrgController implements OrgControllerDocs {
         return ResponseEntity.ok(
                 DataResponse.from("조직이 정상적으로 삭제 처리 되었습니다.")
         );
+    }
+
+    @GetMapping("/members/{orgId}")
+    public ResponseEntity<DataResponse<OrgResponse.OrgMemberSliceDTO>> getOrgMembers(
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        OrgResponse.OrgMemberSliceDTO response = orgQueryService.getOrgMembers(orgId, cursor, size);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
+
+    @GetMapping("/members/{orgId}/count")
+    public ResponseEntity<DataResponse<OrgResponse.OrgMemberCountDTO>> getOrgMembersCount(
+            @PathVariable Long orgId
+    ) {
+        OrgResponse.OrgMemberCountDTO response = orgQueryService.getOrgMembersCount(orgId);
+        return ResponseEntity.ok(DataResponse.from(response));
     }
 
     @PostMapping("/members/{orgId}/invitation")
