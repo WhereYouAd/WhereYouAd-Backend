@@ -159,8 +159,8 @@ public class OrgServiceImpl implements OrgService {
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
 
         // 4. 대상 맴버가 ADMIN이라면 추방 불가
-        if (targetMember.getRole() != OrgRole.ADMIN) {
-            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
+        if (targetMember.getRole() == OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_KICK_ADMIN);
         }
 
         // 5. 중간 테이블에서 해당 멤버 삭제
