@@ -163,8 +163,17 @@ public class OrgServiceImpl implements OrgService{
     @Override
     // 조직 초대 수락 (이메일 내 링크 클릭 시)
     public OrgResponse.OrgInvitationResponse acceptOrgInvitation(String token) {
+        // Redis 내 UUID(key)에 대한 email(value) 비교
+        String email = redisUtil.getData(token).split(":")[1];
+        Organization organization = orgRepository.findById(Long.parseLong(redisUtil.getData(token).split(":")[0]))
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
-//        orgMemberRepository.save();
-        return null;
+        User user = userRepository.findUserByEmail(email).orElseThrow(() ->
+                // 회원이 아닐 시
+                new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        orgMemberRepository.save(OrgMemberConverter.toOrgMemberADMIN(user, organization));
+
+        return new OrgResponse.OrgInvitationResponse(organization.getId(), "조직 멤버 초대 이메일을 수락하였습니다.", email);
     }
 }
