@@ -16,11 +16,13 @@ import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
+import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -31,6 +33,7 @@ public class OrgServiceImpl implements OrgService{
     private final OrgMemberRepository orgMemberRepository;
     private final UserRepository userRepository;
 
+    private final RedisUtil redisUtil;
     private final EmailService emailService;
 
     //조직(워크스페이스) 생성 메서드
@@ -137,27 +140,31 @@ public class OrgServiceImpl implements OrgService{
     }
 
     @Override
+    // 조직 초대 이메일 보내기
     public OrgResponse.OrgInvitationResponse sendOrgInvitation(Long orgId, String email) {
         Organization organization = orgRepository.findById(orgId).orElseThrow(() ->
             new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
-        // 유저 회원 가입 유무
-        User user = userRepository.findUserByEmail(email).orElseThrow(() ->
-                new UserHandler(UserErrorCode.USER_NOT_FOUND));
-
-        // 회원 가입 미완료 (유저가 아닐 시)
-        if (user == null) {
-            emailService.sendEmailForOrgInvitation(email);
-        }
-
-        // 회원 가입 완료 (이미 존재하는 유저)
-        else {
-            // 이미 초대 완료
+        // 초대 완료 여부 확인, 가입 여부에 상관 없이 이메일 발송
+        userRepository.findUserByEmail(email).ifPresent( user -> {
             if (orgMemberRepository.existsByUser(user))
                 new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
+        });
 
-            else emailService.sendEmailForOrgInvitation(email);
-        }
+        // Redis key = 임의의 UUID 토큰(조직 초대 이메일 내 링크를 구별)
+        String token = UUID.randomUUID().toString();
+        // Redis value = 조직 아이디와 이메일의 조합
+        String value = orgId + ":" + email;
+        redisUtil.setDataExpire(token, value,3600*24);
+
         return new OrgResponse.OrgInvitationResponse(orgId, "조직 멤버 초대 이메일을 전송하였습니다.", email);
+    }
+
+    @Override
+    // 조직 초대 수락 (이메일 내 링크 클릭 시)
+    public OrgResponse.OrgInvitationResponse acceptOrgInvitation(String token) {
+
+//        orgMemberRepository.save();
+        return null;
     }
 }

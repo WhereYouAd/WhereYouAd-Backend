@@ -92,4 +92,10 @@ public class OrgController implements OrgControllerDocs {
         OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.sendOrgInvitation(orgId, email);
         return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
     }
+
+    @GetMapping("invitations/{token}")
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(@PathVariable String token) {
+        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.acceptOrgInvitation(token);
+        return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
+    }
 }

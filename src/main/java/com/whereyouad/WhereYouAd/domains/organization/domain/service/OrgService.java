@@ -18,4 +18,6 @@ public interface OrgService {
     OrgResponse.Delete restoreOrganization(Long userId, Long orgId);
 
     OrgResponse.OrgInvitationResponse sendOrgInvitation(Long orgId, String email);
+
+    OrgResponse.OrgInvitationResponse acceptOrgInvitation(String token);
 }
