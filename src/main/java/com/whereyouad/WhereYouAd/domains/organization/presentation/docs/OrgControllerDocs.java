@@ -40,7 +40,8 @@ public interface OrgControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
-            @ApiResponse(responseCode = "404_1", description = "해당 id 값 조직 존재 X")
+            @ApiResponse(responseCode = "404_1", description = "해당 id 값 조직 존재 X"),
+            @ApiResponse(responseCode = "410_1", description = "해당 조직은 삭제되었습니다 (Soft Delete)")
     })
     public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId);
 
