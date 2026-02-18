@@ -65,20 +65,10 @@ public class OrgServiceImpl implements OrgService{
         //회원 id 로 OrgMember 모두 조회 -> DB 조회에서 OrgStatus.ACTIVE 인 Organization 만 포함하는 OrgMember 만 조회해 온다.
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
 
-        //각 OrgMember 에 Organization 추출
-        List<Organization> organizations = new ArrayList<>();
-
-        for (OrgMember orgMember : orgMembers) {
-            organizations.add(orgMember.getOrganization());
-        }
-
-        //각각의 Organization Entity 를 DTO 로 변환
-        List<OrgResponse.SimpleInfo> infos = new ArrayList<>();
-
-        for (Organization organization : organizations) {
-            OrgResponse.SimpleInfo info = OrgConverter.toOrgSimpleInfo(organization, userId);
-            infos.add(info);
-        }
+        //각각의 OrgMember 에서 SimpleInfo DTO 로 매핑
+        List<OrgResponse.SimpleInfo> infos = orgMembers.stream()
+                .map(OrgConverter::toOrgSimpleInfo)
+                .toList();
 
         //마지막 반환 DTO 로 변환
         return OrgConverter.toMyOrganizations(infos);

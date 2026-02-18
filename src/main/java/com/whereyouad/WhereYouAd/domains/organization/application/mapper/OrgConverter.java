@@ -44,20 +44,16 @@ public class OrgConverter {
         );
     }
 
-    public static OrgResponse.SimpleInfo toOrgSimpleInfo(Organization organization, Long userId) {
-        OrgRole myRole;
-
-        if (organization.getOwnerUserId().equals(userId)) {
-            myRole = OrgRole.ADMIN;
-        } else {
-            myRole = OrgRole.MEMBER;
-        }
+    public static OrgResponse.SimpleInfo toOrgSimpleInfo(OrgMember orgMember) {
+        //OrgMember 내부에 존재하는 Role 활용
+        Organization organization = orgMember.getOrganization();
 
         return new OrgResponse.SimpleInfo(organization.getId(),
                 organization.getName(),
                 organization.getDescription(),
                 organization.getLogoUrl(),
-                myRole);
+                orgMember.getRole()
+        );
     }
 
     //DTO -> Entity
