@@ -184,7 +184,7 @@ public class OrgServiceImpl implements OrgService {
 
         // 초대된 이메일과 현재 로그인한 사용자의 이메일이 일치하는지 확인
         if (!user.getEmail().equals(email)) {
-            throw new OrgHandler(OrgErrorCode.ORG_INVITATION_INVALID);
+            throw new OrgHandler(OrgErrorCode.ORG_INVITATION_FORBIDDEN_USER);
         }
 
         Organization organization = orgRepository.findById(Long.parseLong(valueForSplit[0]))
