@@ -51,14 +51,14 @@ public class EmailService {
     }
 
     // 조직 멤버 초대 이메일 발송
-    public void sendEmailForOrgInvitation(String toEmail) {
+    public void sendEmailForOrgInvitation(String token, String toEmail, String orgName) {
         try {
             // 이메일 전송
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(toEmail);
 
-            message.setSubject("Where You Ad 조직에 초대 되었습니다.");
-            message.setText("http://localhost:3000/invitations/{token}");
+            message.setSubject("[Where You Ad] 조직 " + orgName + "에 초대 되었습니다.");
+            message.setText("http://localhost:3000/invitations/"+ token);
             message.setFrom(senderEmail);
 
             emailSender.send(message);
