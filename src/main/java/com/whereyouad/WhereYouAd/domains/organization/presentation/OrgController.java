@@ -105,4 +105,15 @@ public class OrgController implements OrgControllerDocs {
         OrgResponse.OrgMemberCountDTO response = orgQueryService.getOrgMembersCount(orgId);
         return ResponseEntity.ok(DataResponse.from(response));
     }
+
+    @PatchMapping("/members/{orgId}/{memberId}")
+    public ResponseEntity<DataResponse<OrgResponse.OrgMemberDTO>> updateOrgMembersRole(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long memberId,
+            @RequestBody OrgRequest.UpdateRole dto
+    ) {
+        OrgResponse.OrgMemberDTO response = orgService.updateOrgMembersRole(userId, orgId, memberId, dto);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
 }

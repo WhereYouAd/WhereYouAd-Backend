@@ -39,6 +39,16 @@ public class OrgConverter {
                 .build();
     }
 
+    // 단일 OrgMember -> OrgMemberDTO 변환
+    public static OrgResponse.OrgMemberDTO toOrgMemberDTO(OrgMember orgMember) {
+        return new OrgResponse.OrgMemberDTO(
+                orgMember.getUser().getName(),
+                orgMember.getUser().getEmail(),
+                orgMember.getUser().getProfileImageUrl(),
+                orgMember.getRole().name()
+        );
+    }
+
     // 조직 멤버 Slice DTO 변환 (무한 스크롤)
     public static OrgResponse.OrgMemberSliceDTO toOrgMemberSliceDTO(
             boolean hasNext,

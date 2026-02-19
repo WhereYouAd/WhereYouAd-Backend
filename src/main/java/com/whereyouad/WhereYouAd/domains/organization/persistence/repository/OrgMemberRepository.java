@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
 
@@ -34,6 +35,13 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
             @Param("cursor") Long cursor,
             Pageable pageable
     );
+
+    // userId 와 orgId 로 특정 OrgMember 조회
+    @Query("SELECT om FROM OrgMember om " +
+            "WHERE om.user.id = :userId " +
+            "AND om.organization.id = :orgId " +
+            "AND om.user.status = 'ACTIVE'")
+    Optional<OrgMember> findByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
 
     // 조직의 전체 멤버 수 조회
     @Query("SELECT COUNT(m) FROM OrgMember m " +
