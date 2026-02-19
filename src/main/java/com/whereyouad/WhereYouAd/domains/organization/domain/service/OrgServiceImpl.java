@@ -210,7 +210,7 @@ public class OrgServiceImpl implements OrgService {
         OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(memberId, orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
 
-        if (requester.getRole() == OrgRole.ADMIN) {
+        if (orgMember.getRole() == OrgRole.ADMIN) {
             throw new OrgHandler(OrgErrorCode.ORG_CANNOT_ADMIN_TO_MEMBER);
         }
 
