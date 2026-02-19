@@ -24,6 +24,29 @@ public interface OrgControllerDocs {
                                                                                @RequestBody @Valid OrgRequest.Create request);
 
     @Operation(
+            summary = "내가 속한 조직 전체 조회 API",
+            description = "로그인한 회원이 속한 조직들의 DB id, 이름, 설명, 로고URL, 내 역할(ADMIN/MEMBER) 을 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401_3", description = "토큰 없이 접근 시 실패")
+    })
+    public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getMyOrganizations(
+            @AuthenticationPrincipal(expression = "userId") Long userId);
+
+    @Operation(
+            summary = "조직 하나의 세부정보 조회 API",
+            description = "조직 id 를 param 으로 받아 해당 조직의 id, 이름, 설명, 로고URL, 조직 생성 시각 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404_1", description = "해당 id 값 조직 존재 X"),
+            @ApiResponse(responseCode = "410_1", description = "해당 조직은 삭제되었습니다 (Soft Delete)")
+    })
+    public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId);
+
+
+    @Operation(
             summary = "조직 정보 수정 API",
             description = "새로운 조직 이름, 설명, 로고 이미지 URL 을 받아 저장(해당 조직을 생성한 회원만 정보 변경 가능)"
     )
@@ -95,6 +118,21 @@ public interface OrgControllerDocs {
     })
     ResponseEntity<DataResponse<OrgResponse.OrgMemberCountDTO>> getOrgMembersCount(
             @PathVariable Long orgId
+    );
+
+    @Operation(
+            summary = "조직 맴버 삭제 API",
+            description = "맴버 삭제를 요청한 유저의 권한이 ADMIN인 경우 실행이 가능합니다. memberId에 해당하는 맴버를 조직에서 제외시킵니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "403", description = "권한이 부족한 경우(요청을 보낸 유저의 권한이 ADMIN이 아닌 경우)"),
+            @ApiResponse(responseCode = "404", description = "해당 id의 데이터 존재 X")
+    })
+    public ResponseEntity<DataResponse<String>> removeMember(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long memberId
     );
 
     @Operation(summary = "조직 초대 이메일 발송 API", description = "조직 관리자가 이메일을 입력하여 새로운 멤버를 초대합니다.")

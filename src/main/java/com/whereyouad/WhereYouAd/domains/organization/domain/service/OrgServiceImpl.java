@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.Or
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgConverter;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgMemberConverter;
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -65,9 +67,33 @@ public class OrgServiceImpl implements OrgService {
         return OrgConverter.toCreatedResponse(organization);
     }
 
-    public OrgResponse.Read getOrganization(Long userId) {
-        // TODO
-        return null;
+    //로그인한 회원이 속한 조직 모두 조회 메서드
+    public OrgResponse.MyOrganizations getMyOrganizations(Long userId) {
+        //회원 id 로 OrgMember 모두 조회 -> DB 조회에서 OrgStatus.ACTIVE 인 Organization 만 포함하는 OrgMember 만 조회해 온다.
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
+
+        //각각의 OrgMember 에서 SimpleInfo DTO 로 매핑
+        List<OrgResponse.SimpleInfo> infos = orgMembers.stream()
+                .map(OrgConverter::toOrgSimpleInfo)
+                .toList();
+
+        //마지막 반환 DTO 로 변환
+        return OrgConverter.toMyOrganizations(infos);
+    }
+
+    //하나의 조직에 대한 세부 사항(ID, 이름, 설명, logoUrl, createdAt)
+    public OrgResponse.OrgDetail getOrganizationDetail(Long orgId) {
+        //해당 조직 id 로 Organization 조회
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        //Soft Delete 된 조직이면 예외처리
+        if (organization.getStatus() == OrgStatus.DELETED) {
+            throw new OrgHandler(OrgErrorCode.ORG_SOFT_DELETED);
+        }
+
+        //DTO 로 변환
+        return OrgConverter.toOrgDetail(organization);
     }
 
     // 조직 정보 수정 메서드
@@ -137,6 +163,38 @@ public class OrgServiceImpl implements OrgService {
 
         // 조직 status 만 DELETED 로 변경 후 종료
         organization.softDelete();
+    }
+
+    public void removeMemberFromOrg(Long userId, Long orgId, Long memberId) {
+
+        // 0. 본인은 삭제 불가
+        if(Objects.equals(userId, memberId)){
+            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_KICK_SELF);
+        }
+
+        // 1. 조직 존재 여부 확인
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 2. 요청자가 해당 조직의 ADMIN인지 확인
+        OrgMember requester = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        if (requester.getRole() != OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
+        }
+
+        // 3. 삭제 대상 멤버가 해당 조직에 존재하는지 확인
+        OrgMember targetMember = orgMemberRepository.findByUserIdAndOrgId(memberId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        // 4. 대상 맴버가 ADMIN이라면 추방 불가
+        if (targetMember.getRole() == OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_KICK_ADMIN);
+        }
+
+        // 5. 중간 테이블에서 해당 멤버 삭제
+        orgMemberRepository.delete(targetMember);
     }
 
     @Override
