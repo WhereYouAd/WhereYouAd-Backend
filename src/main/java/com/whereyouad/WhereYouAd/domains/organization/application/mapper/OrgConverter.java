@@ -56,12 +56,7 @@ public class OrgConverter {
             List<OrgMember> orgMembers
     ) {
         List<OrgResponse.OrgMemberDTO> memberDTOs = orgMembers.stream()
-                .map(m -> new OrgResponse.OrgMemberDTO(
-                        m.getUser().getName(),
-                        m.getUser().getEmail(),
-                        m.getUser().getProfileImageUrl(),
-                        m.getRole().name()
-                ))
+                .map(OrgConverter::toOrgMemberDTO)
                 .toList();
 
         return new OrgResponse.OrgMemberSliceDTO(
