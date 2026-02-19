@@ -7,7 +7,9 @@ public interface OrgService {
 
     OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request);
 
-    OrgResponse.Read getOrganization(Long userId);
+    OrgResponse.MyOrganizations getMyOrganizations(Long userId);
+
+    OrgResponse.OrgDetail getOrganizationDetail(Long orgId);
 
     OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request);
 
