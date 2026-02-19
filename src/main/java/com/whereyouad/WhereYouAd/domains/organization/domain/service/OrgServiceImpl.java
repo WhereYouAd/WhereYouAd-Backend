@@ -204,7 +204,7 @@ public class OrgServiceImpl implements OrgService {
         if (orgMemberRepository.existsByUserAndOrganization(user, organization))
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
 
-        orgMemberRepository.save(OrgMemberConverter.toOrgMemberADMIN(user, organization));
+        orgMemberRepository.save(OrgMemberConverter.toOrgMemberMEMBER(user, organization));
 
         // Redis 사용 토큰 삭제
         redisUtil.deleteData("INVITE:" + token);
