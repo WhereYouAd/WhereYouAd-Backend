@@ -96,4 +96,21 @@ public interface OrgControllerDocs {
     ResponseEntity<DataResponse<OrgResponse.OrgMemberCountDTO>> getOrgMembersCount(
             @PathVariable Long orgId
     );
+
+    @Operation(
+            summary = "조직 맴버 권한 변경 API",
+            description = "맴버 권한 변경을 요청한 유저의 권한이 ADMIN인 경우 실행이 가능합니다. memberId에 해당하는 맴버의 권한을 변경시킵니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공 (totalCount: 전체 멤버 수)"),
+            @ApiResponse(responseCode = "401", description = "잘못된 요청을 보낸 경우(ADMIN의 권한 변경)"),
+            @ApiResponse(responseCode = "403", description = "권한이 부족한 경우(요청을 보낸 유저의 권한이 ADMIN이 아닌 경우)"),
+            @ApiResponse(responseCode = "404", description = "해당 id의 데이터 존재 X")
+    })
+    ResponseEntity<DataResponse<OrgResponse.OrgMemberDTO>> updateOrgMembersRole(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long memberId,
+            @RequestBody OrgRequest.UpdateRole dto
+    );
 }
