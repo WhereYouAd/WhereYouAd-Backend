@@ -16,4 +16,7 @@ public interface OrgService {
     void removeOrganizationSoft(Long userId, Long orgId);
 
     OrgResponse.Delete restoreOrganization(Long userId, Long orgId);
+
+    // 조직 내 멤버 권한 변경 메서드
+    OrgResponse.OrgMemberDTO updateOrgMembersRole(Long userId, Long orgId, Long memberId, OrgRequest.UpdateRole dto);
 }

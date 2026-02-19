@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.Or
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgConverter;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgMemberConverter;
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
@@ -131,5 +132,35 @@ public class OrgServiceImpl implements OrgService{
 
         //조직 status 만 DELETED 로 변경 후 종료
         organization.softDelete();
+    }
+
+    public OrgResponse.OrgMemberDTO updateOrgMembersRole(Long userId, Long orgId, Long memberId,
+            OrgRequest.UpdateRole dto) {
+
+        // 1. 조직 존재 여부 확인
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 2. 요청자가 해당 조직의 ADMIN인지 확인
+        OrgMember requester = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        if (requester.getRole() != OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
+        }
+
+        // 3. 해당 조직 내 멤버 조회 (상대방도 ADMIN이라면 MEMBER로 변경 불가)
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(memberId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        if (requester.getRole() == OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_ADMIN_TO_MEMBER);
+        }
+
+        // 역할 변경 (더티체킹)
+        orgMember.updateRole(dto.orgRole());
+
+        // 변경된 멤버 정보를 DTO 로 반환
+        return OrgConverter.toOrgMemberDTO(orgMember);
     }
 }
