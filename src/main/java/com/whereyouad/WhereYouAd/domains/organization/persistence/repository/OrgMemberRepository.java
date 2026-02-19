@@ -11,11 +11,19 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
 
     //User 가 가진 OrgMember 모두 추출하는 메서드
     List<OrgMember> findOrgMemberByUser(User user);
+
+    // userId 와 orgId 로 특정 OrgMember 조회
+    @Query("SELECT om FROM OrgMember om " +
+            "WHERE om.user.id = :userId " +
+            "AND om.organization.id = :orgId " +
+            "AND om.user.status = 'ACTIVE'")
+    Optional<OrgMember> findByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
 
     //userId 를 통해 OrgMember 추출 -> Organization 의 status 가 ACTIVE 인 경우에만 조회
     @Query(value = "select om from OrgMember om join fetch om.organization o where om.user.id = :userId and o.status = 'ACTIVE'")

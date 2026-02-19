@@ -115,4 +115,14 @@ public class OrgController implements OrgControllerDocs {
         OrgResponse.OrgMemberCountDTO response = orgQueryService.getOrgMembersCount(orgId);
         return ResponseEntity.ok(DataResponse.from(response));
     }
+
+    @DeleteMapping("{orgId}/members/{memberId}")
+    public ResponseEntity<DataResponse<String>> removeMember(
+            @AuthenticationPrincipal(expression = "userId") Long userId, // 관리자 ID
+            @PathVariable Long orgId,
+            @PathVariable Long memberId
+    ) {
+        orgService.removeMemberFromOrg(userId, orgId, memberId);
+        return ResponseEntity.ok(DataResponse.from("해당 맴버가 조직에서 제외되었습니다."));
+    }
 }
