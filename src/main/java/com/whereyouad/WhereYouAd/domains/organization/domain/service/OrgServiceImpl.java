@@ -21,37 +21,38 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class OrgServiceImpl implements OrgService{
+public class OrgServiceImpl implements OrgService {
 
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final UserRepository userRepository;
 
-    //조직(워크스페이스) 생성 메서드
+    // 조직(워크스페이스) 생성 메서드
     public OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request) {
 
-        //유저 정보 추출
+        // 유저 정보 추출
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
-        //만약 해당 User 가 이미 같은 name 을 가진 Organization 에 속해있으면 예외처리
-        //해당 User 의 OrgMember 를 모두 추출해서,
+        // 만약 해당 User 가 이미 같은 name 을 가진 Organization 에 속해있으면 예외처리
+        // 해당 User 의 OrgMember 를 모두 추출해서,
         List<OrgMember> orgMemberByUser = orgMemberRepository.findOrgMemberByUser(user);
         for (OrgMember orgMember : orgMemberByUser) {
-            //OrgMember 내부 Organization 의 name 이 생성하려는 request 의 name 과 같으면
+            // OrgMember 내부 Organization 의 name 이 생성하려는 request 의 name 과 같으면
             if (orgMember.getOrganization().getName().equals(request.name())) {
-                throw new OrgHandler(OrgErrorCode.ORG_NAME_DUPLICATE); //예외처리
+                throw new OrgHandler(OrgErrorCode.ORG_NAME_DUPLICATE); // 예외처리
             }
         }
 
-        //조직 생성
+        // 조직 생성
         Organization organization = OrgConverter.toOrganization(userId, request);
 
-        //OrgMember 생성
+        // OrgMember 생성
         OrgMember orgMember = OrgMemberConverter.toOrgMemberADMIN(user, organization);
 
         orgRepository.save(organization);
@@ -60,25 +61,49 @@ public class OrgServiceImpl implements OrgService{
         return OrgConverter.toCreatedResponse(organization);
     }
 
-    public OrgResponse.Read getOrganization(Long userId) {
-        //TODO
-        return null;
+    //로그인한 회원이 속한 조직 모두 조회 메서드
+    public OrgResponse.MyOrganizations getMyOrganizations(Long userId) {
+        //회원 id 로 OrgMember 모두 조회 -> DB 조회에서 OrgStatus.ACTIVE 인 Organization 만 포함하는 OrgMember 만 조회해 온다.
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
+
+        //각각의 OrgMember 에서 SimpleInfo DTO 로 매핑
+        List<OrgResponse.SimpleInfo> infos = orgMembers.stream()
+                .map(OrgConverter::toOrgSimpleInfo)
+                .toList();
+
+        //마지막 반환 DTO 로 변환
+        return OrgConverter.toMyOrganizations(infos);
     }
 
-    //조직 정보 수정 메서드
+    //하나의 조직에 대한 세부 사항(ID, 이름, 설명, logoUrl, createdAt)
+    public OrgResponse.OrgDetail getOrganizationDetail(Long orgId) {
+        //해당 조직 id 로 Organization 조회
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        //Soft Delete 된 조직이면 예외처리
+        if (organization.getStatus() == OrgStatus.DELETED) {
+            throw new OrgHandler(OrgErrorCode.ORG_SOFT_DELETED);
+        }
+
+        //DTO 로 변환
+        return OrgConverter.toOrgDetail(organization);
+    }
+
+    // 조직 정보 수정 메서드
     public OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request) {
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
-        //만약 조직 정보 수정을 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
+        // 만약 조직 정보 수정을 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
         if (!organization.getOwnerUserId().equals(userId)) {
-            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); //예외처리
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); // 예외처리
         }
 
-        //조직 정보 수정
+        // 조직 정보 수정
         organization.modifyInfo(request);
 
-        //변환 된 필드값과 해당 조직의 Id, updatedAt 가 포함된 DTO 로 반환
+        // 변환 된 필드값과 해당 조직의 Id, updatedAt 가 포함된 DTO 로 반환
         return OrgConverter.toUpdatedResponse(organization);
     }
 
@@ -86,52 +111,84 @@ public class OrgServiceImpl implements OrgService{
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
-        //만약 조직 복구 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
+        // 만약 조직 복구 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
         if (!organization.getOwnerUserId().equals(userId)) {
-            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); //예외처리
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); // 예외처리
         }
 
-        //조직이 이미 활성화 상태라면,
+        // 조직이 이미 활성화 상태라면,
         if (organization.getStatus() == OrgStatus.ACTIVE) {
-            throw new OrgHandler(OrgErrorCode.ORG_ALREADY_ACTIVE); //예외처리
+            throw new OrgHandler(OrgErrorCode.ORG_ALREADY_ACTIVE); // 예외처리
         }
 
-        organization.restoreDelete(); //조직 Soft Delete 복구
+        organization.restoreDelete(); // 조직 Soft Delete 복구
 
         return OrgConverter.toRestoredResponse(organization);
     }
 
-    //조직 삭제 메서드 -> Hard Delete (DB 에서 완전히 제거)
+    // 조직 삭제 메서드 -> Hard Delete (DB 에서 완전히 제거)
     public void removeOrganization(Long userId, Long orgId) {
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
-        //만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
+        // 만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
         if (!organization.getOwnerUserId().equals(userId)) {
-            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); //예외처리
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); // 예외처리
         }
 
-        //해당 조직에 가입된 모든 회원들의 가입 정보 삭제
+        // 해당 조직에 가입된 모든 회원들의 가입 정보 삭제
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
 
         orgMemberRepository.deleteAll(orgMembers);
 
-        //조직 실제 삭제
+        // 조직 실제 삭제
         orgRepository.delete(organization);
     }
 
-    //조직 삭제 메서드 -> Soft Delete (status 만 DELETED 로 변경)
+    // 조직 삭제 메서드 -> Soft Delete (status 만 DELETED 로 변경)
     public void removeOrganizationSoft(Long userId, Long orgId) {
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
-        //만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
+        // 만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
         if (!organization.getOwnerUserId().equals(userId)) {
             throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN);
         }
 
-        //조직 status 만 DELETED 로 변경 후 종료
+        // 조직 status 만 DELETED 로 변경 후 종료
         organization.softDelete();
+    }
+
+    public void removeMemberFromOrg(Long userId, Long orgId, Long memberId) {
+
+        // 0. 본인은 삭제 불가
+        if(Objects.equals(userId, memberId)){
+            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_KICK_SELF);
+        }
+
+        // 1. 조직 존재 여부 확인
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 2. 요청자가 해당 조직의 ADMIN인지 확인
+        OrgMember requester = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        if (requester.getRole() != OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
+        }
+
+        // 3. 삭제 대상 멤버가 해당 조직에 존재하는지 확인
+        OrgMember targetMember = orgMemberRepository.findByUserIdAndOrgId(memberId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        // 4. 대상 맴버가 ADMIN이라면 추방 불가
+        if (targetMember.getRole() == OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_KICK_ADMIN);
+        }
+
+        // 5. 중간 테이블에서 해당 멤버 삭제
+        orgMemberRepository.delete(targetMember);
     }
 
     public OrgResponse.OrgMemberDTO updateOrgMembersRole(Long userId, Long orgId, Long memberId,

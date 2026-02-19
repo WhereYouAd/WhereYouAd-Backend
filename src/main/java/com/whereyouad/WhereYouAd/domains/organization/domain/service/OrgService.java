@@ -7,7 +7,9 @@ public interface OrgService {
 
     OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request);
 
-    OrgResponse.Read getOrganization(Long userId);
+    OrgResponse.MyOrganizations getMyOrganizations(Long userId);
+
+    OrgResponse.OrgDetail getOrganizationDetail(Long orgId);
 
     OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request);
 
@@ -16,6 +18,9 @@ public interface OrgService {
     void removeOrganizationSoft(Long userId, Long orgId);
 
     OrgResponse.Delete restoreOrganization(Long userId, Long orgId);
+
+    // orgId 조직에서 memberId에 해당하는 맴버 제거
+    void removeMemberFromOrg(Long userId, Long orgId, Long memberId);
 
     // 조직 내 멤버 권한 변경 메서드
     OrgResponse.OrgMemberDTO updateOrgMembersRole(Long userId, Long orgId, Long memberId, OrgRequest.UpdateRole dto);
