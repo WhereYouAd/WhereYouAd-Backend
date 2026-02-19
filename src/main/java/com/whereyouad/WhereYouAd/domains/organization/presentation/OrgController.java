@@ -6,7 +6,6 @@ import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgQuerySer
 import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
 import com.whereyouad.WhereYouAd.domains.organization.presentation.docs.OrgControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
-import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,12 +31,23 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
-    @Hidden
-    @GetMapping("/read")
-    public ResponseEntity<DataResponse<OrgResponse.Read>> getOrganizations(
+    @GetMapping("/my")
+    public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getMyOrganizations(
             @AuthenticationPrincipal(expression = "userId") Long userId
-    ) {
-        OrgResponse.Read response = orgService.getOrganization(userId);
+    )
+    {
+        OrgResponse.MyOrganizations response = orgService.getMyOrganizations(userId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
+    @GetMapping("/{orgId}")
+    public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId)
+    {
+        OrgResponse.OrgDetail response = orgService.getOrganizationDetail(orgId);
+
         return ResponseEntity.ok(
                 DataResponse.from(response)
         );

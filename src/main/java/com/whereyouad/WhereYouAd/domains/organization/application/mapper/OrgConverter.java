@@ -28,6 +28,33 @@ public class OrgConverter {
                 "해당 조직이 활성화 되었습니다");
     }
 
+    public static OrgResponse.MyOrganizations toMyOrganizations(List<OrgResponse.SimpleInfo> infos) {
+        return new OrgResponse.MyOrganizations(
+                infos
+        );
+    }
+
+    public static OrgResponse.OrgDetail toOrgDetail(Organization organization) {
+        return new OrgResponse.OrgDetail(organization.getId(),
+                organization.getName(),
+                organization.getDescription(),
+                organization.getLogoUrl(),
+                organization.getCreatedAt()
+        );
+    }
+
+    public static OrgResponse.SimpleInfo toOrgSimpleInfo(OrgMember orgMember) {
+        //OrgMember 내부에 존재하는 Role 활용
+        Organization organization = orgMember.getOrganization();
+
+        return new OrgResponse.SimpleInfo(organization.getId(),
+                organization.getName(),
+                organization.getDescription(),
+                organization.getLogoUrl(),
+                orgMember.getRole()
+        );
+    }
+
     //DTO -> Entity
     public static Organization toOrganization(Long userId, OrgRequest.Create request) {
         return Organization.builder()

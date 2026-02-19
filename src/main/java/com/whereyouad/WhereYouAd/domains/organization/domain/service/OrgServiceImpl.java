@@ -61,9 +61,33 @@ public class OrgServiceImpl implements OrgService {
         return OrgConverter.toCreatedResponse(organization);
     }
 
-    public OrgResponse.Read getOrganization(Long userId) {
-        // TODO
-        return null;
+    //로그인한 회원이 속한 조직 모두 조회 메서드
+    public OrgResponse.MyOrganizations getMyOrganizations(Long userId) {
+        //회원 id 로 OrgMember 모두 조회 -> DB 조회에서 OrgStatus.ACTIVE 인 Organization 만 포함하는 OrgMember 만 조회해 온다.
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
+
+        //각각의 OrgMember 에서 SimpleInfo DTO 로 매핑
+        List<OrgResponse.SimpleInfo> infos = orgMembers.stream()
+                .map(OrgConverter::toOrgSimpleInfo)
+                .toList();
+
+        //마지막 반환 DTO 로 변환
+        return OrgConverter.toMyOrganizations(infos);
+    }
+
+    //하나의 조직에 대한 세부 사항(ID, 이름, 설명, logoUrl, createdAt)
+    public OrgResponse.OrgDetail getOrganizationDetail(Long orgId) {
+        //해당 조직 id 로 Organization 조회
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        //Soft Delete 된 조직이면 예외처리
+        if (organization.getStatus() == OrgStatus.DELETED) {
+            throw new OrgHandler(OrgErrorCode.ORG_SOFT_DELETED);
+        }
+
+        //DTO 로 변환
+        return OrgConverter.toOrgDetail(organization);
     }
 
     // 조직 정보 수정 메서드

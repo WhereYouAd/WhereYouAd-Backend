@@ -25,6 +25,10 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
             "AND om.user.status = 'ACTIVE'")
     Optional<OrgMember> findByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
 
+    //userId 를 통해 OrgMember 추출 -> Organization 의 status 가 ACTIVE 인 경우에만 조회
+    @Query(value = "select om from OrgMember om join fetch om.organization o where om.user.id = :userId and o.status = 'ACTIVE'")
+    List<OrgMember> findOrgMemberByUserId(@Param("userId") Long userId);
+
     //특정 Organization 에 속한 OrgMember 모두 추출하는 메서드
     @Query("select om from OrgMember om where om.organization = :organization")
     List<OrgMember> findOrgMemberByOrg(@Param(value = "organization") Organization organization);
