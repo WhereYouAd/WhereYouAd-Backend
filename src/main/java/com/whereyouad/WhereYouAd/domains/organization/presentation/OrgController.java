@@ -53,7 +53,6 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
-
     @PatchMapping("/{orgId}")
     public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
@@ -124,5 +123,21 @@ public class OrgController implements OrgControllerDocs {
     ) {
         orgService.removeMemberFromOrg(userId, orgId, memberId);
         return ResponseEntity.ok(DataResponse.from("해당 맴버가 조직에서 제외되었습니다."));
+    }
+
+    @PostMapping("/members/{orgId}/invitation")
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(
+            @AuthenticationPrincipal(expression = "userId") Long userId, @PathVariable Long orgId,
+            @RequestBody @Valid OrgRequest.Invite request) {
+        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.sendOrgInvitation(userId, orgId,
+                request.email());
+        return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
+    }
+
+    @PostMapping("/invitations/{token}")
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(
+            @AuthenticationPrincipal(expression = "userId") Long userId, @PathVariable String token) {
+        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.acceptOrgInvitation(userId, token);
+        return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
     }
 }

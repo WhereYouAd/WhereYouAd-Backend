@@ -12,16 +12,19 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMemb
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
+import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
+import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -31,6 +34,9 @@ public class OrgServiceImpl implements OrgService {
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final UserRepository userRepository;
+
+    private final RedisUtil redisUtil;
+    private final EmailService emailService;
 
     // 조직(워크스페이스) 생성 메서드
     public OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request) {
@@ -189,5 +195,78 @@ public class OrgServiceImpl implements OrgService {
 
         // 5. 중간 테이블에서 해당 멤버 삭제
         orgMemberRepository.delete(targetMember);
+    }
+
+    @Override
+    // 조직 초대 이메일 보내기
+    public OrgResponse.OrgInvitationResponse sendOrgInvitation(Long userId, Long orgId, String email) {
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 초대자와 조직 관계 검증 (초대자가 조직의 멤버인지 확인)
+        User sender = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        if (!orgMemberRepository.existsByUserAndOrganization(sender, organization)) {
+            // 초대자가 조직 멤버가 아님 -> 권한 없음
+            throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN);
+        }
+
+        // 초대 완료 여부 확인, 가입 여부에 상관 없이 이메일 발송
+        userRepository.findUserByEmail(email).ifPresent(user -> {
+            if (orgMemberRepository.existsByUserAndOrganization(user, organization)) {
+                throw new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
+            }
+        });
+
+        // Redis key = 임의의 UUID 토큰(조직 초대 이메일 내 링크를 구별)
+        String token = UUID.randomUUID().toString();
+        // Redis value = 조직 아이디와 이메일의 조합
+        String value = orgId + ":" + email;
+        redisUtil.setDataExpire("INVITE:" + token, value, 3600 * 24L);
+
+        emailService.sendEmailForOrgInvitation(token, email, organization.getName());
+
+        return new OrgResponse.OrgInvitationResponse(orgId, "조직 멤버 초대 이메일을 전송하였습니다.", email);
+    }
+
+    @Override
+    // 조직 초대 수락 (이메일 내 링크 클릭 시)
+    public OrgResponse.OrgInvitationResponse acceptOrgInvitation(Long userId, String token) {
+        // 링크 만료 또는 유효하지 않을 시
+        if (token == null)
+            throw new OrgHandler(OrgErrorCode.ORG_INVITATION_INVALID);
+
+        // Redis 내 UUID(key)에 대한 email(value) 비교
+        String value = redisUtil.getData("INVITE:" + token);
+        if (value == null) {
+            throw new OrgHandler(OrgErrorCode.ORG_INVITATION_INVALID);
+        }
+
+        String[] valueForSplit = value.split(":");
+        String email = valueForSplit[1];
+
+        // 로그인한 사용자 검증
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 초대된 이메일과 현재 로그인한 사용자의 이메일이 일치하는지 확인
+        if (!user.getEmail().equals(email)) {
+            throw new OrgHandler(OrgErrorCode.ORG_INVITATION_FORBIDDEN_USER);
+        }
+
+        Organization organization = orgRepository.findById(Long.parseLong(valueForSplit[0]))
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 이미 멤버인지 중복 체크
+        if (orgMemberRepository.existsByUserAndOrganization(user, organization))
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
+
+        orgMemberRepository.save(OrgMemberConverter.toOrgMemberMEMBER(user, organization));
+
+        // Redis 사용 토큰 삭제
+        redisUtil.deleteData("INVITE:" + token);
+
+        return new OrgResponse.OrgInvitationResponse(organization.getId(), "조직 멤버 초대 이메일을 수락하였습니다.", email);
     }
 }

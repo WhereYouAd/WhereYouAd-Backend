@@ -21,4 +21,8 @@ public interface OrgService {
 
     // orgId 조직에서 memberId에 해당하는 맴버 제거
     void removeMemberFromOrg(Long userId, Long orgId, Long memberId);
+
+    OrgResponse.OrgInvitationResponse sendOrgInvitation(Long userId, Long orgId, String email);
+
+    OrgResponse.OrgInvitationResponse acceptOrgInvitation(Long userId, String token);
 }

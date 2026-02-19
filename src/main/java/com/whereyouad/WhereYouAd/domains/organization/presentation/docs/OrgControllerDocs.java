@@ -134,4 +134,30 @@ public interface OrgControllerDocs {
             @PathVariable Long orgId,
             @PathVariable Long memberId
     );
+
+    @Operation(summary = "조직 초대 이메일 발송 API", description = "조직 관리자가 이메일을 입력하여 새로운 멤버를 초대합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "403", description = "조직 멤버가 아닌 사용자의 요청"),
+            @ApiResponse(responseCode = "404", description = "조직을 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 조직에 가입된 사용자")
+    })
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody @Valid OrgRequest.Invite request
+    );
+
+    @Operation(summary = "조직 초대 수락 API", description = "이메일로 받은 초대 토큰을 통해 조직 가입을 수락합니다. (로그인 필수, 본인 확인)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "400", description = "유효하지 않거나 만료된 토큰"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "403", description = "초대된 이메일과 로그인한 사용자가 불일치")
+    })
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable String token
+    );
 }

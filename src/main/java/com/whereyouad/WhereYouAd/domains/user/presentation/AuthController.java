@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.user.presentation;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.LoginRequest;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.AuthService;
+import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.presentation.docs.AuthControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
