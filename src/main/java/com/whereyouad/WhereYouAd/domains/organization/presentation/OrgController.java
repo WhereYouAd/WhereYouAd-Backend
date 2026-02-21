@@ -53,6 +53,7 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
+
     @PatchMapping("/{orgId}")
     public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
@@ -123,6 +124,17 @@ public class OrgController implements OrgControllerDocs {
     ) {
         orgService.removeMemberFromOrg(userId, orgId, memberId);
         return ResponseEntity.ok(DataResponse.from("해당 맴버가 조직에서 제외되었습니다."));
+    }
+
+    @PatchMapping("/members/{orgId}/{memberId}")
+    public ResponseEntity<DataResponse<OrgResponse.OrgMemberDTO>> updateOrgMembersRole(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long memberId,
+            @RequestBody @Valid OrgRequest.UpdateRole dto
+    ) {
+        OrgResponse.OrgMemberDTO response = orgService.updateOrgMembersRole(userId, orgId, memberId, dto);
+        return ResponseEntity.ok(DataResponse.from(response));
     }
 
     @PostMapping("/members/{orgId}/invitation")

@@ -197,6 +197,47 @@ public class OrgServiceImpl implements OrgService {
         orgMemberRepository.delete(targetMember);
     }
 
+    public OrgResponse.OrgMemberDTO updateOrgMembersRole(Long userId, Long orgId, Long memberId,
+            OrgRequest.UpdateRole dto) {
+
+        // 0. 본인 권한 변경 불가
+        if (Objects.equals(userId, memberId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_ROLE_CHANGE_SELF);
+        }
+
+        // 1. 조직 존재 여부 확인
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 2. 요청자가 해당 조직의 ADMIN인지 확인
+        OrgMember requester = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        if (requester.getRole() != OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
+        }
+
+        // 3. 권한 변경 대상 멤버 조회
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(memberId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        // 4. ADMIN -> MEMBER 강등 시: 조직 내 ADMIN이 2명 이상이어야만 허용
+        // 해당 멤버 ADMIN, 요청 역할 MEMBER인 경우
+        boolean isDemoting = orgMember.getRole() == OrgRole.ADMIN && dto.orgRole() == OrgRole.MEMBER;
+        if (isDemoting) {
+            long adminCount = orgMemberRepository.countByOrganizationIdAndRole(orgId, OrgRole.ADMIN);
+            if (adminCount < 2) {
+                throw new OrgHandler(OrgErrorCode.ORG_LAST_ADMIN);
+            }
+        }
+
+        // 역할 변경 (더티체킹)
+        orgMember.updateRole(dto.orgRole());
+
+        // 변경된 멤버 정보를 DTO 로 반환
+        return OrgConverter.toOrgMemberDTO(orgMember);
+    }
+
     @Override
     // 조직 초대 이메일 보내기
     public OrgResponse.OrgInvitationResponse sendOrgInvitation(Long userId, Long orgId, String email) {

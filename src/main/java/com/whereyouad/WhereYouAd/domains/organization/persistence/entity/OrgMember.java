@@ -34,4 +34,8 @@ public class OrgMember { //중간 테이블이므로 BaseEntity 미적용
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id")
     private Organization organization;
+
+    public void updateRole(OrgRole role) {
+        this.role = role;
+    }
 }
