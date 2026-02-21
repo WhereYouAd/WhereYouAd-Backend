@@ -136,4 +136,20 @@ public class OrgController implements OrgControllerDocs {
         OrgResponse.OrgMemberDTO response = orgService.updateOrgMembersRole(userId, orgId, memberId, dto);
         return ResponseEntity.ok(DataResponse.from(response));
     }
+
+    @PostMapping("/members/{orgId}/invitation")
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(
+            @AuthenticationPrincipal(expression = "userId") Long userId, @PathVariable Long orgId,
+            @RequestBody @Valid OrgRequest.Invite request) {
+        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.sendOrgInvitation(userId, orgId,
+                request.email());
+        return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
+    }
+
+    @PostMapping("/invitations/{token}")
+    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(
+            @AuthenticationPrincipal(expression = "userId") Long userId, @PathVariable String token) {
+        OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.acceptOrgInvitation(userId, token);
+        return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
+    }
 }

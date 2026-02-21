@@ -27,6 +27,15 @@ public enum OrgErrorCode implements BaseErrorCode {
 
     //410
     ORG_SOFT_DELETED(HttpStatus.GONE, "ORG_410_1", "해당 조직은 삭제된 조직입니다.(Soft Delete)"),
+
+    // 409
+    ORG_MEMBER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "ORG_MEMBER_409_1", "이미 해당 조직에 초대되어있습니다."),
+
+    // 400
+    ORG_INVITATION_INVALID(HttpStatus.BAD_REQUEST, "ORG_INVITATION_400", "조직 초대 토큰이 만료되었거나 유효하지 않습니다."),
+
+    // 403
+    ORG_INVITATION_FORBIDDEN_USER(HttpStatus.FORBIDDEN, "ORG_INVITATION_403_1", "초대된 이메일과 현재 로그인한 사용자의 이메일이 일치하지 않습니다."),
     ;
 
     private final HttpStatus httpStatus;

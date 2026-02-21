@@ -68,4 +68,10 @@ public class OrgResponse {
             String profileImageUrl,
             String role
     ) {}
+
+    public record OrgInvitationResponse(
+            Long orgId,
+            String message,
+            String email
+    ) {}
 }

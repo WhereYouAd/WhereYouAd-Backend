@@ -24,4 +24,8 @@ public interface OrgService {
 
     // 조직 내 멤버 권한 변경 메서드
     OrgResponse.OrgMemberDTO updateOrgMembersRole(Long userId, Long orgId, Long memberId, OrgRequest.UpdateRole dto);
+
+    OrgResponse.OrgInvitationResponse sendOrgInvitation(Long userId, Long orgId, String email);
+
+    OrgResponse.OrgInvitationResponse acceptOrgInvitation(Long userId, String token);
 }
