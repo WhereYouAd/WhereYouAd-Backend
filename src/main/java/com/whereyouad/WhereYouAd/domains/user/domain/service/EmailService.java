@@ -1,8 +1,14 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.mapper.UserConverter;
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
+import com.whereyouad.WhereYouAd.domains.user.persistence.entity.AuthProviderAccount;
+import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
+import com.whereyouad.WhereYouAd.domains.user.persistence.repository.AuthProviderAccountRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +20,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Transactional
 @Service
 @RequiredArgsConstructor
@@ -23,6 +31,7 @@ public class EmailService {
     private final JavaMailSender emailSender;
     private final RedisUtil redisUtil;
     private final UserRepository userRepository;
+    private final AuthProviderAccountRepository authProviderAccountRepository;
 
     // application.yml 적용 필요
     @Value("${spring.mail.username}")
@@ -34,19 +43,32 @@ public class EmailService {
     // 인증코드 이메일 발송 로직 (최초 회원가입 시)
     public EmailSentResponse sendEmail(String toEmail) {
         if (userRepository.existsByEmail(toEmail)) { // 이미 해당 이메일로 생성한 계정이 있으면
-            throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE); // 이메일 중복 예외(회원가입 시 사용했던 예외)
+//            throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE); // 이메일 중복 예외(회원가입 시 사용했던 예외)
+
+            User user = userRepository.findUserByEmail(toEmail)
+                    .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+            Optional<AuthProviderAccount> authProviderAccount = authProviderAccountRepository.findByUser(user);
+
+            if (authProviderAccount.isEmpty()) {
+                throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE);
+            } else {
+                Provider provider = authProviderAccount.get().getProvider();
+
+                return UserConverter.toEmailSentResponseFail(toEmail, provider);
+            }
         }
 
         String type = "회원가입";
 
-        return emailSendTemplate(toEmail, type);
+        return (EmailSentResponse) emailSendTemplate(toEmail, type);
     }
 
     // 비밀번호 재설정을 위한 인증코드 이메일 발송 로직 (이미 회원가입 된 상태에서 비밀번호 재설정)
-    public EmailSentResponse sendEmailForPwd(String toEmail) {
+    public PasswordResetResponse sendEmailForPwd(String toEmail) {
         if (userRepository.existsByEmail(toEmail)) { // 이미 회원가입 되어있는 것이 확인되면
             String type = "비밀번호 재설정";
-            return emailSendTemplate(toEmail, type); // 정상적으로 이메일 발송
+            return (PasswordResetResponse) emailSendTemplate(toEmail, type); // 정상적으로 이메일 발송
         } else { // 만약 회원가입 되어있지 않다면
             throw new UserHandler(UserErrorCode.USER_NOT_FOUND); // 예외발생
         }
@@ -70,7 +92,7 @@ public class EmailService {
     }
 
     // 기존 이메일 발송 로직 템플릿 화
-    private EmailSentResponse emailSendTemplate(String toEmail, String type) {
+    private Object emailSendTemplate(String toEmail, String type) {
 
         // 인증코드 재전송 로직 -> 이미 Redis 에 해당 이메일 인증코드가 있을시 삭제
         String redisKey = "CODE:" + toEmail;
@@ -111,7 +133,12 @@ public class EmailService {
         // 테스트 계정의 인증은 서버 로그를 통해 인증코드를 얻어 입력.
         redisUtil.setDataExpire("CODE:" + toEmail, authCode, 60 * 3L);
 
-        return new EmailSentResponse("인증코드를 이메일로 전송했습니다.", toEmail, 180L);
+        if (type.equals("회원가입")) {
+            return UserConverter.toEmailSentResponseSuccess(toEmail);
+        } else {
+            return UserConverter.toPasswordResetResponse(toEmail);
+        }
+//        return UserConverter.toEmailSentResponseSuccess(toEmail);
     }
 
     // 인증코드 검증 메서드
