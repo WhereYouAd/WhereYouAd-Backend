@@ -131,7 +131,7 @@ public class OrgController implements OrgControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @PathVariable Long memberId,
-            @RequestBody OrgRequest.UpdateRole dto
+            @RequestBody @Valid OrgRequest.UpdateRole dto
     ) {
         OrgResponse.OrgMemberDTO response = orgService.updateOrgMembersRole(userId, orgId, memberId, dto);
         return ResponseEntity.ok(DataResponse.from(response));
