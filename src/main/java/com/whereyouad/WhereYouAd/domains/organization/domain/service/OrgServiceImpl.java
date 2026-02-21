@@ -212,12 +212,18 @@ public class OrgServiceImpl implements OrgService {
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
         }
 
-        // 3. 해당 조직 내 멤버 조회 (상대방도 ADMIN이라면 MEMBER로 변경 불가)
+        // 3. 권한 변경 대상 멤버 조회
         OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(memberId, orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
 
-        if (orgMember.getRole() == OrgRole.ADMIN) {
-            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_ADMIN_TO_MEMBER);
+        // 4. ADMIN -> MEMBER 강등 시: 조직 내 ADMIN이 2명 이상이어야만 허용
+        // 해당 멤버 ADMIN, 요청 역할 MEMBER인 경우
+        boolean isDemoting = orgMember.getRole() == OrgRole.ADMIN && dto.orgRole() == OrgRole.MEMBER;
+        if (isDemoting) {
+            long adminCount = orgMemberRepository.countByOrganizationIdAndRole(orgId, OrgRole.ADMIN);
+            if (adminCount <= 2) {
+                throw new OrgHandler(OrgErrorCode.ORG_LAST_ADMIN);
+            }
         }
 
         // 역할 변경 (더티체킹)

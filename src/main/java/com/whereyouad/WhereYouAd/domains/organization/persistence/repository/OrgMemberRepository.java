@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.organization.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
@@ -58,4 +59,7 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
     );
 
         Boolean existsByUserAndOrganization(User user, Organization organization);
+
+    // 조직 id에 해당하는 역할 인원 수 조회
+    long countByOrganizationIdAndRole(Long orgId, OrgRole orgRole);
 }
