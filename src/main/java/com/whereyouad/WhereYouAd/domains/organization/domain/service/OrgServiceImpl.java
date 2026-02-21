@@ -200,6 +200,11 @@ public class OrgServiceImpl implements OrgService {
     public OrgResponse.OrgMemberDTO updateOrgMembersRole(Long userId, Long orgId, Long memberId,
             OrgRequest.UpdateRole dto) {
 
+        // 0. 본인 권한 변경 불가
+        if (Objects.equals(userId, memberId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_CANNOT_ROLE_CHANGE_SELF);
+        }
+
         // 1. 조직 존재 여부 확인
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
