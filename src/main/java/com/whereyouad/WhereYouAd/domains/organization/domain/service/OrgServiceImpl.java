@@ -226,7 +226,7 @@ public class OrgServiceImpl implements OrgService {
         boolean isDemoting = orgMember.getRole() == OrgRole.ADMIN && dto.orgRole() == OrgRole.MEMBER;
         if (isDemoting) {
             long adminCount = orgMemberRepository.countByOrganizationIdAndRole(orgId, OrgRole.ADMIN);
-            if (adminCount <= 2) {
+            if (adminCount < 2) {
                 throw new OrgHandler(OrgErrorCode.ORG_LAST_ADMIN);
             }
         }
