@@ -5,6 +5,7 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SmsRequest
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
@@ -56,7 +57,7 @@ public interface UserControllerDocs {
             @ApiResponse(responseCode = "400_2", description = "이메일 전송실패(이메일 오타 등)"),
             @ApiResponse(responseCode = "404_1", description = "해당 이메일로 가입한 회원 존재하지 않음")
     })
-    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request);
+    public ResponseEntity<DataResponse<PasswordResetResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request);
 
     @Operation(
             summary = "사용자 비밀번호 재설정 API",
