@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.organization.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
@@ -17,14 +18,7 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
 
     //User 가 가진 OrgMember 모두 추출하는 메서드
     List<OrgMember> findOrgMemberByUser(User user);
-
-    // userId 와 orgId 로 특정 OrgMember 조회
-    @Query("SELECT om FROM OrgMember om " +
-            "WHERE om.user.id = :userId " +
-            "AND om.organization.id = :orgId " +
-            "AND om.user.status = 'ACTIVE'")
-    Optional<OrgMember> findByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
-
+    
     //userId 를 통해 OrgMember 추출 -> Organization 의 status 가 ACTIVE 인 경우에만 조회
     @Query(value = "select om from OrgMember om join fetch om.organization o where om.user.id = :userId and o.status = 'ACTIVE'")
     List<OrgMember> findOrgMemberByUserId(@Param("userId") Long userId);
@@ -47,6 +41,13 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
             Pageable pageable
     );
 
+    // userId 와 orgId 로 특정 OrgMember 조회
+    @Query("SELECT om FROM OrgMember om " +
+            "WHERE om.user.id = :userId " +
+            "AND om.organization.id = :orgId " +
+            "AND om.user.status = 'ACTIVE'")
+    Optional<OrgMember> findByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
+
     // 조직의 전체 멤버 수 조회
     @Query("SELECT COUNT(m) FROM OrgMember m " +
             "JOIN m.user u " +
@@ -58,4 +59,7 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
     );
 
         Boolean existsByUserAndOrganization(User user, Organization organization);
+
+    // 조직 id에 해당하는 역할 인원 수 조회
+    long countByOrganizationIdAndRole(Long orgId, OrgRole orgRole);
 }
