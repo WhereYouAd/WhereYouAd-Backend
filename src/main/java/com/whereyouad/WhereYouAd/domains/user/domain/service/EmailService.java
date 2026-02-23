@@ -7,7 +7,6 @@ import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.AuthProviderAccount;
-import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.AuthProviderAccountRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
@@ -20,7 +19,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 @Transactional
 @Service
@@ -43,22 +43,22 @@ public class EmailService {
     // 인증코드 이메일 발송 로직 (최초 회원가입 시)
     public EmailSentResponse sendEmail(String toEmail) {
         if (userRepository.existsByEmail(toEmail)) { // 이미 해당 이메일로 생성한 계정이 있으면
-            //해당 사용자 정보 조회
-            User user = userRepository.findUserByEmail(toEmail)
-                    .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
-
-            //해당 사용자에 연관된 AuthProviderAccount 조회
-            Optional<AuthProviderAccount> authProviderAccount = authProviderAccountRepository.findByUser(user);
+            //해당 이메일 값을 가진 AuthProviderAccount List 로 조회
+            List<AuthProviderAccount> authProviderAccounts = authProviderAccountRepository.findByUserEmail(toEmail);
 
             //만약 AuthProviderAccount 가 없으면
-            if (authProviderAccount.isEmpty()) {
+            if (authProviderAccounts.isEmpty()) {
                 //단순 이메일 회원가입에서 이메일 값이 중복인 것이므로 예외(기존 예외처리 로직)
                 throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE);
             } else { //만약 AuthProviderAccount 가 있으면
                 //해당 소셜 로그인 플랫폼 타입을 추출해서 반환
-                Provider provider = authProviderAccount.get().getProvider();
+                List<Provider> providers = new ArrayList<>();
+                for (AuthProviderAccount authProviderAccount : authProviderAccounts) {
+                    Provider provider = authProviderAccount.getProvider();
+                    providers.add(provider);
+                }
 
-                return UserConverter.toEmailSentResponseFail(toEmail, provider);
+                return UserConverter.toEmailSentResponseFail(toEmail, providers);
             }
         }
 
