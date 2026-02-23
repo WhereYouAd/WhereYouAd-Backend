@@ -43,24 +43,28 @@ public class EmailService {
     // 인증코드 이메일 발송 로직 (최초 회원가입 시)
     public EmailSentResponse sendEmail(String toEmail) {
         if (userRepository.existsByEmail(toEmail)) { // 이미 해당 이메일로 생성한 계정이 있으면
-//            throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE); // 이메일 중복 예외(회원가입 시 사용했던 예외)
-
+            //해당 사용자 정보 조회
             User user = userRepository.findUserByEmail(toEmail)
                     .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
+            //해당 사용자에 연관된 AuthProviderAccount 조회
             Optional<AuthProviderAccount> authProviderAccount = authProviderAccountRepository.findByUser(user);
 
+            //만약 AuthProviderAccount 가 없으면
             if (authProviderAccount.isEmpty()) {
+                //단순 이메일 회원가입에서 이메일 값이 중복인 것이므로 예외(기존 예외처리 로직)
                 throw new UserHandler(UserErrorCode.USER_EMAIL_DUPLICATE);
-            } else {
+            } else { //만약 AuthProviderAccount 가 있으면
+                //해당 소셜 로그인 플랫폼 타입을 추출해서 반환
                 Provider provider = authProviderAccount.get().getProvider();
 
                 return UserConverter.toEmailSentResponseFail(toEmail, provider);
             }
         }
 
+        //해당 이메일로 이미 생성된 계정 없으면 이메일 전송 진행
         String type = "회원가입";
-
+        //템플릿 호출
         return (EmailSentResponse) emailSendTemplate(toEmail, type);
     }
 
@@ -91,7 +95,8 @@ public class EmailService {
         }
     }
 
-    // 기존 이메일 발송 로직 템플릿 화
+    //기존 이메일 발송 로직 템플릿 화
+    //"회원가입 시 인증 이메일 발송" 과 "비밀번호 재설정 시 인증 이메일 발송" 에 대한 Response 분리 위해 반환값 Object로 변경 (fix/#39)
     private Object emailSendTemplate(String toEmail, String type) {
 
         // 인증코드 재전송 로직 -> 이미 Redis 에 해당 이메일 인증코드가 있을시 삭제
@@ -133,12 +138,13 @@ public class EmailService {
         // 테스트 계정의 인증은 서버 로그를 통해 인증코드를 얻어 입력.
         redisUtil.setDataExpire("CODE:" + toEmail, authCode, 60 * 3L);
 
-        if (type.equals("회원가입")) {
+        if (type.equals("회원가입")) { //해당 템플릿 메서드를 "회원가입을 위한 이메일 인증" 에서 호출한 경우,
+            //해당 DTO 형식에 맞춰 반환
             return UserConverter.toEmailSentResponseSuccess(toEmail);
-        } else {
+        } else { //"비밀번호 재설정" 에서 호출한 경우,
+            //해당 DTO 형식에 맞춰 반환
             return UserConverter.toPasswordResetResponse(toEmail);
         }
-//        return UserConverter.toEmailSentResponseSuccess(toEmail);
     }
 
     // 인증코드 검증 메서드
