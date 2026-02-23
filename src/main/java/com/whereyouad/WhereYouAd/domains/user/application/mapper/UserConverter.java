@@ -9,6 +9,8 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.OAuth2Response;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.OAuth2UserInfo;
 
+import java.util.List;
+
 public class UserConverter {
 
     public static SignUpResponse toSignInResponse(User user) {
@@ -44,12 +46,12 @@ public class UserConverter {
                 null);
     }
 
-    public static EmailSentResponse toEmailSentResponseFail(String email, Provider provider) {
+    public static EmailSentResponse toEmailSentResponseFail(String email, List<Provider> providers) {
         return new EmailSentResponse("이미 소셜 계정으로 가입된 이메일 입니다.",
                 email,
                 null,
                 true,
-                provider);
+                providers);
     }
 
     public static PasswordResetResponse toPasswordResetResponse(String email) {
