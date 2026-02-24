@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.global.security.jwt;
 
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import lombok.Getter;
@@ -10,13 +11,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
     private final User user;
+    private final Provider provider;
 
     // 일단 User 엔티티에 권한 구분(ADMIN / USER) 가 없기도 하고,
     // 팀장, 멤버등의 역할 구분은 2차 MVP 에서 진행한다.

@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.user.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
@@ -36,6 +37,18 @@ public class UserConverter {
                 .providerId(oAuth2Response.getProviderId())
                 .provider(oAuth2Response.getProvider())
                 .build();
+    }
+
+    public static MyPageResponse toMyPageResponse(User user, String provider) {
+
+        return new MyPageResponse(user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getProfileImageUrl(),
+                user.getPhoneNumber(),
+                user.isEmailVerified(),
+                provider
+        );
     }
 
     public static EmailSentResponse toEmailSentResponseSuccess(String email) {

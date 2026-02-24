@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # 1. Spring Boot App
   app:
-    build: .
+    image: ${DOCKER_USERNAME}/where-you-ad-backend:latest
     container_name: where-you-ad-backend
     ports:
       - "8080:8080"  # Public EC2가 이 포트로 트래픽을 보냄

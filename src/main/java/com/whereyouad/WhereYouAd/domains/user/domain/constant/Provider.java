@@ -10,6 +10,7 @@ import java.util.Arrays;
 @Getter
 @RequiredArgsConstructor
 public enum Provider {
+    EMAIL("email", "이메일"),
     GOOGLE("google", "구글"),
     NAVER("naver", "네이버"),
     KAKAO("kakao", "카카오");

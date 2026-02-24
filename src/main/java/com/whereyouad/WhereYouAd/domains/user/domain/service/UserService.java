@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
@@ -10,6 +11,7 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,5 +86,22 @@ public class UserService {
         user.resetPassword(newPassword);
 
         redisUtil.deleteData("VERIFIED:" + email);
+    }
+
+    /**
+     * 마이페이지 조회
+     * 파라미터 추가: userId 외에 'provider'(로그인 유형) 도 받기
+     * 캐시 키 수정: key = "#userId + ':' + #provider"
+     * 같은 유저(userId=1)라도 '구글'로 로그인했을 때와 '이메일'로 로그인했을 때
+     * 응답 데이터(MyPageResponse의 provider 필드)가 다르므로 캐시를 구분해야 합니다.
+     * 예) user:profile::1:GOOGLE / user:profile::1:EMAIL 로 따로 저장됨.
+     */
+    @Cacheable(value = "user:profile", key = "#userId + ':' + #provider", unless = "#result == null")
+    @Transactional(readOnly = true)
+    public MyPageResponse getMyPage(Long userId, String provider) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        return UserConverter.toMyPageResponse(user, provider);
     }
 }

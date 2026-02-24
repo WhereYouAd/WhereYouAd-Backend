@@ -47,6 +47,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() //swagger 접근 허용
+                        .requestMatchers("/api/users/my").authenticated() //마이페이지는 인증 필요
                         .requestMatchers("/api/users/**", "/api/auth/**").permitAll() //로그인, 회원가입, 이메일 인증 접근 허용
                         .anyRequest().authenticated() //이외 접근은 인증 필요
                 )
