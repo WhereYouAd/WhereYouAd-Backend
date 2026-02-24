@@ -34,7 +34,7 @@ public interface UserControllerDocs {
             summary = "이메일 인증코드 전송 API",
             description = "입력받은 이메일로 인증코드를 전송합니다. 인증코드 재전송도 해당 API 를 호출합니다.\n\n" +
                     "테스트용 이메일은 'test' 로 시작하거나 'example.com' 으로 끝나야합니다. 테스트용 이메일의 인증코드는 서버 로그로 확인 가능합니다.\n\n" +
-                    "이미 소셜 로그인으로 가입된 이메일 값이 요청으로 들어올 경우, isProviderLinked = true, providerType = KAKAO 와 같이 값이 나오며 이메일은 전송되지 않습니다."
+                    "이미 소셜 로그인으로 가입된 이메일 값이 요청으로 들어올 경우, isProviderLinked = true, providerType = [KAKAO, NAVER...] 와 같이 값이 나오며 이메일은 전송되지 않습니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
