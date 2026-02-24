@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.global.security.jwt;
 
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.CustomOAuth2User;
 import io.jsonwebtoken.*;
@@ -22,6 +23,7 @@ public class JwtTokenProvider {
 
     //JWT 토큰 내 권한 정보를 담을 때 사용하는 key 값
     private static final String AUTHORITIES_KEY = "auth";
+    private static final String PROVIDER_KEY = "provider";
     //HTTP 헤더에 붙일 타입(Bearer {token})
     private static final String BEARER_TYPE = "Bearer";
     //AccessToken 만료 시간
@@ -43,17 +45,26 @@ public class JwtTokenProvider {
 
         // 로그인 종류에 따라 이메일(식별자) 추출
         String email;
+        String provider;
+
         Object principal = authentication.getPrincipal();
 
         if (principal instanceof CustomOAuth2User) {
+            CustomOAuth2User oAuth2User = (CustomOAuth2User) principal;
             // 소셜 로그인: CustomOAuth2User에서 이메일 추출
-            email = ((CustomOAuth2User) principal).getEmail();
+            email = oAuth2User.getEmail();
+
+            provider = oAuth2User.getProvider().name();
         } else if (principal instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) principal;
             // 일반 로그인: UserDetails의 username(email) 추출
-            email = ((CustomUserDetails) principal).getUsername();
+            email = userDetails.getUsername();
+
+            provider = userDetails.getProvider().name();
         } else {
             // 그 외의 경우 (기본값)
             email = authentication.getName();
+            provider = Provider.EMAIL.name();
         }
         //사용자 권한(ROLE_USER) 가져와서 문자열로 반환
         String authorities = authentication.getAuthorities().stream()
@@ -67,6 +78,7 @@ public class JwtTokenProvider {
         String accessToken = Jwts.builder()
                 .setSubject(email) // Payload "sub": 유저의 이메일(ID)
                 .claim(AUTHORITIES_KEY, authorities)  // Payload "auth": "ROLE_USER"
+                .claim(PROVIDER_KEY, provider)
                 .setExpiration(accessTokenExpireIn) // Payload "exp": 만료 시간
                 .signWith(key, SignatureAlgorithm.HS512) // Header "alg": HS512 알고리즘으로 서명
                 .compact();
@@ -117,5 +129,16 @@ public class JwtTokenProvider {
             //만료 토큰이라도 재발급(reissue) 시에는 누구인지 알아야 한다.
             return e.getClaims();
         }
+    }
+
+    public String getProvider(String token) {
+        Claims claims = parseClaims(token);
+        String provider = claims.get(PROVIDER_KEY, String.class);
+
+        if (provider == null || provider.isEmpty()) {
+            return Provider.EMAIL.name();
+        }
+
+        return provider;
     }
 }

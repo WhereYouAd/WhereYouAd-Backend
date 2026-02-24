@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.global.security.jwt;
 
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.AuthErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
@@ -22,6 +23,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findUserByEmail(email)
                 .orElseThrow(() -> new AppException(AuthErrorCode.USER_NOT_FOUND));
 
-        return new CustomUserDetails(user);
+        return new CustomUserDetails(user, Provider.EMAIL);
     }
 }

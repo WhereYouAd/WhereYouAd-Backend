@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.application.mapper;
 
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
@@ -31,5 +32,17 @@ public class UserConverter {
                 .providerId(oAuth2Response.getProviderId())
                 .provider(oAuth2Response.getProvider())
                 .build();
+    }
+
+    public static MyPageResponse toMyPageResponse(User user, String provider) {
+
+        return new MyPageResponse(user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getProfileImageUrl(),
+                user.getPhoneNumber(),
+                user.isEmailVerified(),
+                provider
+        );
     }
 }
