@@ -56,4 +56,9 @@ public class MetricFact extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
+
+    //추가 연관관계 -> Advertisement
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ad_id", nullable = false)
+    private Advertisement advertisement;
 }
