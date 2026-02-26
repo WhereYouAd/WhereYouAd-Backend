@@ -6,6 +6,7 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRe
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
@@ -32,7 +33,8 @@ public interface UserControllerDocs {
     @Operation(
             summary = "이메일 인증코드 전송 API",
             description = "입력받은 이메일로 인증코드를 전송합니다. 인증코드 재전송도 해당 API 를 호출합니다.\n\n" +
-                    "테스트용 이메일은 'test' 로 시작하거나 'example.com' 으로 끝나야합니다. 테스트용 이메일의 인증코드는 서버 로그로 확인 가능합니다."
+                    "테스트용 이메일은 'test' 로 시작하거나 'example.com' 으로 끝나야합니다. 테스트용 이메일의 인증코드는 서버 로그로 확인 가능합니다.\n\n" +
+                    "이미 소셜 로그인으로 가입된 이메일 값이 요청으로 들어올 경우, isProviderLinked = true, providerType = [KAKAO, NAVER...] 와 같이 값이 나오며 이메일은 전송되지 않습니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
@@ -59,7 +61,7 @@ public interface UserControllerDocs {
             @ApiResponse(responseCode = "400_2", description = "이메일 전송실패(이메일 오타 등)"),
             @ApiResponse(responseCode = "404_1", description = "해당 이메일로 가입한 회원 존재하지 않음")
     })
-    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request);
+    public ResponseEntity<DataResponse<PasswordResetResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request);
 
     @Operation(
             summary = "사용자 비밀번호 재설정 API",

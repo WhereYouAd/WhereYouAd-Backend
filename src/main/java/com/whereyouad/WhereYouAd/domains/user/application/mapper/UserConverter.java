@@ -1,11 +1,16 @@
 package com.whereyouad.WhereYouAd.domains.user.application.mapper;
 
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.OAuth2Response;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.OAuth2UserInfo;
+
+import java.util.List;
 
 public class UserConverter {
 
@@ -44,5 +49,28 @@ public class UserConverter {
                 user.isEmailVerified(),
                 provider
         );
+    }
+
+    public static EmailSentResponse toEmailSentResponseSuccess(String email) {
+        return new EmailSentResponse("인증 코드를 이메일로 전송했습니다",
+                email,
+                180L,
+                false,
+                null);
+    }
+
+    public static EmailSentResponse toEmailSentResponseFail(String email, List<Provider> providers) {
+        return new EmailSentResponse("이미 소셜 계정으로 가입된 이메일 입니다.",
+                email,
+                null,
+                true,
+                providers);
+    }
+
+    public static PasswordResetResponse toPasswordResetResponse(String email) {
+
+        return new PasswordResetResponse("인증 코드를 이메일로 전송했습니다.",
+                email,
+                180L);
     }
 }

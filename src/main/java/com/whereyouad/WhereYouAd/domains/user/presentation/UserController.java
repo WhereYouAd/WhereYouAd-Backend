@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailReque
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SmsRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
@@ -68,11 +69,11 @@ public class UserController implements UserControllerDocs {
     }
 
     @PostMapping("/password-reset/request")
-    public ResponseEntity<DataResponse<EmailSentResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request) {
-        EmailSentResponse emailSentResponse = emailService.sendEmailForPwd(request.email());
+    public ResponseEntity<DataResponse<PasswordResetResponse>> sendEmailForPwdReset(@RequestBody @Valid EmailRequest.Send request) {
+        PasswordResetResponse response = emailService.sendEmailForPwd(request.email());
 
         return ResponseEntity.ok(
-                DataResponse.from(emailSentResponse)
+                DataResponse.from(response)
         );
     }
 
