@@ -60,5 +60,5 @@ public class MetricFact extends BaseEntity {
     //추가 연관관계 -> Advertisement
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_id", nullable = false)
-    private Advertisement advertisement;
+    private AdContent adContent;
 }
