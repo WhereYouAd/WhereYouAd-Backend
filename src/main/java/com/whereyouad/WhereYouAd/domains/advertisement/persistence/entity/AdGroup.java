@@ -11,38 +11,28 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "adContent")
+@Table(name = "adGroup")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class AdContent extends BaseEntity {
+public class AdGroup extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ad_content_id")
+    @Column(name = "ad_group_id")
     private Long id;
 
-    private String trackingUrl;
+    private Long externalGroupId;
 
-    private String landingUrl;
+    private String name;
 
-    private String type;
+    private String targetingInfo;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @ColumnDefault("'ON_GOING'")
     private Status status;
 
-    private String cta;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ad_group_id")
-    private AdGroup adGroup;
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "provider", nullable = false)
-//    private Provider provider;
-
-//    private LocalDateTime startDate;
-//
-//    private LocalDateTime endDate;
+    @OneToMany(mappedBy = "adGroup", cascade = CascadeType.ALL)
+    private List<AdContent> adContents = new ArrayList<>();
 }

@@ -1,5 +1,5 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.domain.constant;
 
-public enum AdStatus {
+public enum Status {
     ON_GOING, PAUSED, OVER
 }
