@@ -6,9 +6,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Getter
 @Table(name = "adContent")
@@ -38,11 +35,11 @@ public class AdContent extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_group_id")
     private AdGroup adGroup;
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "provider", nullable = false)
-//    private Provider provider;
+    // @Enumerated(EnumType.STRING)
+    // @Column(name = "provider", nullable = false)
+    // private Provider provider;
 
-//    private LocalDateTime startDate;
-//
-//    private LocalDateTime endDate;
+    // private LocalDateTime startDate;
+    //
+    // private LocalDateTime endDate;
 }
