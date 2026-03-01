@@ -21,10 +21,10 @@ public class AdvertisementController implements AdvertisementControllerDocs {
 
     private final AdvertisementQueryService advertisementQueryService;
 
-    @GetMapping("/{projectId}/rankings/roas")
+    @GetMapping("/{orgId}/rankings/roas")
     public ResponseEntity<DataResponse<AdvertisementResponse.RankingROASList>> getRoasRanking(
             @AuthenticationPrincipal (expression = "userId") Long userId,
-            @PathVariable Long projectId,
+            @PathVariable Long orgId,
             @Valid @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Valid @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate)
     {
@@ -33,7 +33,7 @@ public class AdvertisementController implements AdvertisementControllerDocs {
         LocalDate adjustedStart = (startDate != null) ? startDate : adjustedEnd.minusMonths(1);
 
         AdvertisementResponse.RankingROASList response = advertisementQueryService.getRoasRanking(
-                userId, projectId, adjustedStart, adjustedEnd);
+                userId, orgId, adjustedStart, adjustedEnd);
 
         return ResponseEntity.ok(DataResponse.from(response));
     }

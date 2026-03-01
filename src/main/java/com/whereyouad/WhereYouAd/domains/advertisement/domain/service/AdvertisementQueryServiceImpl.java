@@ -7,10 +7,10 @@ import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementEx
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.RoasProjection;
+import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.project.exception.code.ProjectErrorCode;
-import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
-import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,14 +29,14 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public class AdvertisementQueryServiceImpl implements AdvertisementQueryService{
+public class AdvertisementQueryServiceImpl implements AdvertisementQueryService {
 
     private final MetricFactRepository metricFactRepository;
-    private final ProjectRepository projectRepository;
+    private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
 
     @Override
-    public AdvertisementResponse.RankingROASList getRoasRanking(Long userId, Long projectId, LocalDate startDate, LocalDate endDate) {
+    public AdvertisementResponse.RankingROASList getRoasRanking(Long userId, Long orgId, LocalDate startDate, LocalDate endDate) {
 
         // 1. 날짜 유효성 검사
         // 시작일이나 종료일이 미래인 경우
@@ -48,19 +48,20 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService{
             throw new AdvertisementException(AdvertisementErrorCode.INVALID_DATE_RANGE);
         }
 
-        // 2. 프로젝트 존재 여부 확인
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new AdvertisementException(ProjectErrorCode.PROJECT_NOT_FOUND));
+        // 2. 조직 존재 여부 확인
+        if (!orgRepository.existsById(orgId)) {
+            throw new AdvertisementException(OrgErrorCode.ORG_NOT_FOUND);
+        }
 
-        // 3. 요청 맴버의 해당 프로젝트에 대한 접근 권한 체크 (다른 조직의 프로젝트 접근 시도)
-        boolean isMember = orgMemberRepository.existsByUserIdAndOrganizationId(userId, project.getOrganization().getId());
+        // 3. 요청 멤버의 해당 조직에 대한 접근 권한 체크
+        boolean isMember = orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId);
         if (!isMember) {
             throw new AdvertisementException(ProjectErrorCode.ACCESS_FORBIDDEN);
         }
 
-        // 4. 현재 기간 성과 조회
-        List<RoasProjection> current = metricFactRepository.findRoasByProjectAndPeriod(
-                projectId,
+        // 4. 현재 기간 성과 조회 (해당 조직의 모든 프로젝트 포함)
+        List<RoasProjection> current = metricFactRepository.findRoasByOrgAndPeriod(
+                orgId,
                 startDate.atStartOfDay(),
                 endDate.atTime(23, 59, 59));
 
@@ -77,8 +78,8 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService{
         LocalDate prevEnd = endDate.minusDays(periodDays);
 
         // 6. 이전 동일 기간 성과 조회 (diffRate 계산을 위함)
-        List<RoasProjection> previous = metricFactRepository.findRoasByProjectAndPeriod(
-                projectId,
+        List<RoasProjection> previous = metricFactRepository.findRoasByOrgAndPeriod(
+                orgId,
                 prevStart.atStartOfDay(),
                 prevEnd.atTime(23, 59, 59));
 

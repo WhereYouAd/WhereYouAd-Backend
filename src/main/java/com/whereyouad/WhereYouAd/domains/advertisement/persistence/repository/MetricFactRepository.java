@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
 
-  // 특정 프로젝트(projectId)의 지정된 기간(start~end) 동안
+  // 특정 조직(orgId)에 속한 모든 프로젝트의 지정된 기간(start~end) 동안
   // 플랫폼(provider)별 총 매출액과 총 광고비를 합산하여 RoasProjection 형태로 조회
   @Query("""
       SELECT
@@ -19,13 +19,14 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
           SUM(mf.revenue) AS totalRevenue,
           SUM(mf.spend) AS totalSpend
       FROM MetricFact mf
-      WHERE mf.project.id = :projectId
+      JOIN mf.project p
+      WHERE p.organization.id = :orgId
         AND mf.timeBucket >= :start
         AND mf.timeBucket <= :end
       GROUP BY mf.provider
       """)
-  List<RoasProjection> findRoasByProjectAndPeriod(
-      @Param("projectId") Long projectId,
+  List<RoasProjection> findRoasByOrgAndPeriod(
+      @Param("orgId") Long orgId,
       @Param("start") LocalDateTime start,
       @Param("end") LocalDateTime end);
 }
