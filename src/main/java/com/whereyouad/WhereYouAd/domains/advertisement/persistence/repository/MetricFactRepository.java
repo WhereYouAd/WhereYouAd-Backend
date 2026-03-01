@@ -9,9 +9,10 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 
 public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
-    @Query("SELECT SUM(m.spend) FROM MetricFact m JOIN m.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId")
-    BigDecimal sumAllSpendsByUserId(@Param("userId") Long userId);
+    @Query("SELECT SUM(m.spend) FROM MetricFact m JOIN m.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId AND o.id = :orgId")
+    BigDecimal sumAllSpendsByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
 
-    @Query("SELECT SUM(m.spend) FROM MetricFact m JOIN m.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId AND m.provider = :provider")
-    BigDecimal sumSpendsByUserIdAndProvider(@Param("userId") Long userId, @Param("provider") Provider provider);
+    @Query("SELECT SUM(m.spend) FROM MetricFact m JOIN m.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId AND o.id = :orgId AND m.provider = :provider")
+    BigDecimal sumSpendsByUserIdAndOrgIdAndProvider(@Param("userId") Long userId, @Param("orgId") Long orgId,
+            @Param("provider") Provider provider);
 }

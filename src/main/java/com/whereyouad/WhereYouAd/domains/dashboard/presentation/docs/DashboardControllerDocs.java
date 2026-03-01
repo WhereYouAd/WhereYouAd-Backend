@@ -18,5 +18,6 @@ public interface DashboardControllerDocs {
         })
         public ResponseEntity<DataResponse<DashboardResponse.BudgetSummaryResponse>> getBudgetSummary(
                         @AuthenticationPrincipal(expression = "userId") Long userId,
+                        @RequestParam(name = "orgId") Long orgId,
                         @RequestParam(required = false, name = "providerType") String providerType);
 }

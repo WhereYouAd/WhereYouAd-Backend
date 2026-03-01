@@ -23,8 +23,9 @@ public class DashboardController implements DashboardControllerDocs {
     @GetMapping("/budgets")
     public ResponseEntity<DataResponse<DashboardResponse.BudgetSummaryResponse>> getBudgetSummary(
             @AuthenticationPrincipal(expression = "userId") Long userId,
+            @RequestParam(name = "orgId") Long orgId,
             @RequestParam(required = false, name = "providerType") String providerType) {
-        DashboardResponse.BudgetSummaryResponse budgetSummaryResponse = dashboardService.getBudgetSummary(userId,
+        DashboardResponse.BudgetSummaryResponse budgetSummaryResponse = dashboardService.getBudgetSummary(userId, orgId,
                 providerType);
         return ResponseEntity.ok(DataResponse.from(budgetSummaryResponse));
     }
