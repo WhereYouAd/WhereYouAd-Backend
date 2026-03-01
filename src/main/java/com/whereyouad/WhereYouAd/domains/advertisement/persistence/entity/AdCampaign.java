@@ -26,7 +26,8 @@ public class AdCampaign extends BaseEntity {
     @Column(name = "ad_campaign_id")
     private Long id;
 
-    private Long externalGroupId;
+    @Column(name = "external_campaign_id")
+    private String externalCampaignId;
 
     private String name;
 
