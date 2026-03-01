@@ -22,7 +22,8 @@ public class AdGroup extends BaseEntity {
     @Column(name = "ad_group_id")
     private Long id;
 
-    private Long externalGroupId;
+    @Column(name = "external_group_id")
+    private String externalGroupId;
 
     private String name;
 
