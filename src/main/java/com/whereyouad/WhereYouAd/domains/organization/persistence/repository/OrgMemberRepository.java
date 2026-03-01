@@ -62,4 +62,7 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
 
     // 조직 id에 해당하는 역할 인원 수 조회
     long countByOrganizationIdAndRole(Long orgId, OrgRole orgRole);
+
+    // 유저가 조직에 속하는지 확인
+    boolean existsByUserIdAndOrganizationId(Long userId, Long orgId);
 }
