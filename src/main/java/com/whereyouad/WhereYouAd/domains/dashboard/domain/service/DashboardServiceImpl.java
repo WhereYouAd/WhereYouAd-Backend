@@ -20,21 +20,21 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     @Transactional(readOnly = true)
-    public DashboardResponse.BudgetSummaryResponse getBudgetSummary(String providerType) {
+    public DashboardResponse.BudgetSummaryResponse getBudgetSummary(Long userId, String providerType) {
         Long totalBudget;
         BigDecimal totalSpendDec;
 
         // 통합 대시보드
         if (providerType == null || providerType.trim().isEmpty()) {
-            totalBudget = adCampaignRepository.sumAllBudgets();
-            totalSpendDec = metricFactRepository.sumAllSpends();
+            totalBudget = adCampaignRepository.sumAllBudgetsByUserId(userId);
+            totalSpendDec = metricFactRepository.sumAllSpendsByUserId(userId);
             providerType = "ALL";
         }
         // 플랫폼 대시보드
         else {
             Provider provider = Provider.valueOf(providerType.toUpperCase());
-            totalBudget = adCampaignRepository.sumBudgetsByProvider(provider);
-            totalSpendDec = metricFactRepository.sumSpendsByProvider(provider);
+            totalBudget = adCampaignRepository.sumBudgetsByUserIdAndProvider(userId, provider);
+            totalSpendDec = metricFactRepository.sumSpendsByUserIdAndProvider(userId, provider);
             providerType = provider.name();
         }
 

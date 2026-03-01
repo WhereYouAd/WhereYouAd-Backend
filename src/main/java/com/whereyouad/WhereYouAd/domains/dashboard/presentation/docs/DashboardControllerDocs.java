@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 public interface DashboardControllerDocs {
 
@@ -16,5 +17,6 @@ public interface DashboardControllerDocs {
                         @ApiResponse(responseCode = "401_1", description = "실패")
         })
         public ResponseEntity<DataResponse<DashboardResponse.BudgetSummaryResponse>> getBudgetSummary(
+                        @AuthenticationPrincipal(expression = "userId") Long userId,
                         @RequestParam(required = false, name = "providerType") String providerType);
 }

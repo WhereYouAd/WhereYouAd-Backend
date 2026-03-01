@@ -9,9 +9,9 @@ import org.springframework.data.repository.query.Param;
 public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     void findAllByProvider(String provider);
 
-    @Query("SELECT SUM(c.budget) FROM AdCampaign c")
-    Long sumAllBudgets();
+    @Query("SELECT SUM(c.budget) FROM AdCampaign c JOIN c.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId")
+    Long sumAllBudgetsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT SUM(c.budget) FROM AdCampaign c WHERE c.provider = :provider")
-    Long sumBudgetsByProvider(@Param("provider") Provider provider);
+    @Query("SELECT SUM(c.budget) FROM AdCampaign c JOIN c.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId AND c.provider = :provider")
+    Long sumBudgetsByUserIdAndProvider(@Param("userId") Long userId, @Param("provider") Provider provider);
 }
