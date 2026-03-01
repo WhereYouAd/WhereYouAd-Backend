@@ -4,6 +4,11 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Ad
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
+import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
+import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,24 +22,35 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final AdCampaignRepository adCampaignRepository;
     private final MetricFactRepository metricFactRepository;
+    private final OrgMemberRepository orgMemberRepository;
+    private final OrgRepository orgRepository;
 
     @Override
     @Transactional(readOnly = true)
-    public DashboardResponse.BudgetSummaryResponse getBudgetSummary(Long userId, String providerType) {
+    public DashboardResponse.BudgetSummaryResponse getBudgetSummary(Long userId, Long orgId, String providerType) {
+
+        // 조직 존재 여부 확인
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new DashboardException(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 유저가 해당 조직인지 검증
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new DashboardException(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
         Long totalBudget;
         BigDecimal totalSpendDec;
 
         // 통합 대시보드
         if (providerType == null || providerType.trim().isEmpty()) {
-            totalBudget = adCampaignRepository.sumAllBudgetsByUserId(userId);
-            totalSpendDec = metricFactRepository.sumAllSpendsByUserId(userId);
+            totalBudget = adCampaignRepository.sumAllBudgetsByUserIdAndOrgId(userId, orgId);
+            totalSpendDec = metricFactRepository.sumAllSpendsByUserIdAndOrgId(userId, orgId);
             providerType = "ALL";
         }
         // 플랫폼 대시보드
         else {
             Provider provider = Provider.valueOf(providerType.toUpperCase());
-            totalBudget = adCampaignRepository.sumBudgetsByUserIdAndProvider(userId, provider);
-            totalSpendDec = metricFactRepository.sumSpendsByUserIdAndProvider(userId, provider);
+            totalBudget = adCampaignRepository.sumBudgetsByUserIdAndOrgIdAndProvider(userId, orgId, provider);
+            totalSpendDec = metricFactRepository.sumSpendsByUserIdAndOrgIdAndProvider(userId, orgId, provider);
             providerType = provider.name();
         }
 

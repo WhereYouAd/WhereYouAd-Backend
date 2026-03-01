@@ -4,5 +4,5 @@ import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.Dash
 
 public interface DashboardService {
 
-    DashboardResponse.BudgetSummaryResponse getBudgetSummary(Long userId, String provider);
+    DashboardResponse.BudgetSummaryResponse getBudgetSummary(Long userId, Long orgId, String provider);
 }
