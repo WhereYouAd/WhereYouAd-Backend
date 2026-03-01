@@ -38,7 +38,12 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService{
     @Override
     public AdvertisementResponse.RankingROASList getRoasRanking(Long userId, Long projectId, LocalDate startDate, LocalDate endDate) {
 
-        // 1. 날짜 유효성 검사 (시작일보다 종료일이 더 빠른 경우)
+        // 1. 날짜 유효성 검사
+        // 시작일이나 종료일이 미래인 경우
+        if (startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now())) {
+            throw new AdvertisementException(AdvertisementErrorCode.INVALID_DATE_RANGE);
+        }
+        // 시작일보다 종료일이 더 빠른 경우
         if (startDate.isAfter(endDate)) {
             throw new AdvertisementException(AdvertisementErrorCode.INVALID_DATE_RANGE);
         }
