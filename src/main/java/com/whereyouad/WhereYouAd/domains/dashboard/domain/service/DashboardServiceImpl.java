@@ -132,22 +132,18 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         //최근 ~ 한달전 ROAS 값 계산하기 -> revenue / spend * 100
-        BigDecimal currTotalRevenue = currentProjection.getTotalRevenue();
-        BigDecimal currTotalSpend = currentProjection.getTotalSpend();
-        BigDecimal currentRoasBigDecimal = currTotalRevenue.divide(currTotalSpend, 4, RoundingMode.DOWN)
-                .multiply(new BigDecimal("100"))
-                .setScale(2, RoundingMode.DOWN); //-> 소수점 2번째까지만 남기고 반올림
+        BigDecimal currTotalRevenue = toZeroIfNull(currentProjection.getTotalRevenue());
+        BigDecimal currTotalSpend = toZeroIfNull(currentProjection.getTotalSpend());
+        BigDecimal currentRoasBigDecimal = safePercent(currTotalRevenue, currTotalSpend);
 
         //한달전 ~ 두달전 ROAS 값 계산 -> revenue / spend * 100
-        BigDecimal pastTotalRevenue = pastProjection.getTotalRevenue();
-        BigDecimal pastTotalSpend = pastProjection.getTotalSpend();
-        BigDecimal pastRoas = pastTotalRevenue.divide(pastTotalSpend, 4, RoundingMode.DOWN)
-                .multiply(new BigDecimal("100"))
-                .setScale(2, RoundingMode.DOWN); //-> 소수점 2번째 까지만 남기고 반올림
+        BigDecimal pastTotalRevenue = toZeroIfNull(pastProjection.getTotalRevenue());
+        BigDecimal pastTotalSpend = toZeroIfNull(pastProjection.getTotalSpend());
+        BigDecimal pastRoas = safePercent(pastTotalRevenue, pastTotalSpend);
 
         //전환율(CVR) 계산 -> totalConversions(전환수 합계) / totalClicks(클릭수 합계) * 100
-        double rawCurrentCvr = ((double) currentProjection.getTotalConversions() / currentProjection.getTotalClicks()) * 100.0;
-        double rawPastCvr =  ((double) pastProjection.getTotalConversions() / pastProjection.getTotalClicks()) * 100.0;
+        double rawCurrentCvr = safePercent(currentProjection.getTotalConversions(), currentProjection.getTotalClicks());
+        double rawPastCvr = safePercent(pastProjection.getTotalConversions(), pastProjection.getTotalClicks());
 
         //각각의 지표값 -> 클릭수(totalClicks), 노출수(totalImpressions), 전환율(currentCvr), 광고비 대비 매출(ROAS)
         Long totalClicks = currentProjection.getTotalClicks();
@@ -194,5 +190,28 @@ public class DashboardServiceImpl implements DashboardService {
 
         // 소수점 둘째 자리까지 버림 처리
         return Math.floor(changeRate * 100.0) / 100.0;
+    }
+
+    //지표 값이 null 일 경우 BigDecimal 의 0 으로 바꿔주는 메서드
+    private BigDecimal toZeroIfNull(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    //나눗셈 계산시 분모가 0 일 경우 나눗셈 시행하지 않고 0.00 반환
+    private BigDecimal safePercent(BigDecimal numerator, BigDecimal denominator) {
+        if (denominator == null || denominator.signum() == 0 || numerator == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.DOWN);
+        }
+        return numerator.divide(denominator, 4, RoundingMode.DOWN)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.DOWN);
+    }
+
+    //나눗셈 계산시 분모가 0 일 경우 나눗셈 시행하지 않고 0.00 반환
+    private double safePercent(Number numerator, Number denominator) {
+        double n = numerator == null ? 0.0 : numerator.doubleValue();
+        double d = denominator == null ? 0.0 : denominator.doubleValue();
+        if (d == 0.0) return 0.0;
+        return (n / d) * 100.0;
     }
 }
