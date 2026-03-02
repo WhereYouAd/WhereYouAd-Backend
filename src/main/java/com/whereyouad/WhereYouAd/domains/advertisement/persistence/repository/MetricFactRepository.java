@@ -3,16 +3,13 @@ package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
-import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
-
 
 public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     // 예산 조회용
@@ -23,13 +20,12 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     BigDecimal sumSpendsByUserIdAndOrgIdAndProvider(@Param("userId") Long userId, @Param("orgId") Long orgId,
             @Param("provider") Provider provider);
 
-
     //전체 지표 조회 로직에서 사용
     // 해당 프로젝트의 가장 최신 데이터 날짜를 가져오는 쿼리
     @Query("SELECT MAX(m.timeBucket) FROM MetricFact m")
     Optional<LocalDateTime> findLatestTimeBucket();
 
-    // 지정된 기간 동안의 projects 에 대한 모든 지표 합산
+    // orgId에 속한 모든 프로젝트의 지표를 지정된 기간 동안 합산
     @Query("SELECT " +
             "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
             "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
@@ -37,10 +33,11 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "COALESCE(SUM(m.spend), 0) AS totalSpend, " +
             "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
-            "WHERE m.project IN :projects " +
+            "JOIN m.project p " +
+            "WHERE p.organization.id = :orgId " +
             "AND m.timeBucket BETWEEN :startDate AND :endDate")
-    MetricSumProjection findMetricsSumByProjectsAndDateRange(
-            @Param("projects") List<Project> projects,
+    MetricSumProjection findMetricsSumByOrgIdAndDateRange(
+            @Param("orgId") Long orgId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );

@@ -13,8 +13,6 @@ import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCod
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.project.exception.code.ProjectErrorCode;
-import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
-import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @Transactional
@@ -33,7 +30,6 @@ public class DashboardServiceImpl implements DashboardService {
     private final MetricFactRepository metricFactRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
-    private final ProjectRepository projectRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -97,9 +93,6 @@ public class DashboardServiceImpl implements DashboardService {
             throw new AdvertisementException(ProjectErrorCode.ACCESS_FORBIDDEN);
         }
 
-        //해당 조직 내부 모든 Project 조회
-        List<Project> projects = projectRepository.findByOrganizationId(orgId);
-
         //DB 내부 Mock data 중 가장 최근의 timeBucket 값 추출
         LocalDateTime latestDate = metricFactRepository.findLatestTimeBucket()
                 .orElse(LocalDateTime.now());
@@ -109,19 +102,18 @@ public class DashboardServiceImpl implements DashboardService {
 
         LocalDateTime twoMonthsAgo = latestDate.minusMonths(2);
 
-
         MetricSumProjection currentProjection;
         MetricSumProjection pastProjection;
 
         if (providerType == null || providerType.trim().isEmpty()) { //providerType 입력 안됐으면, 조직 내 모든 데이터 집계
             //시간값들과 회원이 속한 project 리스트 기반 projection 으로 DB 에서
             //TotalImpressions, TotalClicks, TotalConversions, TotalSpend, TotalRevenue 를 집계해서 가져오기
-            currentProjection = metricFactRepository.findMetricsSumByProjectsAndDateRange(
-                    projects, oneMonthAgo, latestDate
+            currentProjection = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
+                    orgId, oneMonthAgo, latestDate
             ); //가장 최근 ~ 한달 전의 집계 projection
 
-            pastProjection = metricFactRepository.findMetricsSumByProjectsAndDateRange(
-                    projects, twoMonthsAgo, oneMonthAgo
+            pastProjection = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
+                    orgId, twoMonthsAgo, oneMonthAgo
             ); //한달전 ~ 두달전의 집계 projection
 
         } else { //providerType 이 있다면, 해당 provider 데이터 집계
