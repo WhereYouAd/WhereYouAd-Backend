@@ -1,19 +1,29 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementException;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
 import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
+import com.whereyouad.WhereYouAd.domains.project.exception.code.ProjectErrorCode;
+import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
+import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Transactional
@@ -24,6 +34,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final MetricFactRepository metricFactRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
+    private final ProjectRepository projectRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -71,5 +82,119 @@ public class DashboardServiceImpl implements DashboardService {
                 totalBudget,
                 totalSpend,
                 remainingBudget);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardResponse.AggregatedSummaryResponse getAggregatedMetrics(Long userId, Long orgId, String providerType) {
+        //Organization 존재 확인
+        if (!orgRepository.existsById(orgId)) {
+            throw new AdvertisementException(OrgErrorCode.ORG_NOT_FOUND);
+        }
+
+        //해당 회원이 조직에 속하는지 확인
+        boolean isMember = orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId);
+        if (!isMember) {
+            throw new AdvertisementException(ProjectErrorCode.ACCESS_FORBIDDEN);
+        }
+
+        //해당 조직 내부 모든 Project 조회
+        List<Project> projects = projectRepository.findByOrganizationId(orgId);
+
+        //DB 내부 Mock data 중 가장 최근의 timeBucket 값 추출
+        LocalDateTime latestDate = metricFactRepository.findLatestTimeBucket()
+                .orElse(LocalDateTime.now());
+
+        //DB 내부 Mock data 중 가장 최근의 timeBucket 값 기반 한달전, 두달전 기준 정립
+        LocalDateTime oneMonthAgo = latestDate.minusMonths(1);
+
+        LocalDateTime twoMonthsAgo = latestDate.minusMonths(2);
+
+
+        MetricSumProjection currentProjection;
+        MetricSumProjection pastProjection;
+
+        if (providerType == null || providerType.trim().isEmpty()) { //providerType 입력 안됐으면, 조직 내 모든 데이터 집계
+            //시간값들과 회원이 속한 project 리스트 기반 projection 으로 DB 에서
+            //TotalImpressions, TotalClicks, TotalConversions, TotalSpend, TotalRevenue 를 집계해서 가져오기
+            currentProjection = metricFactRepository.findMetricsSumByProjectsAndDateRange(
+                    projects, oneMonthAgo, latestDate
+            ); //가장 최근 ~ 한달 전의 집계 projection
+
+            pastProjection = metricFactRepository.findMetricsSumByProjectsAndDateRange(
+                    projects, twoMonthsAgo, oneMonthAgo
+            ); //한달전 ~ 두달전의 집계 projection
+
+        } else { //providerType 이 있다면, 해당 provider 데이터 집계
+            Provider provider = Provider.valueOf(providerType.toUpperCase());
+            currentProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
+                    orgId, provider, oneMonthAgo, latestDate);
+            pastProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
+                    orgId, provider, twoMonthsAgo, oneMonthAgo);
+        }
+
+        //최근 ~ 한달전 ROAS 값 계산하기 -> revenue / spend * 100
+        BigDecimal currTotalRevenue = currentProjection.getTotalRevenue();
+        BigDecimal currTotalSpend = currentProjection.getTotalSpend();
+        BigDecimal currentRoasBigDecimal = currTotalRevenue.divide(currTotalSpend, 4, RoundingMode.DOWN)
+                .multiply(new BigDecimal("100"))
+                .setScale(2, RoundingMode.DOWN); //-> 소수점 2번째까지만 남기고 반올림
+
+        //한달전 ~ 두달전 ROAS 값 계산 -> revenue / spend * 100
+        BigDecimal pastTotalRevenue = pastProjection.getTotalRevenue();
+        BigDecimal pastTotalSpend = pastProjection.getTotalSpend();
+        BigDecimal pastRoas = pastTotalRevenue.divide(pastTotalSpend, 4, RoundingMode.DOWN)
+                .multiply(new BigDecimal("100"))
+                .setScale(2, RoundingMode.DOWN); //-> 소수점 2번째 까지만 남기고 반올림
+
+        //전환율(CVR) 계산 -> totalConversions(전환수 합계) / totalClicks(클릭수 합계) * 100
+        double rawCurrentCvr = ((double) currentProjection.getTotalConversions() / currentProjection.getTotalClicks()) * 100.0;
+        double rawPastCvr =  ((double) pastProjection.getTotalConversions() / pastProjection.getTotalClicks()) * 100.0;
+
+        //각각의 지표값 -> 클릭수(totalClicks), 노출수(totalImpressions), 전환율(currentCvr), 광고비 대비 매출(ROAS)
+        Long totalClicks = currentProjection.getTotalClicks();
+        Long totalImpressions = currentProjection.getTotalImpressions();
+        double currentCvr = Math.floor(rawCurrentCvr * 100.0) / 100.0; //CVR 소수점 2번째자리까지만 파싱
+        double currentRoas = currentRoasBigDecimal.doubleValue(); //ROAS 소수점 2번째자리까지만 파싱된 BigDecimal -> double 로 형변환
+
+        //각 지표값의 변화율 -> 클릭수 변화율, 노출수 변화율, 전환율 변화율, ROAS 변화율
+        Double clickChangeRate = calculateChangeRate(currentProjection.getTotalClicks(), pastProjection.getTotalClicks());
+        Double impressionChangeRate = calculateChangeRate(currentProjection.getTotalImpressions(), pastProjection.getTotalImpressions());
+        Double cvrChangeRate = calculateChangeRate(rawCurrentCvr, rawPastCvr);
+        Double roasChangeRate = calculateChangeRate(currentRoasBigDecimal, pastRoas);
+
+        return DashboardConverter.toAggregatedSummary(
+                totalClicks,
+                clickChangeRate,
+                totalImpressions,
+                impressionChangeRate,
+                currentCvr,
+                cvrChangeRate,
+                currentRoas,
+                roasChangeRate
+                );
+    }
+
+    //변화율 계산 메서드
+    private Double calculateChangeRate(Number current, Number past) {
+        // null 방어 및 double 형변환
+        double currentVal = (current != null) ? current.doubleValue() : 0.0;
+        double pastVal = (past != null) ? past.doubleValue() : 0.0;
+
+        // Divide by Zero 방어 (과거 데이터가 0인 경우)
+        if (pastVal == 0.0) {
+            if (currentVal > 0.0) {
+                // 과거엔 0이었으나 현재 실적이 발생한 경우 (비즈니스 룰에 따라 100% 등으로 설정)
+                return 100.0;
+            }
+            // 둘 다 0이거나 데이터가 아예 없는 경우
+            return 0.0;
+        }
+
+        // 변화율 계산
+        double changeRate = ((currentVal - pastVal) / pastVal) * 100.0;
+
+        // 소수점 둘째 자리까지 버림 처리
+        return Math.floor(changeRate * 100.0) / 100.0;
     }
 }
