@@ -8,6 +8,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.pr
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
 import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashboardErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
@@ -124,7 +125,13 @@ public class DashboardServiceImpl implements DashboardService {
             ); //한달전 ~ 두달전의 집계 projection
 
         } else { //providerType 이 있다면, 해당 provider 데이터 집계
-            Provider provider = Provider.valueOf(providerType.toUpperCase());
+
+            Provider provider;
+            try { //providerType 에 잘못된 값이 입력되지 않았는지 검증
+                provider = Provider.valueOf(providerType.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
+            }
             currentProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
                     orgId, provider, oneMonthAgo, latestDate);
             pastProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
