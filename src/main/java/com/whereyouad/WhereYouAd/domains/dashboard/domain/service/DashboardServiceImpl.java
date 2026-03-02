@@ -1,11 +1,13 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
 import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashBoardErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @Transactional
@@ -71,5 +75,37 @@ public class DashboardServiceImpl implements DashboardService {
                 totalBudget,
                 totalSpend,
                 remainingBudget);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    // 지정된 날짜(startDate ~ endDate)동안의 진행 중(ON_GOING) 상태인 광고 개수를 찾는 메서드
+    public DashboardResponse.OngoingPlatformAdCountResponse getOngoingAdCountByProvider(
+        Long userId, Long orgId, LocalDate startDate, LocalDate endDate) {
+
+        // 1. 날짜 유효성 검사
+        // 시작일이나 종료일이 미래인 경우
+        if (startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now())) {
+            throw new DashboardException(DashBoardErrorCode.INVALID_DATE_RANGE);
+        }
+        // 시작일보다 종료일이 더 빠른 경우
+        if (startDate.isAfter(endDate)) {
+            throw new DashboardException(DashBoardErrorCode.INVALID_DATE_RANGE);
+        }
+
+        // 2. 조직 존재 여부 확인
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new DashboardException(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 3. 유저가 해당 조직 멤버인지 검증
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new DashboardException(DashBoardErrorCode.ACCESS_FORBIDDEN));
+
+        // 4. 진행 중인 광고 개수 세기
+        List<DashboardResponse.OngoingPlatformAdCount> providerCount = adCampaignRepository
+                .countOngoingAdsByProvider(orgId, Status.ON_GOING, startDate, endDate);
+
+        // 5. 변환 후 반환
+        return DashboardConverter.toOngoingPlatformAdCountResponse(providerCount, startDate, endDate);
     }
 }
