@@ -47,11 +47,11 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
 
     //orgId 와 provider 가 일치하는 지표에 대해 합산
     @Query("SELECT " +
-            "SUM(m.impressions) AS totalImpressions, " +
-            "SUM(m.clicks) AS totalClicks, " +
-            "SUM(m.conversions) AS totalConversions, " +
-            "SUM(m.spend) AS totalSpend, " +
-            "SUM(m.revenue) AS totalRevenue " +
+            "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
+            "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
+            "COALESCE(SUM(m.conversions), 0) AS totalConversions, " +
+            "COALESCE(SUM(m.spend), 0) AS totalSpend, " +
+            "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
             "JOIN m.project p " +
             "WHERE p.organization.id = :orgId " +
