@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementException;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
@@ -109,11 +110,11 @@ public class DashboardServiceImpl implements DashboardService {
             //시간값들과 회원이 속한 project 리스트 기반 projection 으로 DB 에서
             //TotalImpressions, TotalClicks, TotalConversions, TotalSpend, TotalRevenue 를 집계해서 가져오기
             currentProjection = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
-                    orgId, oneMonthAgo, latestDate
+                    orgId, oneMonthAgo, latestDate, Status.ON_GOING
             ); //가장 최근 ~ 한달 전의 집계 projection
 
             pastProjection = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
-                    orgId, twoMonthsAgo, oneMonthAgo
+                    orgId, twoMonthsAgo, oneMonthAgo, Status.ON_GOING
             ); //한달전 ~ 두달전의 집계 projection
 
         } else { //providerType 이 있다면, 해당 provider 데이터 집계
@@ -125,9 +126,9 @@ public class DashboardServiceImpl implements DashboardService {
                 throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
             }
             currentProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
-                    orgId, provider, oneMonthAgo, latestDate);
+                    orgId, provider, oneMonthAgo, latestDate, Status.ON_GOING);
             pastProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
-                    orgId, provider, twoMonthsAgo, oneMonthAgo);
+                    orgId, provider, twoMonthsAgo, oneMonthAgo, Status.ON_GOING);
         }
 
         //최근 ~ 한달전 ROAS 값 계산하기 -> revenue / spend * 100

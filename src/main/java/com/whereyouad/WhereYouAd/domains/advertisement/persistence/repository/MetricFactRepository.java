@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
@@ -38,13 +39,14 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "JOIN ac.adGroup ag " +
             "JOIN ag.adCampaign camp " +
             "WHERE p.organization.id = :orgId " +
-            "AND camp.status = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status.ON_GOING " +
-            "AND m.timeBucket BETWEEN :startDate AND :endDate")
+            "AND camp.status = :status " +
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate")
     MetricSumProjection findMetricsSumByOrgIdAndDateRange(
             @Param("orgId") Long orgId,
             @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate
-    );
+            @Param("endDate") LocalDateTime endDate,
+            @Param("status") Status status
+            );
 
     //orgId 와 provider 가 일치하고 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표에 대해 지정된 기간 범위 합산
     @Query("SELECT " +
@@ -60,12 +62,13 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "JOIN ag.adCampaign camp " +
             "WHERE p.organization.id = :orgId " +
             "AND m.provider = :provider " +
-            "AND camp.status = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status.ON_GOING " +
-            "AND m.timeBucket BETWEEN :startDate AND :endDate")
+            "AND camp.status = :status " +
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate")
     MetricSumProjection findMetricsSumByOrgIdAndProvider(
             @Param("orgId") Long orgId,
             @Param("provider") Provider provider,
             @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate
+            @Param("endDate") LocalDateTime endDate,
+            @Param("status") Status status
     );
 }
