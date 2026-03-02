@@ -90,7 +90,7 @@ public class DashboardServiceImpl implements DashboardService {
         //해당 회원이 조직에 속하는지 확인
         boolean isMember = orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId);
         if (!isMember) {
-            throw new AdvertisementException(ProjectErrorCode.ACCESS_FORBIDDEN);
+            throw new DashboardException(ProjectErrorCode.ACCESS_FORBIDDEN);
         }
 
         //DB 내부 Mock data 중 가장 최근의 timeBucket 값 추출
@@ -145,8 +145,8 @@ public class DashboardServiceImpl implements DashboardService {
         double rawPastCvr = safePercent(pastProjection.getTotalConversions(), pastProjection.getTotalClicks());
 
         //각각의 지표값 -> 클릭수(totalClicks), 노출수(totalImpressions), 전환율(currentCvr), 광고비 대비 매출(ROAS)
-        Long totalClicks = currentProjection.getTotalClicks();
-        Long totalImpressions = currentProjection.getTotalImpressions();
+        Long totalClicks = currentProjection.getTotalClicks() != null ? currentProjection.getTotalClicks() : 0L;
+        Long totalImpressions = currentProjection.getTotalImpressions() != null ? currentProjection.getTotalImpressions() : 0L;
         double currentCvr = Math.floor(rawCurrentCvr * 100.0) / 100.0; //CVR 소수점 2번째자리까지만 파싱
         double currentRoas = currentRoasBigDecimal.doubleValue(); //ROAS 소수점 2번째자리까지만 파싱된 BigDecimal -> double 로 형변환
 
@@ -188,7 +188,9 @@ public class DashboardServiceImpl implements DashboardService {
         double changeRate = ((currentVal - pastVal) / pastVal) * 100.0;
 
         // 소수점 둘째 자리까지 버림 처리
-        return Math.floor(changeRate * 100.0) / 100.0;
+        return BigDecimal.valueOf(changeRate)
+                .setScale(2, RoundingMode.DOWN)
+                .doubleValue();
     }
 
     //지표 값이 null 일 경우 BigDecimal 의 0 으로 바꿔주는 메서드
