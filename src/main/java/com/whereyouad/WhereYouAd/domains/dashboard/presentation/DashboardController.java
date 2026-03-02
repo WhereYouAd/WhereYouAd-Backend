@@ -1,6 +1,5 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.presentation;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.domain.service.DashboardService;
 import com.whereyouad.WhereYouAd.domains.dashboard.presentation.docs.DashboardControllerDocs;
