@@ -30,8 +30,8 @@ public class MetricFact extends BaseEntity {
     @Column(name = "time_bucket", nullable = false)
     private LocalDateTime timeBucket; // 집계 단위 시작 시간
 
-//    @Column(name = "dimension_type")
-//    private String dimensionType;
+    // @Column(name = "dimension_type")
+    // private String dimensionType;
 
     @Column(name = "impressions")
     private Long impressions; // 노출수
@@ -57,7 +57,7 @@ public class MetricFact extends BaseEntity {
     @JoinColumn(name = "project_id")
     private Project project;
 
-    //추가 연관관계 -> Advertisement
+    // 추가 연관관계 -> Advertisement
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_content_id", nullable = false)
     private AdContent adContent;
