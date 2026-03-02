@@ -25,7 +25,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     @Query("SELECT MAX(m.timeBucket) FROM MetricFact m")
     Optional<LocalDateTime> findLatestTimeBucket();
 
-    // orgId에 속한 모든 프로젝트의 지표를 지정된 기간 동안 합산
+    // orgId에 속한 모든 프로젝트의 지표중 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표를 지정된 기간 범위 합산
     @Query("SELECT " +
             "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
             "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
@@ -34,7 +34,11 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
             "JOIN m.project p " +
+            "JOIN m.adContent ac " +
+            "JOIN ac.adGroup ag " +
+            "JOIN ag.adCampaign camp " +
             "WHERE p.organization.id = :orgId " +
+            "AND camp.status = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status.ON_GOING " +
             "AND m.timeBucket BETWEEN :startDate AND :endDate")
     MetricSumProjection findMetricsSumByOrgIdAndDateRange(
             @Param("orgId") Long orgId,
@@ -42,7 +46,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("endDate") LocalDateTime endDate
     );
 
-    //orgId 와 provider 가 일치하는 지표에 대해 합산
+    //orgId 와 provider 가 일치하고 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표에 대해 지정된 기간 범위 합산
     @Query("SELECT " +
             "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
             "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
@@ -51,8 +55,12 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
             "JOIN m.project p " +
+            "JOIN m.adContent ac " +
+            "JOIN ac.adGroup ag " +
+            "JOIN ag.adCampaign camp " +
             "WHERE p.organization.id = :orgId " +
             "AND m.provider = :provider " +
+            "AND camp.status = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status.ON_GOING " +
             "AND m.timeBucket BETWEEN :startDate AND :endDate")
     MetricSumProjection findMetricsSumByOrgIdAndProvider(
             @Param("orgId") Long orgId,
