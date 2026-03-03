@@ -110,7 +110,7 @@ jwt:
 
 # 7. OAuth2 로그인 성공 후 프론트엔드 리다이렉트 URL
 oauth2:
-  redirect-url: ${OAUTH2_REDIRECT_URL:http://localhost:3000/oauth2/redirect}
+  redirect-현url: ${OAUTH2_REDIRECT_URL:http://localhost:3000/oauth2/redirect}
 
 # 8. SMS 인증
 coolSms:
