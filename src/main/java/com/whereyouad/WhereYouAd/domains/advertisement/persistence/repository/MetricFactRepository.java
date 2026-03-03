@@ -35,12 +35,15 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
             "JOIN m.project p " +
-            "JOIN m.adContent ac " +
-            "JOIN ac.adGroup ag " +
-            "JOIN ag.adCampaign camp " +
             "WHERE p.organization.id = :orgId " +
-            "AND camp.status = :status " +
-            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate")
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate " +
+            "AND m.adContent.id IN (" +
+            "   SELECT ac.id " +
+            "   FROM AdContent ac " +
+            "   JOIN ac.adGroup ag " +
+            "   JOIN ag.adCampaign camp " +
+            "   WHERE camp.status = :status" + ")"
+            )
     MetricSumProjection findMetricsSumByOrgIdAndDateRange(
             @Param("orgId") Long orgId,
             @Param("startDate") LocalDateTime startDate,
@@ -57,13 +60,16 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
             "JOIN m.project p " +
-            "JOIN m.adContent ac " +
-            "JOIN ac.adGroup ag " +
-            "JOIN ag.adCampaign camp " +
             "WHERE p.organization.id = :orgId " +
             "AND m.provider = :provider " +
-            "AND camp.status = :status " +
-            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate")
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate " +
+            "AND m.adContent.id IN (" +
+            "   SELECT ac.id " +
+            "   FROM AdContent ac " +
+            "   JOIN ac.adGroup ag " +
+            "   JOIN ag.adCampaign camp " +
+            "   WHERE camp.status = :status" + ")"
+            )
     MetricSumProjection findMetricsSumByOrgIdAndProvider(
             @Param("orgId") Long orgId,
             @Param("provider") Provider provider,
