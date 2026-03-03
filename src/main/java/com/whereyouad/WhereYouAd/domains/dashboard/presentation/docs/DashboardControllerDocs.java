@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,7 +29,6 @@ public interface DashboardControllerDocs {
             @RequestParam(name = "orgId") Long orgId,
             @RequestParam(required = false, name = "providerType") String providerType
     );
-
 
 
     @Operation(
@@ -77,4 +77,20 @@ public interface DashboardControllerDocs {
             @Parameter(description = "조회 시작일 (yyyy-MM-dd)") LocalDate startDate,
             @Parameter(description = "조회 종료일 (yyyy-MM-dd)") LocalDate endDate
     );
+
+        @Operation(
+                summary = "대시보드 - 진행 중인 광고 수 provider별 조회 API",
+                description = "조직 내 현재 진행 중인(status=ON_GOING, 기간 포함) 광고를 플랫폼별로 집계해 반환. startDate/endDate 미제공 시 오늘 기준으로 조회."
+        )
+        @ApiResponses({
+                @ApiResponse(responseCode = "200", description = "성공"),
+                @ApiResponse(responseCode = "401", description = "인증 실패"),
+                @ApiResponse(responseCode = "404", description = "조직 없음 또는 멤버 아님")
+        })
+        ResponseEntity<DataResponse<DashboardResponse.OngoingPlatformAdCountResponse>> getOngoingAdCount(
+                @AuthenticationPrincipal(expression = "userId") Long userId,
+                @PathVariable Long orgId,
+                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+        );
 }

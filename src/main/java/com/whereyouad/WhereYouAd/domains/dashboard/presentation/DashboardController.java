@@ -45,6 +45,22 @@ public class DashboardController implements DashboardControllerDocs {
         return ResponseEntity.ok(DataResponse.from(budgetSummaryResponse));
     }
 
+    @GetMapping("/{orgId}/ad-count")
+    public ResponseEntity<DataResponse<DashboardResponse.OngoingPlatformAdCountResponse>> getOngoingAdCount(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate)
+    {
+        // 조회 기간 설정이 없으면 오늘부터 최근 1개월 데이터 조회
+        LocalDate adjustedEnd = (endDate != null) ? endDate : LocalDate.now();
+        LocalDate adjustedStart = (startDate != null) ? startDate : adjustedEnd.minusMonths(1);
+
+        DashboardResponse.OngoingPlatformAdCountResponse response = dashboardService.getOngoingAdCountByProvider(
+                userId, orgId, adjustedStart, adjustedEnd);
+
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
     @GetMapping("/{orgId}/rankings/roas")
     public ResponseEntity<DataResponse<DashboardResponse.RankingROASList>> getRoasRanking(
             @AuthenticationPrincipal (expression = "userId") Long userId,

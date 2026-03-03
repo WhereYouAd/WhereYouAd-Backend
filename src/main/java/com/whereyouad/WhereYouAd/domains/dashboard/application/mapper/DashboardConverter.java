@@ -3,6 +3,9 @@ package com.whereyouad.WhereYouAd.domains.dashboard.application.mapper;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import java.math.BigDecimal;
 
 public class DashboardConverter {
@@ -36,5 +39,16 @@ public class DashboardConverter {
     {
         return new DashboardResponse.AggregatedSummaryResponse(clicks, clickChangeRate, impressions, impressionChangeRate,
                 cvr, cvrChangeRate, roas, roasChangeRate);
+    }
+
+    public static DashboardResponse.OngoingPlatformAdCountResponse toOngoingPlatformAdCountResponse(
+            List<DashboardResponse.OngoingPlatformAdCount> providerCount,
+            LocalDate startDate,
+            LocalDate endDate)
+    {
+        long totalCount = providerCount.stream()
+                .mapToLong(DashboardResponse.OngoingPlatformAdCount::count)
+                .sum();
+        return new DashboardResponse.OngoingPlatformAdCountResponse(startDate, endDate, totalCount, providerCount);
     }
 }

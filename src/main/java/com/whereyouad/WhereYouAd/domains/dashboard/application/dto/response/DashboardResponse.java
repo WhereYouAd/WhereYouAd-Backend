@@ -45,4 +45,17 @@ public class DashboardResponse {
             Double ROAS, //광고비 대비 매출
             Double ROASChangeRate //광고비 대비 매출 변화율
     ) {}
+
+    // 현재 진행 중인 모든 플랫폼의 광고 개수 반환 응답
+    public record OngoingPlatformAdCountResponse(
+            LocalDate startDate,
+            LocalDate endDate,
+            Long totalCount,
+            List<OngoingPlatformAdCount> providerCount
+    ) {}
+    // 각 플랫폼에 해당하는 광고 개수
+    public record OngoingPlatformAdCount(
+            Provider provider,
+            Long count
+    ) {}
 }

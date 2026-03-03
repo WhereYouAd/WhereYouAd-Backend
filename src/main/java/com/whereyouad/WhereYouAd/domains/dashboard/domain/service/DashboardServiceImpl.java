@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
@@ -179,56 +181,9 @@ public class DashboardServiceImpl implements DashboardService {
                 );
     }
 
-    //변화율 계산 메서드
-    private Double calculateChangeRate(Number current, Number past) {
-        // null 방어 및 double 형변환
-        double currentVal = (current != null) ? current.doubleValue() : 0.0;
-        double pastVal = (past != null) ? past.doubleValue() : 0.0;
-
-        // Divide by Zero 방어 (과거 데이터가 0인 경우)
-        if (pastVal == 0.0) {
-            if (currentVal > 0.0) {
-                // 과거엔 0이었으나 현재 실적이 발생한 경우 (비즈니스 룰에 따라 100% 등으로 설정)
-                return 100.0;
-            }
-            // 둘 다 0이거나 데이터가 아예 없는 경우
-            return 0.0;
-        }
-
-        // 변화율 계산
-        double changeRate = ((currentVal - pastVal) / pastVal) * 100.0;
-
-        // 소수점 둘째 자리까지 버림 처리
-        return BigDecimal.valueOf(changeRate)
-                .setScale(2, RoundingMode.DOWN)
-                .doubleValue();
-    }
-
-    //지표 값이 null 일 경우 BigDecimal 의 0 으로 바꿔주는 메서드
-    private BigDecimal toZeroIfNull(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
-    }
-
-    //나눗셈 계산시 분모가 0 일 경우 나눗셈 시행하지 않고 0.00 반환
-    private BigDecimal safePercent(BigDecimal numerator, BigDecimal denominator) {
-        if (denominator == null || denominator.signum() == 0 || numerator == null) {
-            return BigDecimal.ZERO.setScale(2, RoundingMode.DOWN);
-        }
-        return numerator.divide(denominator, 4, RoundingMode.DOWN)
-                .multiply(BigDecimal.valueOf(100))
-                .setScale(2, RoundingMode.DOWN);
-    }
-
-    //나눗셈 계산시 분모가 0 일 경우 나눗셈 시행하지 않고 0.00 반환
-    private double safePercent(Number numerator, Number denominator) {
-        double n = numerator == null ? 0.0 : numerator.doubleValue();
-        double d = denominator == null ? 0.0 : denominator.doubleValue();
-        if (d == 0.0) return 0.0;
-        return (n / d) * 100.0;
-    }
-
     @Override
     @Transactional(readOnly = true)
+    // 특정 조직의 전체 광고에 대한 기간별 ROAS 성과 순위 조회
     public DashboardResponse.RankingROASList getRoasRanking(Long userId, Long orgId, LocalDate startDate, LocalDate endDate) {
 
         // 1. 날짜 유효성 검사
@@ -314,10 +269,42 @@ public class DashboardServiceImpl implements DashboardService {
         return new DashboardResponse.RankingROASList(startDate, endDate, rankings);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    // 지정된 날짜(startDate ~ endDate)동안의 진행 중(ON_GOING) 상태인 광고 개수를 찾는 메서드
+    public DashboardResponse.OngoingPlatformAdCountResponse getOngoingAdCountByProvider(
+            Long userId, Long orgId, LocalDate startDate, LocalDate endDate) {
+
+        // 1. 날짜 유효성 검사
+        // 시작일이나 종료일이 미래인 경우
+        if (startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now())) {
+            throw new DashboardException(DashboardErrorCode.INVALID_DATE_RANGE);
+        }
+        // 시작일보다 종료일이 더 빠른 경우
+        if (startDate.isAfter(endDate)) {
+            throw new DashboardException(DashboardErrorCode.INVALID_DATE_RANGE);
+        }
+
+        // 2. 조직 존재 여부 확인
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new DashboardException(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 3. 유저가 해당 조직 멤버인지 검증
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new DashboardException(DashboardErrorCode.ACCESS_FORBIDDEN));
+
+        // 4. 진행 중인 광고 개수 세기
+        List<DashboardResponse.OngoingPlatformAdCount> providerCount = adCampaignRepository
+                .countOngoingAdsByProvider(orgId, Status.ON_GOING, startDate, endDate);
+
+        // 5. 변환 후 반환
+        return DashboardConverter.toOngoingPlatformAdCountResponse(providerCount, startDate, endDate);
+    }
 
 
 
-    //------------------- private 계산 메서드 --------------------
+
+    //------------------- private 내부 계산 메서드 --------------------
 
 
     // ROAS = (revenue / spend) * 100
@@ -347,5 +334,53 @@ public class DashboardServiceImpl implements DashboardService {
         // 변화율 계산 후 반환
         double rate = ((currentRoas - prevRoas) / prevRoas) * 100.0;
         return (int) Math.round(rate);
+    }
+
+    //변화율 계산 메서드
+    private Double calculateChangeRate(Number current, Number past) {
+        // null 방어 및 double 형변환
+        double currentVal = (current != null) ? current.doubleValue() : 0.0;
+        double pastVal = (past != null) ? past.doubleValue() : 0.0;
+
+        // Divide by Zero 방어 (과거 데이터가 0인 경우)
+        if (pastVal == 0.0) {
+            if (currentVal > 0.0) {
+                // 과거엔 0이었으나 현재 실적이 발생한 경우 (비즈니스 룰에 따라 100% 등으로 설정)
+                return 100.0;
+            }
+            // 둘 다 0이거나 데이터가 아예 없는 경우
+            return 0.0;
+        }
+
+        // 변화율 계산
+        double changeRate = ((currentVal - pastVal) / pastVal) * 100.0;
+
+        // 소수점 둘째 자리까지 버림 처리
+        return BigDecimal.valueOf(changeRate)
+                .setScale(2, RoundingMode.DOWN)
+                .doubleValue();
+    }
+
+    //지표 값이 null 일 경우 BigDecimal 의 0 으로 바꿔주는 메서드
+    private BigDecimal toZeroIfNull(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    //나눗셈 계산시 분모가 0 일 경우 나눗셈 시행하지 않고 0.00 반환
+    private BigDecimal safePercent(BigDecimal numerator, BigDecimal denominator) {
+        if (denominator == null || denominator.signum() == 0 || numerator == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.DOWN);
+        }
+        return numerator.divide(denominator, 4, RoundingMode.DOWN)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.DOWN);
+    }
+
+    //나눗셈 계산시 분모가 0 일 경우 나눗셈 시행하지 않고 0.00 반환
+    private double safePercent(Number numerator, Number denominator) {
+        double n = numerator == null ? 0.0 : numerator.doubleValue();
+        double d = denominator == null ? 0.0 : denominator.doubleValue();
+        if (d == 0.0) return 0.0;
+        return (n / d) * 100.0;
     }
 }
