@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum AdvertisementErrorCode implements BaseErrorCode {
 
-    // TODO: 에러 코드 추가
+    // 400
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "AD_400_1", "날짜 입력이 잘못되었습니다."),
     ;
 
     private final HttpStatus httpStatus;
