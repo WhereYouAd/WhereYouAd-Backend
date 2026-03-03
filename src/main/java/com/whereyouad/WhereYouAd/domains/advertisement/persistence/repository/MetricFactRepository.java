@@ -1,12 +1,20 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.RoasProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import java.util.List;
 
 public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     // 예산 조회용
@@ -16,4 +24,84 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     @Query("SELECT SUM(m.spend) FROM MetricFact m JOIN m.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId AND o.id = :orgId AND m.provider = :provider AND m.adContent.adGroup.adCampaign.status = 'ON_GOING'")
     BigDecimal sumSpendsByUserIdAndOrgIdAndProvider(@Param("userId") Long userId, @Param("orgId") Long orgId,
             @Param("provider") Provider provider);
+
+    //전체 지표 조회 로직에서 사용
+    // 해당 프로젝트의 가장 최신 데이터 날짜를 가져오는 쿼리
+    @Query("SELECT MAX(m.timeBucket) FROM MetricFact m")
+    Optional<LocalDateTime> findLatestTimeBucket();
+
+    // orgId에 속한 모든 프로젝트의 지표중 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표를 지정된 기간 범위 합산
+    @Query("SELECT " +
+            "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
+            "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
+            "COALESCE(SUM(m.conversions), 0) AS totalConversions, " +
+            "COALESCE(SUM(m.spend), 0) AS totalSpend, " +
+            "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
+            "FROM MetricFact m " +
+            "JOIN m.project p " +
+            "WHERE p.organization.id = :orgId " +
+            "AND p.organization.status = :orgStatus " +
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate " +
+            "AND m.adContent.id IN (" +
+            "   SELECT ac.id " +
+            "   FROM AdContent ac " +
+            "   JOIN ac.adGroup ag " +
+            "   JOIN ag.adCampaign camp " +
+            "   WHERE camp.status = :status" + ")"
+            )
+    MetricSumProjection findMetricsSumByOrgIdAndDateRange(
+            @Param("orgId") Long orgId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("orgStatus") OrgStatus orgStatus,
+            @Param("status") Status status
+            );
+
+    //orgId 와 provider 가 일치하고 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표에 대해 지정된 기간 범위 합산
+    @Query("SELECT " +
+            "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
+            "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
+            "COALESCE(SUM(m.conversions), 0) AS totalConversions, " +
+            "COALESCE(SUM(m.spend), 0) AS totalSpend, " +
+            "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
+            "FROM MetricFact m " +
+            "JOIN m.project p " +
+            "WHERE p.organization.id = :orgId " +
+            "AND p.organization.status = :orgStatus " +
+            "AND m.provider = :provider " +
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate " +
+            "AND m.adContent.id IN (" +
+            "   SELECT ac.id " +
+            "   FROM AdContent ac " +
+            "   JOIN ac.adGroup ag " +
+            "   JOIN ag.adCampaign camp " +
+            "   WHERE camp.status = :status" + ")"
+            )
+    MetricSumProjection findMetricsSumByOrgIdAndProvider(
+            @Param("orgId") Long orgId,
+            @Param("provider") Provider provider,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("orgStatus") OrgStatus orgStatus,
+            @Param("status") Status status
+    );
+
+  // 특정 조직(orgId)에 속한 모든 프로젝트의 지정된 기간(start~end) 동안
+  // 플랫폼(provider)별 총 매출액과 총 광고비를 합산하여 RoasProjection 형태로 조회
+  @Query("""
+      SELECT
+          mf.provider AS provider,
+          SUM(mf.revenue) AS totalRevenue,
+          SUM(mf.spend) AS totalSpend
+      FROM MetricFact mf
+      JOIN mf.project p
+      WHERE p.organization.id = :orgId
+        AND mf.timeBucket >= :start
+        AND mf.timeBucket <= :end
+      GROUP BY mf.provider
+      """)
+  List<RoasProjection> findRoasByOrgAndPeriod(
+      @Param("orgId") Long orgId,
+      @Param("start") LocalDateTime start,
+      @Param("end") LocalDateTime end);
 }
