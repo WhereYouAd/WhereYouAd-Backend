@@ -8,6 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public class AdvertisementQueryServiceImpl implements AdvertisementQueryService{
+public class AdvertisementQueryServiceImpl implements AdvertisementQueryService {
 
 }
