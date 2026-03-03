@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -36,6 +37,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "FROM MetricFact m " +
             "JOIN m.project p " +
             "WHERE p.organization.id = :orgId " +
+            "AND p.organization.status = :orgStatus " +
             "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate " +
             "AND m.adContent.id IN (" +
             "   SELECT ac.id " +
@@ -48,6 +50,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("orgId") Long orgId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
+            @Param("orgStatus") OrgStatus orgStatus,
             @Param("status") Status status
             );
 
@@ -61,6 +64,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "FROM MetricFact m " +
             "JOIN m.project p " +
             "WHERE p.organization.id = :orgId " +
+            "AND p.organization.status = :orgStatus " +
             "AND m.provider = :provider " +
             "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate " +
             "AND m.adContent.id IN (" +
@@ -75,6 +79,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("provider") Provider provider,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
+            @Param("orgStatus") OrgStatus orgStatus,
             @Param("status") Status status
     );
 }
