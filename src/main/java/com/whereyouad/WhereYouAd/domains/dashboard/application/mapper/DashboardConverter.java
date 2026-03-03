@@ -28,4 +28,13 @@ public class DashboardConverter {
                 totalRevenue != null ? totalRevenue.longValue() : 0L,
                 totalSpend != null ? totalSpend.longValue() : 0L);
     }
+
+    public static DashboardResponse.AggregatedSummaryResponse toAggregatedSummary(
+            Long clicks, Double clickChangeRate, Long impressions, Double impressionChangeRate,
+            Double cvr, Double cvrChangeRate, Double roas, Double roasChangeRate
+    )
+    {
+        return new DashboardResponse.AggregatedSummaryResponse(clicks, clickChangeRate, impressions, impressionChangeRate,
+                cvr, cvrChangeRate, roas, roasChangeRate);
+    }
 }

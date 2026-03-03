@@ -21,6 +21,20 @@ public class DashboardController implements DashboardControllerDocs {
 
     private final DashboardService dashboardService;
 
+    @GetMapping("/{orgId}/metrics")
+    public ResponseEntity<DataResponse<DashboardResponse.AggregatedSummaryResponse>> getMetricsSummary(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String providerType
+    )
+    {
+        DashboardResponse.AggregatedSummaryResponse response = dashboardService.getAggregatedMetrics(userId, orgId, providerType);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
     @GetMapping("/budgets")
     public ResponseEntity<DataResponse<DashboardResponse.BudgetSummaryResponse>> getBudgetSummary(
             @AuthenticationPrincipal(expression = "userId") Long userId,
