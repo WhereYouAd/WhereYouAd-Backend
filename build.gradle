@@ -65,6 +65,9 @@ dependencies {
 
 	// Dotenv
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+
+	// Spring Cloud AWS (S3)
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.4.2'
 }
 
 tasks.named('test') {
