@@ -26,10 +26,12 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
     private final OrgMemberRepository orgMemberRepository;
 
     @Override
-    public AdvertisementResponse.AdContentInfoResponse readAdContent(Long userId, Long orgId, Long projectId, Long adContentId) {
+    public AdvertisementResponse.AdContentInfoResponse readAdContent(Long userId, Long orgId, Long projectId,
+            Long adContentId) {
         // 유저가 해당 조직인지 검증 (권한 검증)
-        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+        if (!orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
+        }
 
         // 조직, 프로젝트와의 무결성 검증 및 조회
         AdContent adContent = adContentRepository.findByIdWithValidation(adContentId, projectId, orgId)
@@ -45,8 +47,9 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
     @Override
     public AdvertisementResponse.AdContentInfosResponse readAdContents(Long userId, Long orgId, Long projectId) {
         // 유저가 해당 조직인지 검증 (권한 검증)
-        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+        if (!orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
+        }
 
         List<AdContent> adContents = adContentRepository.findAllByIdWithValidation(projectId, orgId);
 
@@ -59,10 +62,12 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
     }
 
     @Override
-    public AdvertisementResponse.AdGroupInfoResponse readAdGroup(Long userId, Long orgId, Long projectId, Long adContentId) {
+    public AdvertisementResponse.AdGroupInfoResponse readAdGroup(Long userId, Long orgId, Long projectId,
+            Long adContentId) {
         // 유저가 해당 조직인지 검증 (권한 검증)
-        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+        if (!orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
+        }
 
         // 조직, 프로젝트와의 무결성 검증 및 조회
         AdContent adContent = adContentRepository.findByIdWithValidation(adContentId, projectId, orgId)
