@@ -50,7 +50,12 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
 
         List<AdContent> adContents = adContentRepository.findAllByIdWithValidation(projectId, orgId);
 
-        return AdvertisementConverter.toAdContentsInfo(adContents);
+        // AdGroup 예외 처리 - null이 아닌 것만 필터링해서 보여줌
+        List<AdContent> validAdContents = adContents.stream()
+                .filter(adContent -> adContent.getAdGroup() != null)
+                .toList();
+
+        return AdvertisementConverter.toAdContentsInfo(validAdContents);
     }
 
     @Override
