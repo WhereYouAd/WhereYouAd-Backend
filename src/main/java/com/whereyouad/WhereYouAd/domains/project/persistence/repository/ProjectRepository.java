@@ -6,11 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("select p from Project p where p.organization.id = :orgId")
     List<Project> findByOrganizationId(@Param(value = "orgId") Long orgId);
-
-    Optional<Project> findByIdandOrganizationId(Long id, Long orgId);
 }
