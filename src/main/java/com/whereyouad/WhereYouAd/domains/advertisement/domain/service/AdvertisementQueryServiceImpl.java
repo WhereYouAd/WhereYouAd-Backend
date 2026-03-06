@@ -34,6 +34,8 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
         AdGroup adGroup = adContent.getAdGroup();
+        if (adGroup == null)
+            throw new AdvertisementHandler(AdvertisementErrorCode.ADGROUP_NOT_FOUND);
 
         return AdvertisementConverter.toAdContentInfo(adContent, AdvertisementConverter.toAdGroupInfo(adGroup));
     }
@@ -54,6 +56,8 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
         AdGroup adGroup = adContent.getAdGroup();
+        if (adGroup == null)
+            throw new AdvertisementHandler(AdvertisementErrorCode.ADGROUP_NOT_FOUND);
 
         return AdvertisementConverter.toAdGroupInfo(adGroup);
     }
