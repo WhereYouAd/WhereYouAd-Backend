@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @AllArgsConstructor
-public enum DashBoardErrorCode implements BaseErrorCode {
+public enum DashboardErrorCode implements BaseErrorCode {
 
     // 400
     PROVIDER_NOT_VALID(HttpStatus.BAD_REQUEST, "DASH_400_1", "providerType 에 올바르지 않은 값이 입력되었습니다."),

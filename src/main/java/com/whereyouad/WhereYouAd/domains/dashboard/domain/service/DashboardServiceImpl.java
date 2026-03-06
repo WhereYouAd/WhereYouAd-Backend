@@ -11,7 +11,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.pr
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
 import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
-import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashBoardErrorCode;
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashboardErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
@@ -133,7 +133,7 @@ public class DashboardServiceImpl implements DashboardService {
             try { //providerType 에 잘못된 값이 입력되지 않았는지 검증
                 provider = Provider.valueOf(providerType.toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new DashboardException(DashBoardErrorCode.PROVIDER_NOT_VALID);
+                throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
             }
             currentProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
                     orgId, provider, oneMonthAgo, latestDate, OrgStatus.ACTIVE, Status.ON_GOING);
@@ -276,11 +276,11 @@ public class DashboardServiceImpl implements DashboardService {
         // 1. 날짜 유효성 검사
         // 시작일이나 종료일이 미래인 경우
         if (startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now())) {
-            throw new DashboardException(DashBoardErrorCode.INVALID_DATE_RANGE);
+            throw new DashboardException(DashboardErrorCode.INVALID_DATE_RANGE);
         }
         // 시작일보다 종료일이 더 빠른 경우
         if (startDate.isAfter(endDate)) {
-            throw new DashboardException(DashBoardErrorCode.INVALID_DATE_RANGE);
+            throw new DashboardException(DashboardErrorCode.INVALID_DATE_RANGE);
         }
 
         // 2. 조직 존재 여부 확인
@@ -289,7 +289,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         // 3. 유저가 해당 조직 멤버인지 검증
         orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new DashboardException(DashBoardErrorCode.ACCESS_FORBIDDEN));
+                .orElseThrow(() -> new DashboardException(DashboardErrorCode.ACCESS_FORBIDDEN));
 
         // 4. 진행 중인 광고 개수 세기
         List<DashboardResponse.OngoingPlatformAdCount> providerCount = adCampaignRepository
