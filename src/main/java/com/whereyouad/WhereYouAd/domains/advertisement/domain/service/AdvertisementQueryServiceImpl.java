@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
@@ -42,7 +44,13 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
 
     @Override
     public AdvertisementResponse.AdContentInfosResponse readAdContents(Long userId, Long orgId, Long projectId) {
-        return null;
+        // 유저가 해당 조직인지 검증 (권한 검증)
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        List<AdContent> adContents = adContentRepository.findAllByIdWithValidation(projectId, orgId);
+
+        return AdvertisementConverter.toAdContentsInfo(adContents);
     }
 
     @Override
