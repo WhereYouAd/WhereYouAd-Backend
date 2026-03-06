@@ -7,6 +7,9 @@ import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.Advertisem
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
+import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
+import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,9 +21,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdvertisementQueryServiceImpl implements AdvertisementQueryService {
 
     private final AdContentRepository adContentRepository;
+    private final OrgMemberRepository orgMemberRepository;
 
     @Override
-    public AdvertisementResponse.AdContentInfoResponse readAdContent(Long orgId, Long projectId, Long adContentId) {
+    public AdvertisementResponse.AdContentInfoResponse readAdContent(Long userId, Long orgId, Long projectId, Long adContentId) {
+        // 유저가 해당 조직인지 검증 (권한 검증)
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        // 조직, 프로젝트와의 무결성 검증 및 조회
         AdContent adContent = adContentRepository.findByIdWithValidation(adContentId, projectId, orgId)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
@@ -30,12 +39,17 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
     }
 
     @Override
-    public AdvertisementResponse.AdContentInfosResponse readAdContents(Long orgId, Long projectId) {
+    public AdvertisementResponse.AdContentInfosResponse readAdContents(Long userId, Long orgId, Long projectId) {
         return null;
     }
 
     @Override
-    public AdvertisementResponse.AdGroupInfoResponse readAdGroup(Long orgId, Long projectId, Long adContentId) {
+    public AdvertisementResponse.AdGroupInfoResponse readAdGroup(Long userId, Long orgId, Long projectId, Long adContentId) {
+        // 유저가 해당 조직인지 검증 (권한 검증)
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        // 조직, 프로젝트와의 무결성 검증 및 조회
         AdContent adContent = adContentRepository.findByIdWithValidation(adContentId, projectId, orgId)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 

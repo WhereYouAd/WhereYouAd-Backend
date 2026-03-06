@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-
 @RestController
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @RequestMapping("/api/advertisement")
@@ -22,9 +21,9 @@ public class AdvertisementController implements AdvertisementControllerDocs {
     @GetMapping("/{orgId}/projects/{projectId}/ad-contents/{adContentId}")
     public ResponseEntity<DataResponse<AdvertisementResponse.AdContentInfoResponse>> readAdContent(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId, @PathVariable Long projectId, @PathVariable Long adContentId
-    ) {
-        AdvertisementResponse.AdContentInfoResponse adContentInfoResponse = advertisementQueryService.readAdContent(orgId, projectId, adContentId);
+            @PathVariable Long orgId, @PathVariable Long projectId, @PathVariable Long adContentId) {
+        AdvertisementResponse.AdContentInfoResponse adContentInfoResponse = advertisementQueryService
+                .readAdContent(userId, orgId, projectId, adContentId);
         return ResponseEntity.ok(DataResponse.from(adContentInfoResponse));
     }
 
@@ -32,9 +31,9 @@ public class AdvertisementController implements AdvertisementControllerDocs {
     @GetMapping("/{orgId}/projects/{projectId}/ad-contents")
     public ResponseEntity<DataResponse<AdvertisementResponse.AdContentInfosResponse>> readAdContents(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId, @PathVariable Long projectId
-    ) {
-        AdvertisementResponse.AdContentInfosResponse adContentInfosResponse = advertisementQueryService.readAdContents(orgId, projectId);
+            @PathVariable Long orgId, @PathVariable Long projectId) {
+        AdvertisementResponse.AdContentInfosResponse adContentInfosResponse = advertisementQueryService
+                .readAdContents(userId, orgId, projectId);
         return ResponseEntity.ok(DataResponse.from(adContentInfosResponse));
     }
 
@@ -42,9 +41,8 @@ public class AdvertisementController implements AdvertisementControllerDocs {
     @GetMapping("/{orgId}/projects/{projectId}/ad-contents/{adContentId}/ad-group")
     public ResponseEntity<DataResponse<AdvertisementResponse.AdGroupInfoResponse>> readAdGroup(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId, @PathVariable Long projectId, @PathVariable Long adContentId
-    ) {
-        AdvertisementResponse.AdGroupInfoResponse adGroupInfoResponse = advertisementQueryService.readAdGroup(orgId, projectId, adContentId);
+            @PathVariable Long orgId, @PathVariable Long projectId, @PathVariable Long adContentId) {
+        AdvertisementResponse.AdGroupInfoResponse adGroupInfoResponse = advertisementQueryService.readAdGroup(userId, orgId, projectId, adContentId);
         return ResponseEntity.ok(DataResponse.from(adGroupInfoResponse));
     }
 }
