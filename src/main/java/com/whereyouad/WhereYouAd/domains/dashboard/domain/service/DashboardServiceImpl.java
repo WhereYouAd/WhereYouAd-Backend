@@ -1,7 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
-import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementException;
+import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
@@ -95,7 +95,7 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardResponse.AggregatedSummaryResponse getAggregatedMetrics(Long userId, Long orgId, String providerType) {
         //Organization 존재 확인
         if (!orgRepository.existsById(orgId)) {
-            throw new AdvertisementException(OrgErrorCode.ORG_NOT_FOUND);
+            throw new AdvertisementHandler(OrgErrorCode.ORG_NOT_FOUND);
         }
 
         //해당 회원이 조직에 속하는지 확인
@@ -187,22 +187,22 @@ public class DashboardServiceImpl implements DashboardService {
         // 1. 날짜 유효성 검사
         // 시작일이나 종료일이 미래인 경우
         if (startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now())) {
-            throw new AdvertisementException(AdvertisementErrorCode.INVALID_DATE_RANGE);
+            throw new AdvertisementHandler(AdvertisementErrorCode.INVALID_DATE_RANGE);
         }
         // 시작일보다 종료일이 더 빠른 경우
         if (startDate.isAfter(endDate)) {
-            throw new AdvertisementException(AdvertisementErrorCode.INVALID_DATE_RANGE);
+            throw new AdvertisementHandler(AdvertisementErrorCode.INVALID_DATE_RANGE);
         }
 
         // 2. 조직 존재 여부 확인
         if (!orgRepository.existsById(orgId)) {
-            throw new AdvertisementException(OrgErrorCode.ORG_NOT_FOUND);
+            throw new AdvertisementHandler(OrgErrorCode.ORG_NOT_FOUND);
         }
 
         // 3. 요청 멤버의 해당 조직에 대한 접근 권한 체크
         boolean isMember = orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId);
         if (!isMember) {
-            throw new AdvertisementException(ProjectErrorCode.ACCESS_FORBIDDEN);
+            throw new AdvertisementHandler(ProjectErrorCode.ACCESS_FORBIDDEN);
         }
 
         // 4. 현재 기간 성과 조회 (해당 조직의 모든 프로젝트 포함)

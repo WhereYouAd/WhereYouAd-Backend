@@ -1,6 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.project.domain.service;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementException;
+import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
@@ -68,11 +68,11 @@ public class ProjectServiceImpl implements ProjectService{
         for (Long campaignId : campaignIds) {
             if (campaignId != null) {
                 AdCampaign adCampaign = adCampaignRepository.findById(campaignId)
-                        .orElseThrow(() -> new AdvertisementException(AdvertisementErrorCode.ADCAMPAIGN_NOT_FOUND));
+                        .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCAMPAIGN_NOT_FOUND));
 
                 //만약 해당 AdCampaign 이 연관된 Project 존재 시, 예외 발생
                 if (adCampaign.getProject() != null) {
-                    throw new AdvertisementException(AdvertisementErrorCode.ADCAMPAIGN_ALREADY_RELATED);
+                    throw new AdvertisementHandler(AdvertisementErrorCode.ADCAMPAIGN_ALREADY_RELATED);
                 } else { //연관된 Project 없으면 추가 진행
                     adCampaigns.add(adCampaign);
                 }
