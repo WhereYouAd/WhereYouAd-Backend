@@ -38,8 +38,6 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
         AdGroup adGroup = adContent.getAdGroup();
-        if (adGroup == null)
-            throw new AdvertisementHandler(AdvertisementErrorCode.ADGROUP_NOT_FOUND);
 
         return AdvertisementConverter.toAdContentInfo(adContent, AdvertisementConverter.toAdGroupInfo(adGroup));
     }
@@ -53,12 +51,7 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
 
         List<AdContent> adContents = adContentRepository.findAllByIdWithValidation(projectId, orgId);
 
-        // AdGroup 예외 처리 - null이 아닌 것만 필터링해서 보여줌
-        List<AdContent> validAdContents = adContents.stream()
-                .filter(adContent -> adContent.getAdGroup() != null)
-                .toList();
-
-        return AdvertisementConverter.toAdContentsInfo(validAdContents);
+        return AdvertisementConverter.toAdContentsInfo(adContents);
     }
 
     @Override
@@ -74,8 +67,6 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
         AdGroup adGroup = adContent.getAdGroup();
-        if (adGroup == null)
-            throw new AdvertisementHandler(AdvertisementErrorCode.ADGROUP_NOT_FOUND);
 
         return AdvertisementConverter.toAdGroupInfo(adGroup);
     }
