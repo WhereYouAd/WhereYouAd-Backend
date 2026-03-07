@@ -14,7 +14,7 @@ public interface AdvertisementControllerDocs {
         @Operation(summary = "캠페인(프로젝트) 내 개별 광고 조회", description = "캠페인(세 플랫폼의 캠페인을 합친 프로젝트) 내의 개별 광고에 대한 상세 정보(해당하는 광고 그룹 타겟 정보까지 포함)를 조회합니다.")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "성공"),
-                        @ApiResponse(responseCode = "404", description = "ORG_404_2: 해당 멤버가 조직에 존재하지 않습니다.<br>AD_404_1: 해당 광고가 존재하지 않음<br>AD_404_2: 해당 광고 그룹이 존재하지 않음")
+                        @ApiResponse(responseCode = "404", description = "ORG_404_2: 해당 멤버가 조직에 존재하지 않습니다. <br>AD_404_1: 해당 캠페인이 존재하지 않음 <br>AD_404_2: 해당 광고 그룹이 존재하지 않음 <br>AD_404_3: 해당 광고가 존재하지 않음")
         })
         ResponseEntity<DataResponse<AdvertisementResponse.AdContentInfoResponse>> readAdContent(
                         @AuthenticationPrincipal(expression = "userId") Long userId,
@@ -32,7 +32,7 @@ public interface AdvertisementControllerDocs {
         @Operation(summary = "캠페인(프로젝트) 내 특정 광고의 광고 그룹 조회", description = "캠페인(세 플랫폼의 캠페인을 합친 프로젝트) 내의 특정 광고의 광고 그룹 정보를 조회합니다.")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "성공"),
-                        @ApiResponse(responseCode = "404", description = "ORG_404_2: 해당 멤버가 조직에 존재하지 않습니다.<br>AD_404_1: 해당 광고가 존재하지 않음<br>AD_404_2: 해당 광고 그룹이 존재하지 않음")
+                        @ApiResponse(responseCode = "404", description = "ORG_404_2: 해당 멤버가 조직에 존재하지 않습니다.<br>AD_404_1: 해당 캠페인이 존재하지 않음 <br>AD_404_2: 해당 광고 그룹이 존재하지 않음 <br>AD_404_3: 해당 광고가 존재하지 않음")
         })
         ResponseEntity<DataResponse<AdvertisementResponse.AdGroupInfoResponse>> readAdGroup(
                         @AuthenticationPrincipal(expression = "userId") Long userId,
