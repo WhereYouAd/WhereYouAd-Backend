@@ -11,6 +11,12 @@ public enum AdvertisementErrorCode implements BaseErrorCode {
 
     // 400
     INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "AD_400_1", "날짜 입력이 잘못되었습니다."),
+
+    //404
+    ADCAMPAIGN_NOT_FOUND(HttpStatus.NOT_FOUND, "AD_404_1", "해당 캠페인이 존재하지 않습니다."),
+
+    //409
+    ADCAMPAIGN_ALREADY_RELATED(HttpStatus.CONFLICT,"AD_409_1" ,"해당 캠페인은 이미 다른 캠페인 그룹에 속해있습니다."),
     ;
 
     private final HttpStatus httpStatus;
