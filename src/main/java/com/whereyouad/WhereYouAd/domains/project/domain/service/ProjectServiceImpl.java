@@ -166,6 +166,7 @@ public class ProjectServiceImpl implements ProjectService{
             List<Provider> distinctProviders = projectCampaigns.stream()
                     .map(ProjectQueryDto.CampaignSummary::provider)
                     .distinct() // 중복된 KAKAO, NAVER 등이 있다면 하나만 남김
+                    .sorted(Comparator.comparing(Provider::name))
                     .toList();
 
             // 예산 소진 현황 계산
