@@ -117,3 +117,9 @@ coolSms:
   apiKey: ${SMS_API_KEY}
   secretKey: ${SMS_SECRET_KEY}
   senderNumber: ${SMS_SENDER_NUMBER}
+
+# 9. OpenAI 설정
+openai:
+  api-key: ${OPENAI_API_KEY}
+  base-url: https://api.openai.com
+  model: gpt-4o-mini
