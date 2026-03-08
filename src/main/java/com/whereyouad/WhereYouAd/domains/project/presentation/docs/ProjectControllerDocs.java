@@ -39,7 +39,7 @@ public interface ProjectControllerDocs {
                     "반환 값에는 각 캠페인 그룹의 Id(projectId),  이름, 설명, 해당 캠페인 그룹에서 진행하는 광고 플랫폼들(providers), 예산 소진 현황(budgetUsageRate) 입니다."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "성공"),
+            @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "404_1", description = "회원 찾을 수 없음"),
             @ApiResponse(responseCode = "404_1", description = "조직 찾을 수 없음"),
             @ApiResponse(responseCode = "404_2", description = "해당 조직에 회원이 속하지 않음"),
