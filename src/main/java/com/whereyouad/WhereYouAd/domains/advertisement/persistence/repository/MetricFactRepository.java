@@ -87,27 +87,54 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("status") Status status
     );
 
-  // 특정 조직(orgId)에 속한 모든 프로젝트의 지정된 기간(start~end) 동안
-  // 플랫폼(provider)별 총 매출액과 총 광고비를 합산하여 RoasProjection 형태로 조회
-  @Query("""
-      SELECT
-          mf.provider AS provider,
-          SUM(mf.revenue) AS totalRevenue,
-          SUM(mf.spend) AS totalSpend
-      FROM MetricFact mf
-      JOIN mf.project p
-      WHERE p.organization.id = :orgId
-        AND mf.timeBucket >= :start
-        AND mf.timeBucket <= :end
-      GROUP BY mf.provider
-      """)
-  List<RoasProjection> findRoasByOrgAndPeriod(
-      @Param("orgId") Long orgId,
-      @Param("start") LocalDateTime start,
-      @Param("end") LocalDateTime end);
+    // 특정 조직(orgId)에 속한 모든 프로젝트의 지정된 기간(start~end) 동안
+    // 플랫폼(provider)별 총 매출액과 총 광고비를 합산하여 RoasProjection 형태로 조회
+    @Query("SELECT " +
+           "mf.provider AS provider, " +
+           "SUM(mf.revenue) AS totalRevenue, " +
+           "SUM(mf.spend) AS totalSpend " +
+           "FROM MetricFact mf " +
+           "JOIN mf.project p " +
+           "WHERE p.organization.id = :orgId " +
+           "AND mf.timeBucket >= :start " +
+           "AND mf.timeBucket <= :end " +
+           "GROUP BY mf.provider")
+    List<RoasProjection> findRoasByOrgAndPeriod(
+            @Param("orgId") Long orgId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    // 정해진 기간동안의 MetricFact 데이터 조회 (AI 분석에 사용, 조직 필터)
+    @Query("SELECT m FROM MetricFact m " +
+           "JOIN FETCH m.adContent ac " +
+           "JOIN FETCH ac.adGroup ag " +
+           "JOIN FETCH ag.adCampaign camp " +
+           "JOIN camp.project p " +
+           "WHERE m.timeBucket >= :start " +
+           "AND m.timeBucket <= :end " +
+           "AND p.organization.id = :orgId " +
+           "ORDER BY m.timeBucket ASC")
+    List<MetricFact> findAllByDateRangeAndOrgForAiAnalysis(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("orgId") Long orgId
+    );
 
     // 프로젝트 ID 목록으로 지출(spend) 총합 일괄 조회
     @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$SpendSummary(m.project.id, SUM(m.spend)) " +
             "FROM MetricFact m WHERE m.project.id IN :projectIds GROUP BY m.project.id")
     List<ProjectQueryDto.SpendSummary> findSpendSummariesByProjectIds(@Param("projectIds") List<Long> projectIds);
+
+    // 정해진 기간동안의 데이터 유무 검사
+    @Query("SELECT COUNT(m) > 0 FROM MetricFact m " +
+           "JOIN m.project p " +
+           "WHERE m.timeBucket >= :start " +
+           "AND m.timeBucket <= :end " +
+           "AND p.organization.id = :orgId")
+    boolean existsByTimeBucketBetweenAndOrg(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("orgId") Long orgId
+    );
 }

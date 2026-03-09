@@ -94,6 +94,9 @@ spring:
             user-name-attribute: id
   # AWS S3
   cloud:
+    # Spring Boot 3.5.x + Spring Cloud 2024.0.x 호환 검증 비활성화
+    compatibility-verifier:
+      enabled: false
     aws:
       credentials:
         access-key: ${AWS_ACCESS_KEY}
@@ -117,3 +120,16 @@ coolSms:
   apiKey: ${SMS_API_KEY}
   secretKey: ${SMS_SECRET_KEY}
   senderNumber: ${SMS_SENDER_NUMBER}
+
+# 9. OpenAI 설정
+openai:
+  api-key: ${OPENAI_API_KEY}
+  base-url: https://api.openai.com
+  model: gpt-4o-mini
+
+# 10. Feign 클라이언트 로그 설정
+feign:
+  client:
+    config:
+      openAiClient:
+        loggerLevel: BASIC   # NONE / BASIC / HEADERS / FULL
