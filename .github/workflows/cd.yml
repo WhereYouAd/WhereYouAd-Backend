@@ -63,8 +63,9 @@ jobs:
           script: |
             cd ~/WhereYouAd-Backend
             
-            # 최신 파일(docker-compose.yml 등) pull
-            git pull origin develop
+            # 최신 파일 강제 동기화 (기존 git pull의 충돌 방지)
+            git fetch origin develop
+            git reset --hard origin/develop
             
             # GitHub Secrets에 저장된 .env 내용을 파일로 생성 (덮어쓰기)
             echo "${{ secrets.PROD_ENV_FILE }}" > .env
