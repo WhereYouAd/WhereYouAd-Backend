@@ -162,38 +162,42 @@ public class ProjectServiceImpl implements ProjectService{
             Long projectId = project.getId();
             List<ProjectQueryDto.CampaignSummary> projectCampaigns = campaignMap.getOrDefault(projectId, Collections.emptyList());
 
-            // Provider 추출 (Set을 사용하여 중복 플랫폼 제거 후 List 변환)
+            // Provider 추출
             List<Provider> distinctProviders = projectCampaigns.stream()
                     .map(ProjectQueryDto.CampaignSummary::provider)
-                    .distinct() // 중복된 KAKAO, NAVER 등이 있다면 하나만 남김
+                    .distinct()
                     .sorted(Comparator.comparing(Provider::name))
                     .toList();
-
-            // 예산 소진 현황 계산
-            // 총 예산 (캠페인 budget의 합)
-            long totalBudget = projectCampaigns.stream()
-                    .mapToLong(summary -> summary.budget() != null ? summary.budget() : 0L)
-                    .sum();
 
             // 총 지출 (MetricFact spend의 합)
             BigDecimal totalSpend = spendMap.getOrDefault(projectId, BigDecimal.ZERO);
 
-            // 소진율 계산 (비용 / 예산 * 100)
-            double budgetUsageRate = 0.0;
-            if (totalBudget > 0 && totalSpend != null) {
-                budgetUsageRate = totalSpend
-                        .divide(BigDecimal.valueOf(totalBudget), 4, RoundingMode.HALF_UP) // 소수점 계산
-                        .multiply(BigDecimal.valueOf(100))
-                        .doubleValue();
-
-                // 소수점 첫째 자리까지 반올림
-                budgetUsageRate = Math.round(budgetUsageRate * 10.0) / 10.0;
-            }
+            // 예산 소진 현황 계산 메서드 호출
+            double budgetUsageRate = calculateBudgetUsageRate(projectCampaigns, totalSpend);
 
             return ProjectConverter.toSimpleProjectResponse(project, distinctProviders, budgetUsageRate);
 
         }).toList();
 
         return ProjectConverter.toProjectListResponse(responseList);
+    }
+
+    //예산 소진 현황 계산 메서드
+    private double calculateBudgetUsageRate(List<ProjectQueryDto.CampaignSummary> projectCampaigns, BigDecimal totalSpend) {
+        // 총 예산 (캠페인 budget의 합)
+        long totalBudget = projectCampaigns.stream()
+                .mapToLong(summary -> summary.budget() != null ? summary.budget() : 0L)
+                .sum();
+
+        // 예산이 없거나 지출이 없으면 0.0 반환
+        if (totalBudget <= 0 || totalSpend == null) {
+            return 0.0;
+        }
+
+        // 소진율 계산 (비용 / 예산 * 100), 소수점 첫째 자리 이후로는 버림 처리
+        return totalSpend
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(totalBudget), 1, RoundingMode.DOWN)
+                .doubleValue();
     }
 }
