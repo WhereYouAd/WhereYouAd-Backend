@@ -32,4 +32,21 @@ public interface ProjectControllerDocs {
             @PathVariable Long orgId,
             @Valid @RequestBody ProjectRequest.CreateRequest request
     );
+
+    @Operation(
+            summary = "캠페인 그룹 정보 조회 API",
+            description = "캠페인 그룹을 조회하려는 조직 Id 를 받아 해당 조직에 속한 모든 캠페인 그룹 정보를 조회 합니다. \n\n" +
+                    "반환 값에는 각 캠페인 그룹의 Id(projectId),  이름, 설명, 해당 캠페인 그룹에서 진행하는 광고 플랫폼들(providers), 예산 소진 현황(budgetUsageRate) 입니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404_1", description = "회원 찾을 수 없음"),
+            @ApiResponse(responseCode = "404_1", description = "조직 찾을 수 없음"),
+            @ApiResponse(responseCode = "404_2", description = "해당 조직에 회원이 속하지 않음"),
+            @ApiResponse(responseCode = "410_1", description = "조직 Soft Deleted")
+    })
+    public ResponseEntity<DataResponse<ProjectResponse.ProjectListResponse>> getProjects(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    );
 }
