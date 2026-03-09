@@ -36,6 +36,11 @@ services:
       SMS_SECRET_KEY: ${SMS_SECRET_KEY}
       SMS_SENDER_NUMBER: ${SMS_SENDER_NUMBER}
 
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
     depends_on:
       - mysqldb
       - redis

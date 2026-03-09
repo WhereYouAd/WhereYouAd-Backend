@@ -6,6 +6,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.RoasProjection;
+import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -119,6 +120,11 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("end") LocalDateTime end,
             @Param("orgId") Long orgId
     );
+
+    // 프로젝트 ID 목록으로 지출(spend) 총합 일괄 조회
+    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$SpendSummary(m.project.id, SUM(m.spend)) " +
+            "FROM MetricFact m WHERE m.project.id IN :projectIds GROUP BY m.project.id")
+    List<ProjectQueryDto.SpendSummary> findSpendSummariesByProjectIds(@Param("projectIds") List<Long> projectIds);
 
     // 정해진 기간동안의 데이터 유무 검사
     @Query("SELECT COUNT(m) > 0 FROM MetricFact m " +

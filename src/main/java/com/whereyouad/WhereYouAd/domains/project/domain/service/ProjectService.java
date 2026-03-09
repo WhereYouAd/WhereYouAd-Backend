@@ -6,4 +6,6 @@ import com.whereyouad.WhereYouAd.domains.project.application.dto.response.Projec
 public interface ProjectService {
 
     ProjectResponse.CreatedResponse createProject(Long userId, Long orgId, ProjectRequest.CreateRequest request);
+
+    ProjectResponse.ProjectListResponse getProjects(Long userId, Long orgId);
 }

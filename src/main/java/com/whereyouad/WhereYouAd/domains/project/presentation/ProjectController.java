@@ -33,4 +33,17 @@ public class ProjectController implements ProjectControllerDocs {
         );
     }
 
+    @GetMapping("/{orgId}")
+    public ResponseEntity<DataResponse<ProjectResponse.ProjectListResponse>> getProjects(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    )
+    {
+        ProjectResponse.ProjectListResponse response = projectService.getProjects(userId, orgId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
 }
