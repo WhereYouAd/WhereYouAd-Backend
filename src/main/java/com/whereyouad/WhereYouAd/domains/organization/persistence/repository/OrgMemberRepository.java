@@ -23,8 +23,8 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
     @Query(value = "select om from OrgMember om join fetch om.organization o where om.user.id = :userId and o.status = 'ACTIVE'")
     List<OrgMember> findOrgMemberByUserId(@Param("userId") Long userId);
 
-    //userId 를 통해 OrgMember 추출 -> Organization 의 status 가 DELETED 인 경우에만 조회
-    @Query(value = "select om from OrgMember om join fetch om.organization o where om.user.id = :userId and o.status = 'DELETED'")
+    //userId 를 통해 OrgMember 추출 -> Organization 의 status 가 DELETED 이고, ownerUserId 가 userId 와 일치하는 경우에만 조회
+    @Query(value = "select om from OrgMember om join fetch om.organization o where om.user.id = :userId and o.status = 'DELETED' and om.organization.ownerUserId = :userId")
     List<OrgMember> findOrgMemberByUserIdSoftDeleted(@Param("userId") Long userId);
 
     //특정 Organization 에 속한 OrgMember 모두 추출하는 메서드
