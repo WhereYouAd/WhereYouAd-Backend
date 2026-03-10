@@ -53,6 +53,18 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
+    @GetMapping("/deleted")
+    public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getSoftDeletedOrganizations(
+            @AuthenticationPrincipal(expression = "userId") Long userId
+    )
+    {
+        OrgResponse.MyOrganizations response = orgService.getSoftDeletedOrgs(userId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
 
     @PatchMapping("/{orgId}")
     public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(

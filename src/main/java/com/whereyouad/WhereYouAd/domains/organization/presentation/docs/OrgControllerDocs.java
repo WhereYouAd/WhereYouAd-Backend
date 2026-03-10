@@ -45,6 +45,17 @@ public interface OrgControllerDocs {
     })
     public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId);
 
+    @Operation(
+            summary = "회원이 만든 조직 중 Soft Deleted 된 조직 목록 조회",
+            description = "해당 회원이 만든 조직 중 status 가 DELETED 인 조직만을 조회합니다. Soft Delete 된 조직 복구를 위해 사용 가능한 API 입니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404_1", description = "회원 존재 X")
+    })
+    public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getSoftDeletedOrganizations(
+            @AuthenticationPrincipal(expression = "userId") Long userId
+    );
 
     @Operation(
             summary = "조직 정보 수정 API",
