@@ -22,9 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Transactional
@@ -94,6 +92,26 @@ public class OrgServiceImpl implements OrgService {
 
         //DTO 로 변환
         return OrgConverter.toOrgDetail(organization);
+    }
+
+    public OrgResponse.MyOrganizations getSoftDeletedOrgs(Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        //userId 일치하고, Organization 의 status 가 DELETED 인 OrgMember 만 조회
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserIdSoftDeleted(userId);
+
+        //Soft Deleted 된 조직 없으면 빈 리스트 반환
+        if (orgMembers.isEmpty()) {
+            return OrgConverter.toMyOrganizations(Collections.emptyList());
+        }
+
+        //각각의 OrgMember 에서 SimpleInfo DTO 로 매핑
+        List<OrgResponse.SimpleInfo> infos = orgMembers.stream()
+                .map(OrgConverter::toOrgSimpleInfo)
+                .toList();
+
+        return OrgConverter.toMyOrganizations(infos);
     }
 
     // 조직 정보 수정 메서드
