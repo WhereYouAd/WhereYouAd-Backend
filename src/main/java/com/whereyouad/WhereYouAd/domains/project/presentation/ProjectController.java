@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.project.application.dto.request.Project
 import com.whereyouad.WhereYouAd.domains.project.application.dto.response.ProjectResponse;
 import com.whereyouad.WhereYouAd.domains.project.domain.service.ProjectService;
 import com.whereyouad.WhereYouAd.domains.project.presentation.docs.ProjectControllerDocs;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -41,9 +42,17 @@ public class ProjectController implements ProjectControllerDocs {
     {
         ProjectResponse.ProjectListResponse response = projectService.getProjects(userId, orgId);
 
-        return ResponseEntity.ok(
-                DataResponse.from(response)
-        );
-    }
+                return ResponseEntity.ok(
+                                DataResponse.from(response));
+        }
+
+        @PatchMapping("/{orgId}/status")
+        public ResponseEntity<DataResponse<Void>> updateAllProjectsStatus(
+                        @AuthenticationPrincipal(expression = "userId") Long userId,
+                        @PathVariable Long orgId,
+                        @RequestParam Status status) {
+                projectService.updateAllProjectsStatus(userId, orgId, status);
+                return ResponseEntity.ok(DataResponse.ok());
+        }
 
 }
