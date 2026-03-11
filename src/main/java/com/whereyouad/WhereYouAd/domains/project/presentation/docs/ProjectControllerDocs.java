@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.project.presentation.docs;
 
 import com.whereyouad.WhereYouAd.domains.project.application.dto.request.ProjectRequest;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.response.ProjectResponse;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface ProjectControllerDocs {
 
@@ -49,4 +51,17 @@ public interface ProjectControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId
     );
+
+    @Operation(summary = "전체 프로젝트 중단/재개 API", description = "특정 조직에 속한 모든 프로젝트 및 그 하위의 모든 광고 그룹과 콘텐츠 상태를 일괄 중단(PAUSED) 하거나 재개(ON_GOING) 합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404_1", description = "회원 찾을 수 없음"),
+            @ApiResponse(responseCode = "404_1", description = "조직 찾을 수 없음"),
+            @ApiResponse(responseCode = "404_2", description = "해당 조직에 회원이 속하지 않음"),
+            @ApiResponse(responseCode = "410_1", description = "조직 Soft Deleted")
+    })
+    public ResponseEntity<DataResponse<Void>> updateAllProjectsStatus(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam Status status);
 }
