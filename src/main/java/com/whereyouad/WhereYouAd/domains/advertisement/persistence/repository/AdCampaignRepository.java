@@ -6,6 +6,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCamp
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -45,4 +46,11 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
             "FROM AdCampaign c WHERE c.project.id IN :projectIds")
     List<ProjectQueryDto.CampaignSummary> findCampaignSummariesByProjectIds(@Param("projectIds") List<Long> projectIds);
 
+    @Modifying
+    @Query("UPDATE AdCampaign a SET a.status = :status WHERE a.project.id = :projectId")
+    void updateStatusByProjectId(@Param("projectId") Long projectId, @Param("status") Status status);
+
+    @Modifying
+    @Query("UPDATE AdCampaign a SET a.status = :status WHERE a.project.organization.id = :orgId")
+    void updateStatusByOrganizationId(@Param("orgId") Long orgId, @Param("status") Status status);
 }

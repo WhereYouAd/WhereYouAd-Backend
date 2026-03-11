@@ -35,11 +35,8 @@ public class AdContent extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_group_id")
     private AdGroup adGroup;
-    // @Enumerated(EnumType.STRING)
-    // @Column(name = "provider", nullable = false)
-    // private Provider provider;
 
-    // private LocalDateTime startDate;
-    //
-    // private LocalDateTime endDate;
+    public void updateStatus(Status status) {
+        this.status = status;
+    }
 }

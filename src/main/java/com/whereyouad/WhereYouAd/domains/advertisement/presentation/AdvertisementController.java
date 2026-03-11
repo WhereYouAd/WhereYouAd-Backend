@@ -2,6 +2,8 @@ package com.whereyouad.WhereYouAd.domains.advertisement.presentation;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.AdvertisementResponse;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.AdvertisementQueryService;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.AdvertisementCommandService;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs.AdvertisementControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import lombok.AccessLevel;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdvertisementController implements AdvertisementControllerDocs {
 
     private final AdvertisementQueryService advertisementQueryService;
+    private final AdvertisementCommandService advertisementCommandService;
 
     // AdContent - 개별 광고 상세 조회
     @GetMapping("/{orgId}/projects/{projectId}/ad-contents/{adContentId}")
@@ -42,7 +45,29 @@ public class AdvertisementController implements AdvertisementControllerDocs {
     public ResponseEntity<DataResponse<AdvertisementResponse.AdGroupInfoResponse>> readAdGroup(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId, @PathVariable Long projectId, @PathVariable Long adContentId) {
-        AdvertisementResponse.AdGroupInfoResponse adGroupInfoResponse = advertisementQueryService.readAdGroup(userId, orgId, projectId, adContentId);
+        AdvertisementResponse.AdGroupInfoResponse adGroupInfoResponse = advertisementQueryService.readAdGroup(userId,
+                orgId, projectId, adContentId);
         return ResponseEntity.ok(DataResponse.from(adGroupInfoResponse));
     }
+
+    // Project - 단일 프로젝트(캠페인) 전체 중단/재개
+    @PatchMapping("/{orgId}/projects/{projectId}/status")
+    public ResponseEntity<DataResponse<Void>> updateProjectStatus(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId, @PathVariable Long projectId,
+            @RequestParam Status status) {
+        advertisementCommandService.updateProjectStatus(userId, orgId, projectId, status);
+        return ResponseEntity.ok(DataResponse.ok());
+    }
+
+    // AdContent - 개별 광고 중단/재개
+    @PatchMapping("/{orgId}/projects/{projectId}/ad-contents/{adContentId}/status")
+    public ResponseEntity<DataResponse<Void>> updateAdContentStatus(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId, @PathVariable Long projectId, @PathVariable Long adContentId,
+            @RequestParam Status status) {
+        advertisementCommandService.updateAdContentStatus(userId, orgId, projectId, adContentId, status);
+        return ResponseEntity.ok(DataResponse.ok());
+    }
+
 }
