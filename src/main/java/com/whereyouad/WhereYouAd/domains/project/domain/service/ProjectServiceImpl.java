@@ -5,7 +5,10 @@ import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHa
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
@@ -35,11 +38,13 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public class ProjectServiceImpl implements ProjectService{
+public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final AdCampaignRepository adCampaignRepository;
+    private final AdGroupRepository adGroupRepository;
+    private final AdContentRepository adContentRepository;
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final MetricFactRepository metricFactRepository;
@@ -199,5 +204,27 @@ public class ProjectServiceImpl implements ProjectService{
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(totalBudget), 1, RoundingMode.DOWN)
                 .doubleValue();
+    }
+
+    @Override
+    public void updateAllProjectsStatus(Long userId, Long orgId, Status status) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        if (organization.getStatus() == OrgStatus.DELETED) {
+            throw new OrgHandler(OrgErrorCode.ORG_SOFT_DELETED);
+        }
+
+        Optional<OrgMember> orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId);
+        if (orgMember.isEmpty()) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
+        }
+
+        adCampaignRepository.updateStatusByOrganizationId(orgId, status);
+        adGroupRepository.updateStatusByOrganizationId(orgId, status);
+        adContentRepository.updateStatusByOrganizationId(orgId, status);
     }
 }
