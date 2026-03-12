@@ -70,7 +70,8 @@ public interface AdvertisementControllerDocs {
         @ApiResponses({
                 @ApiResponse(responseCode = "200", description = "성공"),
                 @ApiResponse(responseCode = "404", description = "ORG_404_2: 해당 멤버가 조직에 존재하지 않습니다."),
-                @ApiResponse(responseCode = "400", description = "AD_400_2: providerType 입력이 잘못되었습니다.")
+                @ApiResponse(responseCode = "400", description = "AD_400_2: providerType 입력이 잘못되었습니다."),
+                @ApiResponse(responseCode = "404", description = "ORG_404_1: 해당 id 의 조직이 존재하지 않습니다.")
         })
         public ResponseEntity<DataResponse<AdvertisementResponse.AdCampaignListResponse>> readAdCampaigns(
                 @AuthenticationPrincipal(expression = "userId") Long userId,
