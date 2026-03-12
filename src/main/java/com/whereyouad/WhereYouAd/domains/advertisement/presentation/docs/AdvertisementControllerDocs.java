@@ -60,4 +60,21 @@ public interface AdvertisementControllerDocs {
                         @AuthenticationPrincipal(expression = "userId") Long userId,
                         @PathVariable Long orgId, @PathVariable Long projectId, @PathVariable Long adContentId,
                         @RequestParam Status status);
+
+
+        @Operation(
+                summary = "각 플랫폼별 광고 캠페인 조회 API",
+                description = "각 플랫폼별로 우리 서비스 내에서 캠페인 그룹으로 묶이지 않은 캠페인을 조회합니다.\n\n" +
+                        "/api/project/create/{orgId} 캠페인 그룹 정보 설정 API 에서 각 플랫폼별 캠페인을 선택하기 위해 사용되는 API 입니다."
+        )
+        @ApiResponses({
+                @ApiResponse(responseCode = "200", description = "성공"),
+                @ApiResponse(responseCode = "404", description = "ORG_404_2: 해당 멤버가 조직에 존재하지 않습니다."),
+                @ApiResponse(responseCode = "400", description = "AD_400_2: providerType 입력이 잘못되었습니다.")
+        })
+        public ResponseEntity<DataResponse<AdvertisementResponse.AdCampaignListResponse>> readAdCampaigns(
+                @AuthenticationPrincipal(expression = "userId") Long userId,
+                @PathVariable Long orgId,
+                @RequestParam(required = true) String providerType
+        );
 }
