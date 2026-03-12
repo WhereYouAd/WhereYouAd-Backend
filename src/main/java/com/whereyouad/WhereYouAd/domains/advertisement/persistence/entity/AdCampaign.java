@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -58,6 +59,12 @@ public class AdCampaign extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
+
+    //Organization 의존성
+    //API 연동 시 리팩터링 필요
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "org_id")
+    private Organization organization;
 
     public void relateProject(Project project) {
         this.project = project;
