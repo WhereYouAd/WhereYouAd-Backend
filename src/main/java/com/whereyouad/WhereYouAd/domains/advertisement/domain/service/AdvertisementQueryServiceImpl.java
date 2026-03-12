@@ -13,6 +13,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Ad
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
     private final AdContentRepository adContentRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final AdCampaignRepository adCampaignRepository;
+    private final OrgRepository orgRepository;
 
     @Override
     public AdvertisementResponse.AdContentInfoResponse readAdContent(Long userId, Long orgId, Long projectId,
@@ -79,6 +81,11 @@ public class AdvertisementQueryServiceImpl implements AdvertisementQueryService 
     //API 연동시, AdCampaign 내부 organization 필드와 함께 리팩티렁 필요
     @Override
     public AdvertisementResponse.AdCampaignListResponse readAdCampaigns(Long userId, Long orgId, String providerType) {
+        //조직 존재 검증
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        //조직에 회원이 속하는지 검증
         if (!orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
         }
