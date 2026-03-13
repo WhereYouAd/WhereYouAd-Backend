@@ -27,6 +27,9 @@ public class AdContent extends BaseEntity {
 
     private String type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @ColumnDefault("'ON_GOING'")
     private Status status;
 
     private String cta;
