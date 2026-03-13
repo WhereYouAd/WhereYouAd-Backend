@@ -110,6 +110,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     //조직 내 모든 Project 조회 로직
+    @Override
     public ProjectResponse.ProjectListResponse getProjects(Long userId, Long orgId) {
         validateProject(userId, orgId);
 
@@ -151,11 +152,7 @@ public class ProjectServiceImpl implements ProjectService {
             List<ProjectQueryDto.CampaignSummary> projectCampaigns = campaignMap.getOrDefault(projectId, Collections.emptyList());
 
             // Provider 추출
-            List<Provider> distinctProviders = projectCampaigns.stream()
-                    .map(ProjectQueryDto.CampaignSummary::provider)
-                    .distinct()
-                    .sorted(Comparator.comparing(Provider::name))
-                    .toList();
+            List<Provider> distinctProviders = extractDistinctProviders(projectCampaigns);
 
             // 총 지출 (MetricFact spend의 합)
             BigDecimal totalSpend = spendMap.getOrDefault(projectId, BigDecimal.ZERO);
@@ -183,26 +180,33 @@ public class ProjectServiceImpl implements ProjectService {
         List<ProjectQueryDto.CampaignSummary> campaignSummaries = adCampaignRepository.findCampaignSummariesByProjectId(project.getId());
 
         // Provider 추출
-        List<Provider> distinctProviders = campaignSummaries.stream()
-                .map(ProjectQueryDto.CampaignSummary::provider)
-                .distinct()
-                .sorted(Comparator.comparing(Provider::name))
-                .toList();
+        List<Provider> distinctProviders = extractDistinctProviders(campaignSummaries);
 
         // 총 예산 (캠페인 budget의 합)
-        long totalBudget = campaignSummaries.stream()
-                .mapToLong(summary -> summary.budget() != null ? summary.budget() : 0L)
-                .sum();
+        long totalBudget = calculateTotalBudget(campaignSummaries);
 
         return ProjectConverter.toProjectInfoResponse(project, distinctProviders, totalBudget);
     }
 
-    //예산 소진 현황 계산 메서드
-    private double calculateBudgetUsageRate(List<ProjectQueryDto.CampaignSummary> projectCampaigns, BigDecimal totalSpend) {
-        // 총 예산 (캠페인 budget의 합)
-        long totalBudget = projectCampaigns.stream()
+    // Provider 추출 공통 메서드
+    private List<Provider> extractDistinctProviders(List<ProjectQueryDto.CampaignSummary> campaignSummaries) {
+        return campaignSummaries.stream()
+                .map(ProjectQueryDto.CampaignSummary::provider)
+                .distinct()
+                .sorted(Comparator.comparing(Provider::name))
+                .toList();
+    }
+
+    // 총 예산 계산 공통 메서드
+    private long calculateTotalBudget(List<ProjectQueryDto.CampaignSummary> campaignSummaries) {
+        return campaignSummaries.stream()
                 .mapToLong(summary -> summary.budget() != null ? summary.budget() : 0L)
                 .sum();
+    }
+
+    // 예산 소진 현황 계산 메서드
+    private double calculateBudgetUsageRate(List<ProjectQueryDto.CampaignSummary> projectCampaigns, BigDecimal totalSpend) {
+        long totalBudget = calculateTotalBudget(projectCampaigns);
 
         // 예산이 없거나 지출이 없으면 0.0 반환
         if (totalBudget <= 0 || totalSpend == null) {
