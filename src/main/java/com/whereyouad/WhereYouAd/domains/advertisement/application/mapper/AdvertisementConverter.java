@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.AdvertisementResponse;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 
@@ -23,5 +24,14 @@ public class AdvertisementConverter {
     public static AdvertisementResponse.AdGroupInfoResponse toAdGroupInfo(AdGroup adGroup) {
         return new AdvertisementResponse.AdGroupInfoResponse(
                 adGroup.getId(), adGroup.getName(), adGroup.getTargetingInfo(), adGroup.getStatus());
+    }
+
+    public static AdvertisementResponse.AdCampaignSimpleResponse toAdCampaignSimple(AdCampaign adCampaign) {
+        return new AdvertisementResponse.AdCampaignSimpleResponse(
+                adCampaign.getId(), adCampaign.getName(), adCampaign.getDescription());
+    }
+
+    public static AdvertisementResponse.AdCampaignListResponse toAdCampaignList(List<AdvertisementResponse.AdCampaignSimpleResponse> simpleResponses) {
+        return new AdvertisementResponse.AdCampaignListResponse(simpleResponses);
     }
 }
