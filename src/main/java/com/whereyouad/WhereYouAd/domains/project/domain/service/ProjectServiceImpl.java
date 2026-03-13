@@ -172,9 +172,8 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectResponse.ProjectInfoResponse getProject(Long userId, Long orgId, Long projectId) {
         validateProject(userId, orgId);
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() ->
-                    new ProjectHandler(ProjectErrorCode.PROJECT_NOT_FOUND)
-        );
+        Project project = projectRepository.findByIdAndOrganizationId(projectId, orgId)
+                .orElseThrow(() -> new ProjectHandler(ProjectErrorCode.PROJECT_NOT_FOUND));
 
         // 캠페인 정보 모음
         List<ProjectQueryDto.CampaignSummary> campaignSummaries = adCampaignRepository.findCampaignSummariesByProjectId(project.getId());
