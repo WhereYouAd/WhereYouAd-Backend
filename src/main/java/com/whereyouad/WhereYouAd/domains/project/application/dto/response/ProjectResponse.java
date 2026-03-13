@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.project.application.dto.response;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,6 +20,7 @@ public class ProjectResponse {
     public record SimpleProjectResponse(
             Long projectId,
             String name,
+            Status status,
             String description,
             List<Provider> providers,
             Double budgetUsageRate
@@ -27,6 +29,7 @@ public class ProjectResponse {
     public record ProjectInfoResponse (
         Long projectId,
         String name,
+        Status status,
         String description,
         Long budget,
         LocalDate createdAt,

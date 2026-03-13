@@ -16,7 +16,7 @@ public class ProjectConverter {
     public static ProjectResponse.SimpleProjectResponse toSimpleProjectResponse(Project project, List<Provider> providers, Double budgetUsageRate)
     {
         return new ProjectResponse.SimpleProjectResponse(
-                project.getId(), project.getName(), project.getDescription(), providers, budgetUsageRate);
+                project.getId(), project.getName(), project.getStatus(), project.getDescription(), providers, budgetUsageRate);
     }
 
     public static ProjectResponse.ProjectListResponse toProjectListResponse(List<ProjectResponse.SimpleProjectResponse> projects) {
@@ -25,6 +25,6 @@ public class ProjectConverter {
 
     public static ProjectResponse.ProjectInfoResponse toProjectInfoResponse(Project project, List<Provider> providers, Long budget) {
         return new ProjectResponse.ProjectInfoResponse(
-                project.getId(), project.getName(), project.getDescription(), budget, project.getCreatedAt().toLocalDate(), providers);
+                project.getId(), project.getName(), project.getStatus(), project.getDescription(), budget, project.getCreatedAt().toLocalDate(), providers);
     }
 }
