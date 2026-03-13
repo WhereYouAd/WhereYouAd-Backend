@@ -72,7 +72,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(Arrays.asList("http://localhost:5173")); //프론트 로컬 주소 허용
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",           // 프론트 로컬 주소
+                "http://localhost:3000",           // 프론트 로컬 주소 (대안)
+                "http://52.79.171.160:8080"        // 배포 서버 주소 (Swagger UI 등)
+        ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 

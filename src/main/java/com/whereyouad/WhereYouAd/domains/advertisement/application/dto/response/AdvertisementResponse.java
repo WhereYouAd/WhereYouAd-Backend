@@ -24,4 +24,14 @@ public class AdvertisementResponse {
             String targetInfo,
             Status status
     ) {}
+
+    public record AdCampaignListResponse(
+            List<AdCampaignSimpleResponse> adCampaigns
+    ) {}
+
+    public record AdCampaignSimpleResponse(
+            Long adCampaignId,
+            String name,
+            String description
+    ) {}
 }
