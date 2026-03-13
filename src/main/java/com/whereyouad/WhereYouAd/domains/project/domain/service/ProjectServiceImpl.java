@@ -20,6 +20,8 @@ import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto
 import com.whereyouad.WhereYouAd.domains.project.application.dto.request.ProjectRequest;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.response.ProjectResponse;
 import com.whereyouad.WhereYouAd.domains.project.application.mapper.ProjectConverter;
+import com.whereyouad.WhereYouAd.domains.project.exception.ProjectHandler;
+import com.whereyouad.WhereYouAd.domains.project.exception.code.ProjectErrorCode;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectRepository;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
@@ -92,6 +94,7 @@ public class ProjectServiceImpl implements ProjectService {
         //Project 엔티티 생성 및 저장
         Project project = Project.builder()
                 .name(request.name())
+                .status(Status.ON_GOING)
                 .description(request.description())
                 .createdBy(userId)
                 .organization(organization)
@@ -108,27 +111,9 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     //조직 내 모든 Project 조회 로직
+    @Override
     public ProjectResponse.ProjectListResponse getProjects(Long userId, Long orgId) {
-
-        //회원 Not Found 예외처리
-        userRepository.findById(userId)
-                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
-
-        //조직 Not Found 예외처리
-        Organization organization = orgRepository.findById(orgId)
-                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
-
-        //조직 Soft Delete 상태시 예외
-        if (organization.getStatus() == OrgStatus.DELETED) {
-            throw new OrgHandler(OrgErrorCode.ORG_SOFT_DELETED);
-        }
-
-        Optional<OrgMember> orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId);
-
-        //조직에 속하지 않은 회원의 요청일 시 예외
-        if (orgMember.isEmpty()) {
-            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
-        }
+        validateProject(userId, orgId);
 
         // 조직 내 모든 Project 조회
         List<Project> projects = projectRepository.findByOrganizationId(orgId);
@@ -168,11 +153,7 @@ public class ProjectServiceImpl implements ProjectService {
             List<ProjectQueryDto.CampaignSummary> projectCampaigns = campaignMap.getOrDefault(projectId, Collections.emptyList());
 
             // Provider 추출
-            List<Provider> distinctProviders = projectCampaigns.stream()
-                    .map(ProjectQueryDto.CampaignSummary::provider)
-                    .distinct()
-                    .sorted(Comparator.comparing(Provider::name))
-                    .toList();
+            List<Provider> distinctProviders = extractDistinctProviders(projectCampaigns);
 
             // 총 지출 (MetricFact spend의 합)
             BigDecimal totalSpend = spendMap.getOrDefault(projectId, BigDecimal.ZERO);
@@ -187,12 +168,45 @@ public class ProjectServiceImpl implements ProjectService {
         return ProjectConverter.toProjectListResponse(responseList);
     }
 
-    //예산 소진 현황 계산 메서드
-    private double calculateBudgetUsageRate(List<ProjectQueryDto.CampaignSummary> projectCampaigns, BigDecimal totalSpend) {
+    // 개별 프로젝트 조회
+    @Override
+    public ProjectResponse.ProjectInfoResponse getProject(Long userId, Long orgId, Long projectId) {
+        validateProject(userId, orgId);
+
+        Project project = projectRepository.findByIdAndOrganizationId(projectId, orgId)
+                .orElseThrow(() -> new ProjectHandler(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        // 캠페인 정보 모음
+        List<ProjectQueryDto.CampaignSummary> campaignSummaries = adCampaignRepository.findCampaignSummariesByProjectId(project.getId());
+
+        // Provider 추출
+        List<Provider> distinctProviders = extractDistinctProviders(campaignSummaries);
+
         // 총 예산 (캠페인 budget의 합)
-        long totalBudget = projectCampaigns.stream()
+        long totalBudget = calculateTotalBudget(campaignSummaries);
+
+        return ProjectConverter.toProjectInfoResponse(project, distinctProviders, totalBudget);
+    }
+
+    // Provider 추출 공통 메서드
+    private List<Provider> extractDistinctProviders(List<ProjectQueryDto.CampaignSummary> campaignSummaries) {
+        return campaignSummaries.stream()
+                .map(ProjectQueryDto.CampaignSummary::provider)
+                .distinct()
+                .sorted(Comparator.comparing(Provider::name))
+                .toList();
+    }
+
+    // 총 예산 계산 공통 메서드
+    private long calculateTotalBudget(List<ProjectQueryDto.CampaignSummary> campaignSummaries) {
+        return campaignSummaries.stream()
                 .mapToLong(summary -> summary.budget() != null ? summary.budget() : 0L)
                 .sum();
+    }
+
+    // 예산 소진 현황 계산 메서드
+    private double calculateBudgetUsageRate(List<ProjectQueryDto.CampaignSummary> projectCampaigns, BigDecimal totalSpend) {
+        long totalBudget = calculateTotalBudget(projectCampaigns);
 
         // 예산이 없거나 지출이 없으면 0.0 반환
         if (totalBudget <= 0 || totalSpend == null) {
@@ -226,5 +240,27 @@ public class ProjectServiceImpl implements ProjectService {
         adCampaignRepository.updateStatusByOrganizationId(orgId, status);
         adGroupRepository.updateStatusByOrganizationId(orgId, status);
         adContentRepository.updateStatusByOrganizationId(orgId, status);
+    }
+
+    public void validateProject (Long userId, Long orgId) {
+        //회원 Not Found 예외처리
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        //조직 Not Found 예외처리
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        //조직 Soft Delete 상태시 예외
+        if (organization.getStatus() == OrgStatus.DELETED) {
+            throw new OrgHandler(OrgErrorCode.ORG_SOFT_DELETED);
+        }
+
+        Optional<OrgMember> orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId);
+
+        //조직에 속하지 않은 회원의 요청일 시 예외
+        if (orgMember.isEmpty()) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
+        }
     }
 }

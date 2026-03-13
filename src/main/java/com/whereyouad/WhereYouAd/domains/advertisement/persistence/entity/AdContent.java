@@ -23,6 +23,8 @@ public class AdContent extends BaseEntity {
 
     private String landingUrl;
 
+    private String description;
+
     private String type;
 
     @Enumerated(EnumType.STRING)

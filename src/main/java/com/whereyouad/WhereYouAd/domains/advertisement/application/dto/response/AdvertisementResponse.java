@@ -10,6 +10,7 @@ public class AdvertisementResponse {
             Long id,
             String trackingUrl,
             String landingUrl,
+            String description,
             Status status,
             String targetInfo
     ) {}
