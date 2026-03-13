@@ -47,7 +47,7 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     List<ProjectQueryDto.CampaignSummary> findCampaignSummariesByProjectIds(@Param("projectIds") List<Long> projectIds);
 
     @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$CampaignSummary(c.project.id, c.provider, c.budget) " +
-            "FROM AdCampaign c WHERE c.project.id = :projectIds")
+            "FROM AdCampaign c WHERE c.project.id = :projectId")
     List<ProjectQueryDto.CampaignSummary> findCampaignSummariesByProjectId(@Param("projectId") Long projectId);
 
     @Modifying
