@@ -58,4 +58,10 @@ public class DashboardResponse {
             Provider provider,
             Long count
     ) {}
+
+    //실시간 클릭수 스트림 반환 응답
+    public record RealTimeClickResponse(
+            Long currentClickCount,
+            String providerType
+    ) {}
 }
