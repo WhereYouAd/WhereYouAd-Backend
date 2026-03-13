@@ -137,4 +137,9 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("end") LocalDateTime end,
             @Param("orgId") Long orgId
     );
+
+    // 프로젝트 ID로 지출(spend) 총합  조회
+    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$SpendSummary(m.project.id, SUM(m.spend)) " +
+            "FROM MetricFact m WHERE m.project.id = :projectId GROUP BY m.project.id")
+    ProjectQueryDto.SpendSummary findSpendSummaryByProjectId(Long projectId);
 }

@@ -179,9 +179,22 @@ public class ProjectServiceImpl implements ProjectService {
                     new ProjectHandler(ProjectErrorCode.PROJECT_NOT_FOUND)
         );
 
-        adCampaignRepository.findCampaignSummariesByProjectId(project.getId());
+        // 캠페인 정보 모음
+        List<ProjectQueryDto.CampaignSummary> campaignSummaries = adCampaignRepository.findCampaignSummariesByProjectId(project.getId());
 
-        return ProjectConverter.toProjectInfoResponse(project, null, null);
+        // Provider 추출
+        List<Provider> distinctProviders = campaignSummaries.stream()
+                .map(ProjectQueryDto.CampaignSummary::provider)
+                .distinct()
+                .sorted(Comparator.comparing(Provider::name))
+                .toList();
+
+        // 총 예산 (캠페인 budget의 합)
+        long totalBudget = campaignSummaries.stream()
+                .mapToLong(summary -> summary.budget() != null ? summary.budget() : 0L)
+                .sum();
+
+        return ProjectConverter.toProjectInfoResponse(project, distinctProviders, totalBudget);
     }
 
     //예산 소진 현황 계산 메서드
@@ -246,8 +259,4 @@ public class ProjectServiceImpl implements ProjectService {
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
         }
     }
-
-//    public void getCampaignResponses(List<ProjectQueryDto.CampaignSummary> campaignSummaries, ) {
-//
-//    }
 }
