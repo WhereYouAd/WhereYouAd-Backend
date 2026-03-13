@@ -94,6 +94,7 @@ public class ProjectServiceImpl implements ProjectService {
         //Project 엔티티 생성 및 저장
         Project project = Project.builder()
                 .name(request.name())
+                .status(Status.ON_GOING)
                 .description(request.description())
                 .createdBy(userId)
                 .organization(organization)
