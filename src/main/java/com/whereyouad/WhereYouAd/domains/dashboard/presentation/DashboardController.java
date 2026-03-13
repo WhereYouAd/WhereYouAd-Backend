@@ -90,6 +90,8 @@ public class DashboardController implements DashboardControllerDocs {
             @RequestParam(required = false) Provider provider
     )
     {
-        dashboardClickService.subscribe(userId, orgId, provider);
+        SseEmitter emitter = dashboardClickService.subscribe(userId, orgId, provider);
+
+        return ResponseEntity.ok(emitter);
     }
 }

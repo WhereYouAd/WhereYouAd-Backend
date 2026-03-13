@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.presentation.docs;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDate;
 
@@ -78,19 +80,44 @@ public interface DashboardControllerDocs {
             @Parameter(description = "조회 종료일 (yyyy-MM-dd)") LocalDate endDate
     );
 
-        @Operation(
-                summary = "대시보드 - 진행 중인 광고 수 provider별 조회 API",
-                description = "조직 내 현재 진행 중인(status=ON_GOING, 기간 포함) 광고를 플랫폼별로 집계해 반환. startDate/endDate 미제공 시 오늘 기준으로 조회."
-        )
-        @ApiResponses({
-                @ApiResponse(responseCode = "200", description = "성공"),
-                @ApiResponse(responseCode = "401", description = "인증 실패"),
-                @ApiResponse(responseCode = "404", description = "조직 없음 또는 멤버 아님")
-        })
-        ResponseEntity<DataResponse<DashboardResponse.OngoingPlatformAdCountResponse>> getOngoingAdCount(
-                @AuthenticationPrincipal(expression = "userId") Long userId,
-                @PathVariable Long orgId,
-                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
-        );
+    @Operation(
+            summary = "대시보드 - 진행 중인 광고 수 provider별 조회 API",
+            description = "조직 내 현재 진행 중인(status=ON_GOING, 기간 포함) 광고를 플랫폼별로 집계해 반환. startDate/endDate 미제공 시 오늘 기준으로 조회."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "조직 없음 또는 멤버 아님")
+    })
+    ResponseEntity<DataResponse<DashboardResponse.OngoingPlatformAdCountResponse>> getOngoingAdCount(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    );
+
+
+    @Operation(
+            summary = "대시보드 - 실시간 클릭수 스트림 출력 API",
+            description = "해당 조직의 실시간 클릭수를 스트림으로 보내주는 API 입니다. providerType 값을 입력하지 않으면 조직 내 모든 광고에 대해, 입력시 해당 플랫폼에 대해 클릭수를 스트림으로 반환합니다.\n\n" +
+                    "SSE(Server-Sent-Events) 방식을 사용하므로 한 번 연결되면 1초마다 데이터가 지속적으로 푸시됩니다.\n\n" +
+                    "### 🚨 프론트엔드 연동 시 주의사항\n" +
+                    "본 API는 JWT 인증(`Authorization` 헤더)이 필수입니다. " +
+                    "하지만 브라우저 기본 내장 객체인 `new EventSource()`는 구조상 커스텀 헤더 전송을 지원하지 않아 401 Unauthorized 에러가 발생합니다.\n\n" +
+                    "따라서 프론트엔드에서는 **`@microsoft/fetch-event-source`** 와 같은 외부 라이브러리를 사용하여 " +
+                    "헤더에 `Authorization: Bearer {AccessToken}`을 반드시 담아 호출해 주시기 바랍니다.\n\n" +
+                    "---\n" +
+                    "* **수신 이벤트 명(Event Name):** `org-click-update`\n" +
+                    "* **데이터 규격:** 기존 API와 동일하게 파싱 (`response.data.currentClickCount`, `response.data.providerType`)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404", description = "ORG_404_1 : 해당 id 의 조직이 존재하지 않습니다. \n\n" +
+                    "ORG_404_2 : 해당 멤버가 조직에 존재하지 않습니다.")
+    })
+    public ResponseEntity<SseEmitter> streamRealClicks(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false) Provider provider
+    );
 }
