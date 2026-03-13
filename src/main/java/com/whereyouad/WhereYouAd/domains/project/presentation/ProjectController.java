@@ -42,17 +42,30 @@ public class ProjectController implements ProjectControllerDocs {
     {
         ProjectResponse.ProjectListResponse response = projectService.getProjects(userId, orgId);
 
-                return ResponseEntity.ok(
-                                DataResponse.from(response));
-        }
+            return ResponseEntity.ok(
+                            DataResponse.from(response));
+    }
 
-        @PatchMapping("/{orgId}/status")
-        public ResponseEntity<DataResponse<Void>> updateAllProjectsStatus(
-                        @AuthenticationPrincipal(expression = "userId") Long userId,
-                        @PathVariable Long orgId,
-                        @RequestParam Status status) {
-                projectService.updateAllProjectsStatus(userId, orgId, status);
-                return ResponseEntity.ok(DataResponse.ok());
-        }
+    @GetMapping("/{orgId}/{projectId}")
+    public ResponseEntity<DataResponse<ProjectResponse.ProjectInfoResponse>> getProject(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId, @PathVariable Long projectId
+    )
+    {
+        ProjectResponse.ProjectInfoResponse response = projectService.getProject(userId, orgId, projectId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response));
+    }
+
+
+    @PatchMapping("/{orgId}/status")
+    public ResponseEntity<DataResponse<Void>> updateAllProjectsStatus(
+                    @AuthenticationPrincipal(expression = "userId") Long userId,
+                    @PathVariable Long orgId,
+                    @RequestParam Status status) {
+            projectService.updateAllProjectsStatus(userId, orgId, status);
+            return ResponseEntity.ok(DataResponse.ok());
+    }
 
 }

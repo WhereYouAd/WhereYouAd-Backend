@@ -22,4 +22,9 @@ public class ProjectConverter {
     public static ProjectResponse.ProjectListResponse toProjectListResponse(List<ProjectResponse.SimpleProjectResponse> projects) {
         return new ProjectResponse.ProjectListResponse(projects);
     }
+
+    public static ProjectResponse.ProjectInfoResponse toProjectInfoResponse(Project project, List<Provider> providers, Long budget) {
+        return new ProjectResponse.ProjectInfoResponse(
+                project.getId(), project.getName(), project.getDescription(), budget, project.getCreatedAt().toLocalDate(), providers);
+    }
 }
