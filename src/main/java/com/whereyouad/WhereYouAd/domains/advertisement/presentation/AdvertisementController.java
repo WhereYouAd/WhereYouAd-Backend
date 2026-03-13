@@ -70,4 +70,19 @@ public class AdvertisementController implements AdvertisementControllerDocs {
         return ResponseEntity.ok(DataResponse.ok());
     }
 
+
+    @GetMapping("/{orgId}/campaigns")
+    public ResponseEntity<DataResponse<AdvertisementResponse.AdCampaignListResponse>> readAdCampaigns(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = true) String providerType
+    )
+    {
+        AdvertisementResponse.AdCampaignListResponse response = advertisementQueryService.readAdCampaigns(userId, orgId, providerType);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
 }

@@ -53,4 +53,8 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     @Modifying
     @Query("UPDATE AdCampaign a SET a.status = :status WHERE a.project.organization.id = :orgId")
     void updateStatusByOrganizationId(@Param("orgId") Long orgId, @Param("status") Status status);
+
+    //provider 값과 orgId 값이 일치하고, project 가 null 인 AdCampaign 엔티티 리스트로 추출
+    @Query("SELECT adc FROM AdCampaign adc WHERE adc.provider = :provider AND adc.project IS null AND adc.organization.id = :orgId")
+    List<AdCampaign> findByOrgIdAndProviderWithNullProject(@Param("orgId") Long orgId, @Param("provider") Provider provider);
 }

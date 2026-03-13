@@ -10,4 +10,6 @@ public interface AdvertisementQueryService {
     AdvertisementResponse.AdContentInfosResponse readAdContents(Long userId, Long orgId, Long projectId);
 
     AdvertisementResponse.AdGroupInfoResponse readAdGroup(Long userId, Long orgId, Long projectId, Long adContentId);
+
+    AdvertisementResponse.AdCampaignListResponse readAdCampaigns(Long userId, Long orgId, String providerType);
 }
