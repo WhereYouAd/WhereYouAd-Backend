@@ -10,5 +10,7 @@ public interface ProjectService {
 
     ProjectResponse.ProjectListResponse getProjects(Long userId, Long orgId);
 
+    ProjectResponse.ProjectInfoResponse getProject(Long userId, Long orgId, Long projectId);
+
     void updateAllProjectsStatus(Long userId, Long orgId, Status status);
 }

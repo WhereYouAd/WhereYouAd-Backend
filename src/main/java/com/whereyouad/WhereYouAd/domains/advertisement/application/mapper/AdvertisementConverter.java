@@ -12,7 +12,7 @@ public class AdvertisementConverter {
     public static AdvertisementResponse.AdContentInfoResponse toAdContentInfo(AdContent adContent,
             AdvertisementResponse.AdGroupInfoResponse adGroupInfoResponse) {
         return new AdvertisementResponse.AdContentInfoResponse(
-                adContent.getId(), adContent.getTrackingUrl(), adContent.getLandingUrl(), adContent.getStatus(), adGroupInfoResponse.targetInfo());
+                adContent.getId(), adContent.getTrackingUrl(), adContent.getLandingUrl(), adContent.getDescription(), adContent.getStatus(), adGroupInfoResponse.targetInfo());
     }
 
     public static AdvertisementResponse.AdContentInfosResponse toAdContentsInfo(List<AdContent> adContents) {
