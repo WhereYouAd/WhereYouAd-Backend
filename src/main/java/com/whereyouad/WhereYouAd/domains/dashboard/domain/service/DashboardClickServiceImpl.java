@@ -31,9 +31,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
 
-    /**
-     * 클라이언트 SSE 구독 요청 처리
-     */
+    // 클라이언트 SSE 구독 요청 처리
     @Override
     public SseEmitter subscribe(Long userId, Long orgId, Provider provider) {
         orgRepository.findById(orgId).
@@ -48,6 +46,8 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         String routingKey = orgId + "_" + routingProvider;
 
         // 어떤 유저의 어떤 브라우저 탭인지 식별하기 위한 고유 ID
+        // 같은 회원이 두개 이상의 브라우저 탭을 열었을 경우, user_id 가 같아 첫번째 탭에서 실시간 지표가 멈춰버리고, 두번째 탭에서 지표가 시작될 수 있다.
+        // 따라서 회원 식별자를 user_id + UUID 를 사용해, 회원 1명이 여러 브라우저 탭으로 열더라도 모두 정상동작하도록 설계
         String emitterId = userId + "_" + UUID.randomUUID().toString();
 
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
@@ -68,9 +68,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         return emitter;
     }
 
-    /**
-     * 1초마다 Redis에서 실시간 클릭수를 조회하여 구독 중인 클라이언트들에게 브로드캐스팅
-     */
+    // 1초마다 Redis에서 실시간 클릭수를 조회하여 SSE 구독 중인 클라이언트들에게 브로드캐스팅
     @Scheduled(fixedRate = 1000)
     public void broadcastRealTimeClicks() {
         Set<String> activeRoutingKeys = emitterRepository.findAllRoutingKeys();
@@ -84,14 +82,14 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             // 라우팅 키에서 provider 파싱 ("1_KAKAO" -> "KAKAO")
             String providerType = routingKey.split("_")[1];
 
-            // 1. record를 활용하여 DTO 데이터 생성
+            // DTO 데이터 생성
             DashboardResponse.RealTimeClickResponse payload =
                     new DashboardResponse.RealTimeClickResponse(clickCount, providerType);
 
-            // 2. 프로젝트 공통 규격인 DataResponse로 포장
+            // DataResponse로 포장
             DataResponse<DashboardResponse.RealTimeClickResponse> responseBody = DataResponse.from(payload);
 
-            // 3. 해당 라우팅 키를 구독 중인 모든 클라이언트(SseEmitter)에게 전송
+            // 해당 routingKey 를 구독 중인 모든 케이블(SseEmitter)에게 전송
             Map<String, SseEmitter> sseEmitters = emitterRepository.findAllByRoutingKey(routingKey);
             sseEmitters.forEach((emitterId, emitter) -> {
                 sendToClient(routingKey, emitterId, emitter, responseBody);
@@ -99,9 +97,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         }
     }
 
-    /**
-     * 클라이언트로 데이터 전송 및 예외 처리
-     */
+    // 클라이언트로 데이터 전송 및 예외 처리
     private void sendToClient(String routingKey, String emitterId, SseEmitter emitter, Object data) {
         try {
             emitter.send(SseEmitter.event()
@@ -109,6 +105,8 @@ public class DashboardClickServiceImpl implements DashboardClickService {
                     .data(data));             // DataResponse로 감싸진 JSON 객체가 전송됨
         } catch (IOException e) {
             // 전송 중 에러(클라이언트 강제 종료 등) 발생 시 저장소에서 즉시 삭제
+            // 여기서 발생하는 IOException 은 실제 오류의 개념보단 "사용자가 우리 서비스 탭을 종료" 했음의 의미로 본다.
+            // 따라서 DashboardException 과 같은 오류를 던지지 않고, 해당 SseEmitter 를 삭제하고 로그를 남기고 넘긴다.
             emitterRepository.deleteByRoutingKeyAndEmitterId(routingKey, emitterId);
             log.warn("SSE 연결 끊어짐. Emitter 삭제 처리: {}", emitterId);
         }
