@@ -25,9 +25,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DashboardClickServiceImpl implements DashboardClickService {
 
+    private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 30; // SseEmitter 생명주기 30분 = 연결 30분 유지
+
     private final SseEmitterRepository emitterRepository;
     private final RedisTemplate<String, String> redisTemplate;
-    private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 30; // 30분 유지
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
 
@@ -50,6 +51,10 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         // 따라서 회원 식별자를 user_id + UUID 를 사용해, 회원 1명이 여러 브라우저 탭으로 열더라도 모두 정상동작하도록 설계
         String emitterId = userId + "_" + UUID.randomUUID().toString();
 
+        // SseEmitter 를 생명주기를 30분으로 하여 생성
+        // 사용자가 실시간 클릭수를 띄워두고 정상적으로 30분이 지나면 자동으로 emitter.onTimeOut(...) 실행하여 삭제 진행
+        // TODO : 보통 실무에서 이 생명주기는 30분 ~ 1시간으로 잡는다고 해서, PR 진행하며 시간 값 합의해도 좋을 것 같습니다.
+        // 삭제 후 프론트 측에서 약 3초뒤에 연결이 끊어졌음을 인식하여 새로운 30분짜리 SseEmitter 구독 요청
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
 
         // 연결이 끊어지거나 타임아웃 발생 시 저장소에서 제거되도록 콜백 등록
