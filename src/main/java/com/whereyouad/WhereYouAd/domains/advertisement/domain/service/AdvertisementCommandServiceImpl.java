@@ -73,6 +73,7 @@ public class AdvertisementCommandServiceImpl implements AdvertisementCommandServ
         adCampaignRepository.updateStatusByProjectId(projectId, status);
         adGroupRepository.updateStatusByProjectId(projectId, status);
         adContentRepository.updateStatusByProjectId(projectId, status);
+        projectRepository.updateStatusById(projectId, status);
     }
 
     @Override

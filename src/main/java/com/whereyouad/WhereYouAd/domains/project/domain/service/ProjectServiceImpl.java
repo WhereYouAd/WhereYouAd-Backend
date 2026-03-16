@@ -240,6 +240,8 @@ public class ProjectServiceImpl implements ProjectService {
         adCampaignRepository.updateStatusByOrganizationId(orgId, status);
         adGroupRepository.updateStatusByOrganizationId(orgId, status);
         adContentRepository.updateStatusByOrganizationId(orgId, status);
+
+        projectRepository.updateStatusByOrganizationId(orgId, status);
     }
 
     public void validateProject (Long userId, Long orgId) {
