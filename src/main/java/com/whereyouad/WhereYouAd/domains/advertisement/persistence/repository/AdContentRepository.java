@@ -41,4 +41,7 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
         @Modifying
         @Query("UPDATE AdContent a SET a.status = :status WHERE a.adGroup.adCampaign.project.organization.id = :orgId")
         void updateStatusByOrganizationId(@Param("orgId") Long orgId, @Param("status") Status status);
+
+        // trackingUrl이 존재하는지 확인(트래킹 링크 중복 생성 방지)
+        boolean existsByTrackingUrl(String trackingUrl);
 }
