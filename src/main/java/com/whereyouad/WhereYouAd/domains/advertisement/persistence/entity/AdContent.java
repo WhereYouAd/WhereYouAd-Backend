@@ -41,4 +41,8 @@ public class AdContent extends BaseEntity {
     public void updateStatus(Status status) {
         this.status = status;
     }
+
+    public void updateTrackingUrl(String trackingUrl) {
+        this.trackingUrl = trackingUrl;
+    }
 }
