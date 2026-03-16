@@ -27,13 +27,13 @@ import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectR
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
+import com.whereyouad.WhereYouAd.global.utils.BudgetCalculator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,6 +50,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final MetricFactRepository metricFactRepository;
+    private final BudgetCalculator budgetCalculator;
 
     @Override
     public ProjectResponse.CreatedResponse createProject(Long userId, Long orgId,ProjectRequest.CreateRequest request) {
@@ -159,7 +160,7 @@ public class ProjectServiceImpl implements ProjectService {
             BigDecimal totalSpend = spendMap.getOrDefault(projectId, BigDecimal.ZERO);
 
             // 예산 소진 현황 계산 메서드 호출
-            double budgetUsageRate = calculateBudgetUsageRate(projectCampaigns, totalSpend);
+            double budgetUsageRate = budgetCalculator.calculateBudgetUsageRate(projectCampaigns, totalSpend);
 
             return ProjectConverter.toSimpleProjectResponse(project, distinctProviders, budgetUsageRate);
 
@@ -183,7 +184,7 @@ public class ProjectServiceImpl implements ProjectService {
         List<Provider> distinctProviders = extractDistinctProviders(campaignSummaries);
 
         // 총 예산 (캠페인 budget의 합)
-        long totalBudget = calculateTotalBudget(campaignSummaries);
+        long totalBudget = budgetCalculator.calculateTotalBudget(campaignSummaries);
 
         return ProjectConverter.toProjectInfoResponse(project, distinctProviders, totalBudget);
     }
@@ -197,28 +198,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .toList();
     }
 
-    // 총 예산 계산 공통 메서드
-    private long calculateTotalBudget(List<ProjectQueryDto.CampaignSummary> campaignSummaries) {
-        return campaignSummaries.stream()
-                .mapToLong(summary -> summary.budget() != null ? summary.budget() : 0L)
-                .sum();
-    }
 
-    // 예산 소진 현황 계산 메서드
-    private double calculateBudgetUsageRate(List<ProjectQueryDto.CampaignSummary> projectCampaigns, BigDecimal totalSpend) {
-        long totalBudget = calculateTotalBudget(projectCampaigns);
-
-        // 예산이 없거나 지출이 없으면 0.0 반환
-        if (totalBudget <= 0 || totalSpend == null) {
-            return 0.0;
-        }
-
-        // 소진율 계산 (비용 / 예산 * 100), 소수점 첫째 자리 이후로는 버림 처리
-        return totalSpend
-                .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(totalBudget), 1, RoundingMode.DOWN)
-                .doubleValue();
-    }
 
     @Override
     public void updateAllProjectsStatus(Long userId, Long orgId, Status status) {
