@@ -17,6 +17,7 @@ import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCod
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.project.exception.code.ProjectErrorCode;
+import com.whereyouad.WhereYouAd.global.utils.BudgetCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final MetricFactRepository metricFactRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
+    private final BudgetCalculator budgetCalculator;
 
     @Override
     @Transactional(readOnly = true)
@@ -75,12 +77,9 @@ public class DashboardServiceImpl implements DashboardService {
         totalBudget = (totalBudget != null) ? totalBudget : 0L;
         Long totalSpend = (totalSpendDec != null) ? totalSpendDec.longValue() : 0L;
 
-        // 잔액 및 퍼센트
-        Long remainingBudget = totalBudget - totalSpend;
-
-        // 예산이 0원이면 0%, 아니면 (소진액 / 총예산 * 100) 값의 소수점 첫째 자리까지 반올림
-        Double usagePercentage = (totalBudget == 0) ? 0.0
-                : Math.round(((double) totalSpend / totalBudget) * 1000) / 10.0;
+        // 잔액 및 퍼센트 (BudgetCalculator에 위임)
+        Long remainingBudget = budgetCalculator.calculateRemainingBudget(totalBudget, totalSpend);
+        Double usagePercentage = budgetCalculator.calculateUsageRate(totalBudget, BigDecimal.valueOf(totalSpend));
 
         return new DashboardResponse.BudgetSummaryResponse(
                 providerType,

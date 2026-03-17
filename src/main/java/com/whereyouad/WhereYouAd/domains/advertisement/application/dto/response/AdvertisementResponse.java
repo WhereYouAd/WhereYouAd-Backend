@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response;
 
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.List;
 public class AdvertisementResponse {
     public record AdContentInfoResponse (
             Long id,
+            String name,
+            Provider provider,
             String trackingUrl,
             String landingUrl,
             String description,

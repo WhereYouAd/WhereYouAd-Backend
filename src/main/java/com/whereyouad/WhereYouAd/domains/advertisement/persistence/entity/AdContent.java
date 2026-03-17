@@ -19,6 +19,8 @@ public class AdContent extends BaseEntity {
     @Column(name = "ad_content_id")
     private Long id;
 
+    private String name;
+
     private String trackingUrl;
 
     private String landingUrl;
