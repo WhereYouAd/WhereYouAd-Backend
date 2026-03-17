@@ -8,9 +8,9 @@ import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandl
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -28,7 +28,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 30; // SseEmitter 생명주기 30분 = 연결 30분 유지
 
     private final SseEmitterRepository emitterRepository;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisUtil redisUtil;
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
 
@@ -81,7 +81,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         for (String routingKey : activeRoutingKeys) {
             // Redis에서 집계된 실시간 클릭수 조회 (Kafka Consumer가 업데이트해둔 값)
             String redisKey = "org:clicks:realtime:" + routingKey;
-            String countStr = redisTemplate.opsForValue().get(redisKey);
+            String countStr = redisUtil.getData(redisKey);
             long clickCount = countStr != null ? Long.parseLong(countStr) : 0L;
 
             // 라우팅 키에서 provider 파싱 ("1_KAKAO" -> "KAKAO")
