@@ -19,7 +19,7 @@ public interface ClickControllerDocs {
             summary = "트래킹 링크 발급 API",
             description = "광고(adContentId)에 대한 트래킹 URL 발급\n\n" +
                     "- 하나의 광고당 URL은 1개만 존재\n" +
-                    "- 이미 발급된 URL이 있으면 기존 URL을 그대로 반환" +
+                    "- 이미 발급된 URL이 있으면 기존 URL을 그대로 반환\n" +
                     "- 트래킹 링크를 발급하기 위해서 landingURL이 있어야 정상적으로 redirect 되므로 필수적으로 입력"
     )
     @ApiResponses({
