@@ -62,6 +62,15 @@ public class DashboardResponse {
     //실시간 클릭수 스트림 반환 응답
     public record RealTimeClickResponse(
             Long currentClickCount,
-            String providerType
+            String providerType,
+            Boolean isSuspect,
+            SuspectDetail suspectDetail
+    ) {}
+
+    public record SuspectDetail(
+            String provider,
+            String campaignName,
+            String adName,
+            String message
     ) {}
 }
