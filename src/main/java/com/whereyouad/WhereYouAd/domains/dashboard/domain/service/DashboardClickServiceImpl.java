@@ -1,8 +1,11 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.SseEmitterRepository;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
+import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
@@ -31,6 +34,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
     private final RedisUtil redisUtil;
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
+    private final ObjectMapper objectMapper;
 
     // 클라이언트 SSE 구독 요청 처리
     @Override
@@ -66,7 +70,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
 
         // 503 Service Unavailable 에러 방지를 위한 최초 연결 더미 데이터 전송
         DashboardResponse.RealTimeClickResponse initialData =
-                new DashboardResponse.RealTimeClickResponse(0L, routingProvider);
+                DashboardConverter.toRealTimeClickResponse(0L, routingProvider, false, null);
 
         sendToClient(routingKey, emitterId, emitter, DataResponse.from(initialData));
 
@@ -84,12 +88,32 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             String countStr = redisUtil.getData(redisKey);
             long clickCount = countStr != null ? Long.parseLong(countStr) : 0L;
 
+            //클릭수 이상징후 추출
+            String suspectAlertKey = "org:suspect:alert:" + routingKey;
+            String suspectJson = redisUtil.getData(suspectAlertKey);
+
+            boolean isSuspect = false;
+
+            DashboardResponse.SuspectDetail detail = null;
+
+            //만약 이상징후 값이 존재하면,
+            if (suspectJson != null) {
+                isSuspect = true;
+                try {
+                    detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
+                    redisUtil.deleteData(suspectAlertKey);
+
+                } catch (JsonProcessingException e) {
+                    log.error("이상 징후 데이터 JSON 파싱 실패: {}", suspectJson, e);
+                }
+            }
+
             // 라우팅 키에서 provider 파싱 ("1_KAKAO" -> "KAKAO")
             String providerType = routingKey.split("_")[1];
 
             // DTO 데이터 생성
             DashboardResponse.RealTimeClickResponse payload =
-                    new DashboardResponse.RealTimeClickResponse(clickCount, providerType);
+                    DashboardConverter.toRealTimeClickResponse(clickCount, providerType, isSuspect, detail);
 
             // DataResponse로 포장
             DataResponse<DashboardResponse.RealTimeClickResponse> responseBody = DataResponse.from(payload);
@@ -108,12 +132,17 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             emitter.send(SseEmitter.event()
                     .name("org-click-update") // 프론트엔드가 이 이름으로 이벤트를 리스닝합니다.
                     .data(data));             // DataResponse로 감싸진 JSON 객체가 전송됨
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             // 전송 중 에러(클라이언트 강제 종료 등) 발생 시 저장소에서 즉시 삭제
             // 여기서 발생하는 IOException 은 실제 오류의 개념보단 "사용자가 우리 서비스 탭을 종료" 했음의 의미로 본다.
             // 따라서 DashboardException 과 같은 오류를 던지지 않고, 해당 SseEmitter 를 삭제하고 로그를 남기고 넘긴다.
             emitterRepository.deleteByRoutingKeyAndEmitterId(routingKey, emitterId);
-            log.warn("SSE 연결 끊어짐. Emitter 삭제 처리: {}", emitterId);
+            log.info("SSE 연결 끊어짐. Emitter 삭제 처리: {}", emitterId);
+        } catch (Exception e) {
+            // 2. JSON 직렬화 실패 등 예상치 못한 치명적인 런타임 서버 에러
+            // 스케줄러 루프가 죽는 것을 막기 위해 최상위 Exception으로 한번 더 catch
+            emitterRepository.deleteByRoutingKeyAndEmitterId(routingKey, emitterId);
+            log.error("SSE 데이터 전송 중 예기치 않은 오류 발생. Emitter 강제 삭제 (emitterId: {})", emitterId, e);
         }
     }
 }
