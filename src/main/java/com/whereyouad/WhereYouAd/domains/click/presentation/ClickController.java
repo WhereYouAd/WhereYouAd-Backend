@@ -4,10 +4,15 @@ import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickRes
 import com.whereyouad.WhereYouAd.domains.click.domain.service.ClickService;
 import com.whereyouad.WhereYouAd.domains.click.presentation.docs.ClickControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/clicks")
@@ -26,5 +31,24 @@ public class ClickController implements ClickControllerDocs {
         return ResponseEntity.ok(
                 DataResponse.created(response)
         );
+    }
+
+    @Override
+    @GetMapping("/track/{code}")
+    public ResponseEntity<Void> processTracking(
+            @PathVariable String code,
+            HttpServletRequest request
+    ) {
+        String ipAddress = request.getRemoteAddr();
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent == null) userAgent = "Unknown";
+
+        String landingUrl = clickService.handleTrackingRedirect(code, ipAddress, userAgent);
+
+        HttpHeaders headers = new HttpHeaders();
+        // 헤더 location에 랜딩 url 삽입
+        headers.setLocation(URI.create(landingUrl));
+        // 302 리다이렉트
+        return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 }

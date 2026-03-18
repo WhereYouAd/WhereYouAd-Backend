@@ -44,4 +44,6 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
 
         // trackingUrl이 존재하는지 확인(트래킹 링크 중복 생성 방지)
         boolean existsByTrackingUrl(String trackingUrl);
+
+        Optional<AdContent> findByTrackingUrl(String trackingUrl);
 }

@@ -12,8 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.whereyouad.WhereYouAd.infrastructure.client.click.ClickEventPublisher;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -22,6 +24,7 @@ public class ClickServiceImpl implements ClickService {
 
     private final AdContentRepository adContentRepository;
     private final OrgMemberRepository orgMemberRepository;
+    private final ClickEventPublisher clickEventPublisher;
 
     @Value("${spring.application.base-url}")
     private String baseUrl;
@@ -55,5 +58,28 @@ public class ClickServiceImpl implements ClickService {
         adContent.updateTrackingUrl(trackingUrl);
 
         return new ClickResponse.NewTrackingUrl(trackingUrl);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String handleTrackingRedirect(String code, String ipAddress, String userAgent) {
+        String trackingUrl = baseUrl + "/api/clicks/track/" + code;
+
+        // 1. 광고 조회 (trackingUrl 기반)
+        AdContent adContent = adContentRepository.findByTrackingUrl(trackingUrl)
+                .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
+
+        // 2. 클릭 이벤트 생성
+        ClickResponse.ClickEvent event = new ClickResponse.ClickEvent(adContent.getId(), ipAddress, userAgent,
+                LocalDateTime.now());
+        // 클릭 이벤트 인터페이스에서 redis에 LPush (이후 ClickEventConsumerService에서 RPOP하며 DB에 insert)
+        clickEventPublisher.publish(event);
+
+        // 3. 랜딩 Url 반환
+        if (StringUtils.hasText(adContent.getLandingUrl())) {
+            return adContent.getLandingUrl();
+        }
+        // 랜딩 Url이 없을 경우 홈으로
+        return baseUrl;
     }
 }
