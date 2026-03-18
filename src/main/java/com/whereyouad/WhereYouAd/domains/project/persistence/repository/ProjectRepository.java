@@ -1,7 +1,9 @@
 package com.whereyouad.WhereYouAd.domains.project.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,4 +16,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query("select p from Project p where p.id = :projectId and p.organization.id = :orgId")
     Optional<Project> findByIdAndOrganizationId(@Param("projectId") Long projectId, @Param("orgId") Long orgId);
+
+    @Modifying
+    @Query("UPDATE Project p SET p.status = :status WHERE p.id = :projectId")
+    void updateStatusById(@Param("projectId") Long projectId, @Param("status") Status status);
+
+    @Modifying
+    @Query("UPDATE Project p SET p.status = :status WHERE p.organization.id = :orgId")
+    void updateStatusByOrganizationId(@Param("orgId") Long orgId, @Param("status") Status status);
 }
