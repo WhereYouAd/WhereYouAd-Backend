@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.click.application.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class ClickRequest {
 
@@ -10,6 +11,7 @@ public class ClickRequest {
             @Schema(description = "광고 연결 랜딩 URL", example = "https://www.whereyouad.com")
             @NotBlank(message = "Landing URL cannot be empty")
             @Pattern(regexp = "^(https?://).+", message = "랜딩 url은 http:// or https://로 시작해야 합니다.")
+            @Size(max = 255, message = "랜딩 URL은 255자 이하여야 합니다.")
             String landingUrl
     ) {}
 }
