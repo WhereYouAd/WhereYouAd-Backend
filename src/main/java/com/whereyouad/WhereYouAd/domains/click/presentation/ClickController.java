@@ -1,10 +1,12 @@
 package com.whereyouad.WhereYouAd.domains.click.presentation;
 
+import com.whereyouad.WhereYouAd.domains.click.application.dto.request.ClickRequest;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 import com.whereyouad.WhereYouAd.domains.click.domain.service.ClickService;
 import com.whereyouad.WhereYouAd.domains.click.presentation.docs.ClickControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,9 +27,10 @@ public class ClickController implements ClickControllerDocs {
     public ResponseEntity<DataResponse<ClickResponse.NewTrackingUrl>> createTrackingUrl(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @PathVariable Long adContentId
+            @PathVariable Long adContentId,
+            @Valid @RequestBody ClickRequest.CreateTrackingUrl request
     ) {
-        ClickResponse.NewTrackingUrl response = clickService.createTrackingUrl(userId, adContentId, orgId);
+        ClickResponse.NewTrackingUrl response = clickService.createTrackingUrl(userId, adContentId, orgId, request.landingUrl());
         return ResponseEntity.ok(
                 DataResponse.created(response)
         );

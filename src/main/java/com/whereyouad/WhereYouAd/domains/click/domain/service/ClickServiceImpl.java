@@ -31,7 +31,7 @@ public class ClickServiceImpl implements ClickService {
 
     @Override
     @Transactional
-    public ClickResponse.NewTrackingUrl createTrackingUrl(Long userId, Long adContentId, Long orgId) {
+    public ClickResponse.NewTrackingUrl createTrackingUrl(Long userId, Long adContentId, Long orgId, String landingUrl) {
 
         // 1. 유저가 해당 조직 구성원인지 검증
         if (!orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
@@ -42,19 +42,22 @@ public class ClickServiceImpl implements ClickService {
         AdContent adContent = adContentRepository.findById(adContentId)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
-        // 3. 이미 트래킹 URL이 존재하면 새로 생성하지 않고 기존 URL 반환
+        // 3. 입력받은 landingUrl로 최신화하여 저장
+        adContent.updateLandingUrl(landingUrl);
+
+        // 4. 이미 트래킹 URL이 존재하면 새로 생성하지 않고 기존 URL 반환
         if (StringUtils.hasText(adContent.getTrackingUrl())) {
             return new ClickResponse.NewTrackingUrl(adContent.getTrackingUrl());
         }
 
-        // 4. 동일 코드가 DB에 이미 존재하면 재시도
+        // 5. 동일 코드가 DB에 이미 존재하면 재시도
         String trackingUrl;
         do {
             String code = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
             trackingUrl = baseUrl + "/api/clicks/track/" + code;
         } while (adContentRepository.existsByTrackingUrl(trackingUrl));
 
-        // 5. 트래킹 주소 저장(더티 체킹)
+        // 6. 트래킹 주소 저장(더티 체킹)
         adContent.updateTrackingUrl(trackingUrl);
 
         return new ClickResponse.NewTrackingUrl(trackingUrl);
