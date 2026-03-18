@@ -5,6 +5,7 @@ import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,5 +28,17 @@ public interface ClickControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @PathVariable Long adContentId
+    );
+    @Operation(
+            summary = "광고 트래킹 리다이렉트 API",
+            description = "발급된 트래킹 링크 접속 시 클릭 이벤트 기록 후 광고 페이지로 리다이렉트"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "302", description = "리다이렉트 성공"),
+            @ApiResponse(responseCode = "404", description = "유효하지 않은 트래킹 링크")
+    })
+    ResponseEntity<Void> processTracking(
+            @PathVariable String code,
+            HttpServletRequest request
     );
 }
