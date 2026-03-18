@@ -38,8 +38,8 @@ public class ClickServiceImpl implements ClickService {
             throw new ClickHandler(ClickErrorCode.CLICK_UNAUTHORIZED);
         }
 
-        // 2. 광고 조회
-        AdContent adContent = adContentRepository.findById(adContentId)
+        // 2. 광고 조회 및 AdContent가 해당 조직것인지 검증
+        AdContent adContent = adContentRepository.findByIdAndOrganizationId(adContentId, orgId)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
         // 3. 입력받은 landingUrl로 최신화하여 저장

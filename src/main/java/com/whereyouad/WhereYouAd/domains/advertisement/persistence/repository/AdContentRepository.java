@@ -26,6 +26,17 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
                         @Param("orgId") Long orgId);
 
         @Query("SELECT ac FROM AdContent ac " +
+                        "JOIN ac.adGroup ag " +
+                        "JOIN ag.adCampaign c " +
+                        "JOIN c.project p " +
+                        "JOIN p.organization o " +
+                        "WHERE ac.id = :adContentId " +
+                        "AND o.id = :orgId")
+        Optional<AdContent> findByIdAndOrganizationId(
+                        @Param("adContentId") Long adContentId,
+                        @Param("orgId") Long orgId);
+
+        @Query("SELECT ac FROM AdContent ac " +
                         "JOIN FETCH ac.adGroup ag " +
                         "JOIN ag.adCampaign c " +
                         "JOIN c.project p " +
