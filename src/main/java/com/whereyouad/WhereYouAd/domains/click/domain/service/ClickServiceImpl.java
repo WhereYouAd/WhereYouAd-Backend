@@ -48,7 +48,7 @@ public class ClickServiceImpl implements ClickService {
         String trackingUrl;
         do {
             String code = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-            trackingUrl = baseUrl + "/api/track/" + code;
+            trackingUrl = baseUrl + "/api/clicks/track/" + code;
         } while (adContentRepository.existsByTrackingUrl(trackingUrl));
 
         // 5. 트래킹 주소 저장(더티 체킹)
