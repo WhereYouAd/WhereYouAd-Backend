@@ -51,4 +51,11 @@ public class DashboardConverter {
                 .sum();
         return new DashboardResponse.OngoingPlatformAdCountResponse(startDate, endDate, totalCount, providerCount);
     }
+
+    //Data -> DTO
+    public static DashboardResponse.RealTimeClickResponse toRealTimeClickResponse(
+            Long clickCount, String providerType, Boolean isSuspect, DashboardResponse.SuspectDetail suspectDetail)
+    {
+        return new DashboardResponse.RealTimeClickResponse(clickCount, providerType, isSuspect, suspectDetail);
+    }
 }
