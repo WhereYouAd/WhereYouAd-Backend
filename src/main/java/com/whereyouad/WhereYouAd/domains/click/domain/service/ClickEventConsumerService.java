@@ -8,9 +8,9 @@ import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickRes
 import com.whereyouad.WhereYouAd.domains.click.application.mapper.ClickConverter;
 import com.whereyouad.WhereYouAd.domains.click.persistence.entity.ClickLog;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickLogRepository;
+import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +32,7 @@ public class ClickEventConsumerService {
     private static final String QUEUE_NAME = "click_queue";
     private static final int BATCH_SIZE = 100;
 
-    private final StringRedisTemplate redisTemplate;
+    private final RedisUtil redisUtil;
     private final ObjectMapper objectMapper;
     private final ClickLogRepository clickLogRepository;
     private final AdContentRepository adContentRepository;
@@ -44,7 +44,7 @@ public class ClickEventConsumerService {
 
         // 1. Redis에서 배치 사이즈만큼 RPOP
         for (int i = 0; i < BATCH_SIZE; i++) {
-            String jsonEvent = redisTemplate.opsForList().rightPop(QUEUE_NAME);
+            String jsonEvent = redisUtil.rightPop(QUEUE_NAME);
             if (jsonEvent == null) {
                 break; // 큐가 비어있으면 루프 종료
             }
@@ -177,17 +177,17 @@ public class ClickEventConsumerService {
         String key = "click_ip_count:" + ipAddress;
 
         // 해당 IP의 카운트를 1 증가
-        Long count = redisTemplate.opsForValue().increment(key);
+        Long count = redisUtil.increment(key);
 
         if (count != null && count == 1) {
             // 처음 측정되는 IP면 만료 시간(TTL)을 1분으로 설정
-            redisTemplate.expire(key, 1, TimeUnit.MINUTES);
+            redisUtil.expire(key, 1, TimeUnit.MINUTES);
         }
 
         // 1분 내에 20회 초과 접속 시 봇으로 취급
         if (count != null && count > 20) {
             // 봇으로 취급된 경우 10분 차단
-            redisTemplate.expire(key, 10, TimeUnit.MINUTES);
+            redisUtil.expire(key, 10, TimeUnit.MINUTES);
             return true;
         }
 

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -16,14 +16,14 @@ public class RedisClickEventPublisher implements ClickEventPublisher {
 
     private static final String QUEUE_NAME = "click_queue";
 
-    private final StringRedisTemplate redisTemplate;
+    private final RedisUtil redisUtil;
     private final ObjectMapper objectMapper;
 
     @Override
     public void publish(ClickResponse.ClickEvent event) {
         try {
             String jsonEvent = objectMapper.writeValueAsString(event);
-            redisTemplate.opsForList().leftPush(QUEUE_NAME, jsonEvent);
+            redisUtil.leftPush(QUEUE_NAME, jsonEvent);
             log.debug("redis 큐에 클릭 이벤트 저장: {}", jsonEvent);
         }
         catch (JsonProcessingException e) {
