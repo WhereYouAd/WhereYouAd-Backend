@@ -136,7 +136,7 @@ feign:
 
 # 11. kafka
   kafka:
-    bootstrap-servers: ${BOOTSTRAP-SERVERS:http://localhost:9292}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
