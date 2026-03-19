@@ -123,7 +123,7 @@ coolSms:
 
 # 9. OpenAI 설정
 openai:
-  api-key: ${OPENAI_API_KEY}
+  api-key: 가${OPENAI_API_KEY}
   base-url: https://api.openai.com
   model: gpt-4o-mini
 
@@ -133,3 +133,17 @@ feign:
     config:
       openAiClient:
         loggerLevel: BASIC   # NONE / BASIC / HEADERS / FULL
+
+# 11. kafka
+  kafka:
+    bootstrap-servers: ${BOOTSTRAP-SERVERS:http://localhost:9292}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: where-you-ad-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
