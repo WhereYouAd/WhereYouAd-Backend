@@ -164,14 +164,16 @@ public class UserService {
 
         //변경할 이미지가 요청으로 들어왔다면,
         if (image != null && !image.isEmpty()) {
-            if (oldProfileImageUrl != null) { //기존 프로필 이미지 존재 시,
-                s3UploadService.deleteImageFromUrl(oldProfileImageUrl); //S3 에서 제거
-            }
             newImageUrl = s3UploadService.uploadImage(image); //새 이미지를 S3 업로드 하고 이미지 URL 받기
         }
 
         // 엔티티 수정 (이름, 이미지, 비밀번호)
         user.modifyInfo(request.name(), newImageUrl, finalEncodedPassword);
+
+        // DB 저장 성공 후 기존 이미지 삭제 (orphan 이미지 방지)
+        if (image != null && !image.isEmpty() && oldProfileImageUrl != null) {
+            s3UploadService.deleteImageFromUrl(oldProfileImageUrl);
+        }
 
         return UserConverter.toUserInfoResponse(user.getId(), user.getName(), user.getProfileImageUrl());
     }
