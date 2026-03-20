@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +30,26 @@ public class RedisUtil {
     //Redis 에서 데이터 지우기(key 값 기반)
     public void deleteData(String key) {
         template.delete(key);
+    }
+
+    // List 데이터 저장 (왼쪽 끝에 저장)
+    public Long leftPush(String key, String value) {
+        return template.opsForList().leftPush(key, value);
+    }
+
+    // List 데이터 꺼내기 (오른쪽 끝에서 추출 및 제거)
+    public String rightPop(String key) {
+        return template.opsForList().rightPop(key);
+    }
+
+    // 카운터
+    public Long increment(String key) {
+        return template.opsForValue().increment(key);
+    }
+
+    // 특정 키의 만료 시간 설정
+    public Boolean expire(String key, long timeout, TimeUnit unit) {
+        return template.expire(key, timeout, unit);
     }
 
     // (클릭수) 1 증가
