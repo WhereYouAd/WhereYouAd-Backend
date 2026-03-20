@@ -8,6 +8,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Random;
 
 @Slf4j
@@ -19,30 +20,29 @@ public class DummyClickProducer {
     private final Random random = new Random();
 
     private static final String TOPIC = "ad-click-events";
-    private static final String[] adIds = {"1", "2", "3"};
+    private static final Long[] adContentIds = {1L, 2L, 3L};
+    private static final String[] userAgents = {"UNKNOWN", "MOBILE", "PC"};
 
     // 500ms마다 실행
     @Scheduled(fixedRate = 500)
     public void generateDummyClick() {
-        String adId = adIds[random.nextInt(adIds.length)];
+        Long adContentId = adContentIds[random.nextInt(adContentIds.length)];
 
         // 임의의 IP 주소, 기기 생성
         String ipAddress = "192.168.0." + (random.nextInt(50) + 1);
-        String device = "iOS";
-        long clickedAt = System.currentTimeMillis();
+        String userAgent = userAgents[random.nextInt(userAgents.length)];
 
         ClickDto event = ClickDto.builder()
-                .adId(adId)
+                .adContentId(adContentId)
                 .ipAddress(ipAddress)
-                .device(device)
-                .clickedAt(clickedAt)
+                .userAgent(userAgent)
+                .clickedAt(LocalDateTime.now())
                 .isDummy(true)
                 .build();
 
-        // Kafka로 메시지 send (key는 adId, 같은 광고끼리 같은 파티션으로 분배)
-        kafkaTemplate.send(TOPIC, adId, event);
+        // Kafka로 메시지 send (key는 adContentId, 같은 광고끼리 같은 파티션으로 분배)
+        kafkaTemplate.send(TOPIC, String.valueOf(adContentId), event);
 
-        log.info("Produced click event: {}", event);
+        log.info("Produced dummy click: adContentId={}, ip={}", adContentId, ipAddress);
     }
-
 }
