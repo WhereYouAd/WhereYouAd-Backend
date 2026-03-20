@@ -31,7 +31,13 @@ public class DummyClickProducer {
         String device = "iOS";
         long clickedAt = System.currentTimeMillis();
 
-        ClickDto event = new ClickDto(adId, ipAddress, device, clickedAt);
+        ClickDto event = ClickDto.builder()
+                .adId(adId)
+                .ipAddress(ipAddress)
+                .device(device)
+                .clickedAt(clickedAt)
+                .isDummy(true)
+                .build();
 
         // Kafka로 메시지 send (key는 adId, 같은 광고끼리 같은 파티션으로 분배)
         kafkaTemplate.send(TOPIC, adId, event);
