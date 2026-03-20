@@ -18,4 +18,10 @@ public class ClickResponse {
             String userAgent,
             LocalDateTime clickedAt
     ) {}
+
+    // 실시간 클릭 수 조회 응답 DTO (분 단위)
+    public record RealtimeClickCount(
+            String minute,   // ex) "202603201830"
+            Long count
+    ) {}
 }
