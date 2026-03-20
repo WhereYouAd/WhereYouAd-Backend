@@ -115,9 +115,15 @@ public class UserService {
     //회원 정보(이름, 프로필 이미지, 비밀번호 변경)
     @CacheEvict(value = "user:profile", key = "#userId + ':' + #provider") //정보 변경시 마이페이지 관련 Redis 캐시 삭제하여 이전 데이터 반환 방지
     public UserInfoModifiedResponse modifyUserInfo(Long userId, Provider provider, UserInfoModifyRequest request, MultipartFile image) {
-        // 1. 회원 조회
+        // 회원 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 최종적으로 DB에 저장될 이름 (기본값: 기존 이름)
+        String finalName = user.getName();
+        if (request.name() != null && !request.name().isBlank()) {
+            finalName = request.name();
+        }
 
         // 최종적으로 DB에 저장될 비밀번호 (기본값: 기존 비밀번호)
         String finalEncodedPassword = user.getPassword();
@@ -160,15 +166,15 @@ public class UserService {
 
         // 프로필 이미지 변경 로직
         String oldProfileImageUrl = user.getProfileImageUrl();
-        String newImageUrl = oldProfileImageUrl; // 기본값은 기존 이미지 유지
+        String finalImageUrl = oldProfileImageUrl; // 기본값은 기존 이미지 유지
 
         //변경할 이미지가 요청으로 들어왔다면,
         if (image != null && !image.isEmpty()) {
-            newImageUrl = s3UploadService.uploadImage(image); //새 이미지를 S3 업로드 하고 이미지 URL 받기
+            finalImageUrl = s3UploadService.uploadImage(image); //새 이미지를 S3 업로드 하고 이미지 URL 받기
         }
 
         // 엔티티 수정 (이름, 이미지, 비밀번호)
-        user.modifyInfo(request.name(), newImageUrl, finalEncodedPassword);
+        user.modifyInfo(finalName, finalImageUrl, finalEncodedPassword);
 
         // DB 저장 성공 후 기존 이미지 삭제 (orphan 이미지 방지)
         if (image != null && !image.isEmpty() && oldProfileImageUrl != null) {
