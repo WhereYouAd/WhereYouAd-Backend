@@ -1,9 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.application.mapper;
 
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.*;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
@@ -72,5 +69,9 @@ public class UserConverter {
         return new PasswordResetResponse("인증 코드를 이메일로 전송했습니다.",
                 email,
                 180L);
+    }
+
+    public static UserInfoModifiedResponse toUserInfoResponse(Long userId, String name, String imageUrl) {
+        return new UserInfoModifiedResponse(userId, name, imageUrl);
     }
 }
