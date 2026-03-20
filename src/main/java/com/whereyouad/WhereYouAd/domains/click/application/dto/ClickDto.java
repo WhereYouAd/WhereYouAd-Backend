@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -15,6 +13,6 @@ public class ClickDto {
     private Long adContentId;
     private String ipAddress;
     private String userAgent;
-    private LocalDateTime clickedAt;
+    private long clickedAt;
     private boolean isDummy;
 }

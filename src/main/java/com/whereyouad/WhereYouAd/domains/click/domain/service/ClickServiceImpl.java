@@ -83,7 +83,7 @@ public class ClickServiceImpl implements ClickService {
                 .adContentId(adContent.getId())
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
-                .clickedAt(LocalDateTime.now())
+                .clickedAt(System.currentTimeMillis())
                 .isDummy(false)
                 .build();
         clickEventProducer.produce(clickDto);

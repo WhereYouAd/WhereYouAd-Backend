@@ -8,7 +8,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Random;
 
 @Slf4j
@@ -36,7 +35,7 @@ public class DummyClickProducer {
                 .adContentId(adContentId)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
-                .clickedAt(LocalDateTime.now())
+                .clickedAt(System.currentTimeMillis())
                 .isDummy(true)
                 .build();
 
