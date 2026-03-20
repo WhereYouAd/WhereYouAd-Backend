@@ -59,4 +59,24 @@ public class S3UploadService {
             throw new ImageException(ImageErrorCode.INVALID_FILE_EXTENSION);
         }
     }
+
+    //S3 이미지 URL을 받아 객체 키를 추출한 뒤 S3에서 삭제합니다.
+    public void deleteImageFromUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return;
+        }
+
+        try {
+            // URL에서 S3 객체 키(파일명) 추출
+            // 예: https://[bucketName].s3.ap-northeast-2.amazonaws.com/imageName.jpg -> imageName.jpg
+            String objectKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+
+            // S3에서 객체 삭제
+            s3Template.deleteObject(bucket, objectKey);
+
+        } catch (Exception e) {
+            // S3 삭제 에러 발생 시 처리
+            throw new ImageException(ImageErrorCode.IMAGE_DELETE_FAILED);
+        }
+    }
 }
