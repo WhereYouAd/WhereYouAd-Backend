@@ -26,6 +26,17 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
                         @Param("orgId") Long orgId);
 
         @Query("SELECT ac FROM AdContent ac " +
+                        "JOIN ac.adGroup ag " +
+                        "JOIN ag.adCampaign c " +
+                        "JOIN c.project p " +
+                        "JOIN p.organization o " +
+                        "WHERE ac.id = :adContentId " +
+                        "AND o.id = :orgId")
+        Optional<AdContent> findByIdAndOrganizationId(
+                        @Param("adContentId") Long adContentId,
+                        @Param("orgId") Long orgId);
+
+        @Query("SELECT ac FROM AdContent ac " +
                         "JOIN FETCH ac.adGroup ag " +
                         "JOIN ag.adCampaign c " +
                         "JOIN c.project p " +
@@ -41,4 +52,9 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
         @Modifying
         @Query("UPDATE AdContent a SET a.status = :status WHERE a.adGroup.adCampaign.project.organization.id = :orgId")
         void updateStatusByOrganizationId(@Param("orgId") Long orgId, @Param("status") Status status);
+
+        // trackingUrl이 존재하는지 확인(트래킹 링크 중복 생성 방지)
+        boolean existsByTrackingUrl(String trackingUrl);
+
+        Optional<AdContent> findByTrackingUrl(String trackingUrl);
 }
