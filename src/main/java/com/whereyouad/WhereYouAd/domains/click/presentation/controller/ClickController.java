@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.click.presentation;
+package com.whereyouad.WhereYouAd.domains.click.presentation.controller;
 
 import com.whereyouad.WhereYouAd.domains.click.application.dto.request.ClickRequest;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
@@ -53,5 +53,18 @@ public class ClickController implements ClickControllerDocs {
         headers.setLocation(URI.create(landingUrl));
         // 302 리다이렉트
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
+    }
+
+    // (임시) 실시간 클릭수 조회 (dummy 또는 실제 실시간 집계)
+    // GET /api/clicks/realtime/{adContentId}?mode=real&minutes=60
+    @GetMapping("/realtime/{adContentId}")
+    public ResponseEntity<DataResponse<java.util.List<ClickResponse.RealtimeClickCount>>> getRealtimeClickCounts(
+            @PathVariable Long adContentId,
+            @RequestParam(defaultValue = "real") String mode,
+            @RequestParam(defaultValue = "60") int minutes
+    ) {
+        return ResponseEntity.ok(
+                DataResponse.from(clickService.getRealtimeClickCounts(adContentId, mode, minutes))
+        );
     }
 }
