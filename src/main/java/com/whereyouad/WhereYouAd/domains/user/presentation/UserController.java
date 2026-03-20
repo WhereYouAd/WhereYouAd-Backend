@@ -97,7 +97,7 @@ public class UserController implements UserControllerDocs {
     @PatchMapping("/my")
     public ResponseEntity<DataResponse<UserInfoModifiedResponse>> modifyUserInfo(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestPart(value = "request") UserInfoModifyRequest request,
+            @RequestPart(value = "request") @Valid UserInfoModifyRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image
     )
     {
