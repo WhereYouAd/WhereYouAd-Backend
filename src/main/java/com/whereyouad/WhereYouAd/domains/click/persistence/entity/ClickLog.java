@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.click.persistence.entity;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
+import com.whereyouad.WhereYouAd.domains.click.domain.constant.DeviceType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,8 +23,9 @@ public class ClickLog {
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "device", length = 512)
-    private String device;
+    private DeviceType device;
 
     @Column(name = "clicked_at", nullable = false)
     private LocalDateTime clickedAt;
