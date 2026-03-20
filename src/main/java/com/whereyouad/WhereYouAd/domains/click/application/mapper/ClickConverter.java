@@ -7,16 +7,22 @@ import com.whereyouad.WhereYouAd.domains.click.persistence.entity.ClickLog;
 
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 public class ClickConverter {
 
     public static ClickLog toClickLog(AdContent adContent, ClickDto event, boolean isSuspect) {
         DeviceType deviceType = extractDeviceType(event.getUserAgent());
+        LocalDateTime clickedAt = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(event.getClickedAt()), ZoneId.systemDefault());
 
         return ClickLog.builder()
                 .adContent(adContent)
                 .ipAddress(event.getIpAddress())
                 .device(deviceType)
-                .clickedAt(event.getClickedAt())
+                .clickedAt(clickedAt)
                 .isSuspect(isSuspect)
                 .build();
     }
