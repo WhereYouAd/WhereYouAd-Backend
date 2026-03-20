@@ -8,6 +8,7 @@ import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickRes
 import com.whereyouad.WhereYouAd.domains.click.application.mapper.ClickConverter;
 import com.whereyouad.WhereYouAd.domains.click.persistence.entity.ClickLog;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickLogRepository;
+import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +88,38 @@ public class ClickEventConsumerService {
             boolean isUserAgentBot = isBot(event.userAgent()); // 알려진 봇이나 개발 도구들을 이용한 접근한 경우 봇
             boolean isAbnormalIp = checkAbnormalIp(event.ipAddress()); // 동일 IP에서 1분에 20회 이상 요청을 보낸 경우 봇
             boolean suspect = isUserAgentBot || isAbnormalIp; // 위 경우 중 둘 중 하나라도 봇인 경우 봇
+
+            // ===SSE 실시간 데이터 적재 로직 추가===
+            // 광고 엔티티를 타고 올라가서 orgId와 provider 추출
+            Long orgId = adContent.getAdGroup().getAdCampaign().getProject().getOrganization().getId();
+            String provider = adContent.getAdGroup().getAdCampaign().getProvider().name();
+
+            // 실시간 총 클릭수 증가 (Redis 연산)
+            // 해당 광고가 속한 조직의 메인 대시보드(ALL) 에 클릭수 1 증가
+            // & 해당 광고가 속한 조직 내부에 광고에 해당하는 플랫폼(provider) 에도 클릭수 1 증가
+            redisUtil.increment("org:clicks:realtime:" + orgId + "_ALL");
+            redisUtil.increment("org:clicks:realtime:" + orgId + "_" + provider);
+
+            // 부정 클릭(suspect) 감지 시 프론트엔드 알림용 JSON 적재
+            if (suspect) {
+                String suspectAlertKey = "org:suspect:alert:" + orgId + "_" + provider;
+
+                DashboardResponse.SuspectDetail detail = new DashboardResponse.SuspectDetail(
+                        provider,
+                        adContent.getAdGroup().getAdCampaign().getName(),
+                        adContent.getName(),
+                        "비정상적인 트래픽 의심"
+                );
+                try {
+                    String jsonDetail = objectMapper.writeValueAsString(detail);
+                    redisUtil.setDataExpire(suspectAlertKey, jsonDetail, 5L);
+                } catch (JsonProcessingException e) {
+                    // JSON 파싱에서 오류 발생했을 시 로그만 남김
+                    // 커스텀 오류로 throw 시 ClickLog 엔티티 저장 자체가 실패할 위험이 있으므로 이를 방지하기 위함
+                    log.error("이상징후 JSON 직렬화 실패", e);
+                }
+            }
+            //===SSE 실시간 데이터 적재 로직 끝===
 
             ClickLog clickLog = ClickConverter.toClickLog(adContent, event, suspect);
 
