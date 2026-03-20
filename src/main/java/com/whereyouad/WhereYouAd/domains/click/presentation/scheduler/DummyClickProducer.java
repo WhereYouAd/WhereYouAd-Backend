@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.click.domain.service;
+package com.whereyouad.WhereYouAd.domains.click.presentation.scheduler;
 
 import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
 import lombok.AccessLevel;

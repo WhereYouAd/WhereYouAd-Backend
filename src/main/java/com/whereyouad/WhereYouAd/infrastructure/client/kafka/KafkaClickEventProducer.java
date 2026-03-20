@@ -1,6 +1,7 @@
-package com.whereyouad.WhereYouAd.infrastructure.client.click;
+package com.whereyouad.WhereYouAd.infrastructure.client.kafka;
 
 import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
+import com.whereyouad.WhereYouAd.domains.click.domain.service.ClickEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

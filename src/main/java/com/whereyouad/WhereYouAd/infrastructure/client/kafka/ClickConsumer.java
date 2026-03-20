@@ -1,9 +1,10 @@
-package com.whereyouad.WhereYouAd.domains.click.domain.service;
+package com.whereyouad.WhereYouAd.infrastructure.client.kafka;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
 import com.whereyouad.WhereYouAd.domains.click.application.mapper.ClickConverter;
+import com.whereyouad.WhereYouAd.domains.click.domain.service.BotDetector;
 import com.whereyouad.WhereYouAd.domains.click.persistence.entity.ClickLog;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickLogRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;

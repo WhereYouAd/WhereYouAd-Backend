@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.whereyouad.WhereYouAd.infrastructure.client.click.ClickEventProducer;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;

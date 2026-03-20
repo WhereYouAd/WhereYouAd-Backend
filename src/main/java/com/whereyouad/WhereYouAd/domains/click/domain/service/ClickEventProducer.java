@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.infrastructure.client.click;
+package com.whereyouad.WhereYouAd.domains.click.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
 
