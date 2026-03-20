@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHa
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
+import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 import com.whereyouad.WhereYouAd.domains.click.exception.ClickHandler;
 import com.whereyouad.WhereYouAd.domains.click.exception.code.ClickErrorCode;
@@ -78,9 +79,14 @@ public class ClickServiceImpl implements ClickService {
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
         // 2. 클릭 이벤트 생성 후 Kafka로 발행
-        ClickResponse.ClickEvent event = new ClickResponse.ClickEvent(
-                adContent.getId(), ipAddress, userAgent, LocalDateTime.now());
-        clickEventProducer.produce(event);
+        ClickDto clickDto = ClickDto.builder()
+                .adContentId(adContent.getId())
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .clickedAt(LocalDateTime.now())
+                .isDummy(false)
+                .build();
+        clickEventProducer.produce(clickDto);
 
         // 3. 랜딩 Url 반환
         if (StringUtils.hasText(adContent.getLandingUrl())) {
