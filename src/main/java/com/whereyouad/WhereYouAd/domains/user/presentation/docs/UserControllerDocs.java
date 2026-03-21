@@ -1,14 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.user.presentation.docs;
 
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SmsRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.request.*;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.*;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +11,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface UserControllerDocs {
     @Operation(
@@ -101,4 +96,28 @@ public interface UserControllerDocs {
             @ApiResponse(responseCode = "404_1", description = "해당 사용자 존재하지 않음")
     })
     public ResponseEntity<DataResponse<MyPageResponse>> getMyPage(@AuthenticationPrincipal CustomUserDetails userDetails);
+
+    @Operation(
+            summary = "회원 정보 수정 API",
+            description = "회원이 수정하려는 이름, 프로필 이미지 파일, 기존 비밀번호와 새로운 비밀번호 값을 입력받아 정보 수정을 진행합니다.\n\n" +
+                    "request 에서 boolean 값인 isImageDeleted 를 true 로 하고 image 파일에 null 값을 담아 전송하면 회원 프로필 이미지를 null 값으로 지정하고, isImageDeleted 를 true 로 하고 image 파일에 null 값을 담아 전송하면 기존 프로필 이미지를 유지합니다.\n\n"
+                    + "🚨 **[프론트엔드 연동 주의사항]** 🚨\n"
+                    + "- 요청 시 반드시 `multipart/form-data` 형식으로 전송해야 합니다.\n"
+                    + "- `request` 파트는 단순 문자열이나 객체가 아닌, **`application/json` 타입의 Blob 객체**로 변환하여 append 해야 합니다.\n"
+                    + "- `image` 파트는 파일 객체를 그대로 append 합니다. (변경하지 않을 경우 생략 가능)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404_1", description = "해당 사용자 존재하지 않음"),
+            @ApiResponse(responseCode = "400", description = " USER_400_5 : 이전 비밀번호와 동일한 비밀번호로 바꿀 수 없습니다.\n\n" +
+                    "USER_400_6 : 비밀번호가 일치하지 않습니다.\n\n USER_400_7 : 소셜 로그인 회원은 비밀번호를 변경할 수 없습니다.\n\n" +
+                    "USER_400_8 : 비밀번호 변경을 위해선 이전 비밀번호 입력이 필요합니다."),
+            @ApiResponse(responseCode = "500", description = "IMAGE_500_1 : S3 서버로의 이미지 업로드에 실패했습니다. \n\n" +
+                    "IMAGE_500_2 : S3 서버에서 이미지 삭제를 실패했습니다.")
+    })
+    public ResponseEntity<DataResponse<UserInfoModifiedResponse>> modifyUserInfo(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestPart(value = "request") UserInfoModifyRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    );
 }

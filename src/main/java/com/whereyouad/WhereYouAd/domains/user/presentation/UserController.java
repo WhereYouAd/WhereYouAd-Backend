@@ -1,17 +1,11 @@
 package com.whereyouad.WhereYouAd.domains.user.presentation;
 
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.EmailRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SmsRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.PwdResetRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.EmailSentResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.PasswordResetResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SmsResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.request.*;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.*;
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.SmsService;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.UserService;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
-import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.domains.user.presentation.docs.UserControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
@@ -20,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -93,6 +88,22 @@ public class UserController implements UserControllerDocs {
                 userDetails.getUserId(),
                 userDetails.getProvider().name()
         );
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
+    @PatchMapping("/my")
+    public ResponseEntity<DataResponse<UserInfoModifiedResponse>> modifyUserInfo(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestPart(value = "request") UserInfoModifyRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    )
+    {
+        Long userId = userDetails.getUserId();
+        Provider provider = userDetails.getProvider();
+        UserInfoModifiedResponse response = userService.modifyUserInfo(userId, provider, request, image);
 
         return ResponseEntity.ok(
                 DataResponse.from(response)
