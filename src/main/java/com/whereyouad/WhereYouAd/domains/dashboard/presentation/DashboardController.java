@@ -1,6 +1,5 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.presentation;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.domain.service.DashboardClickService;
 import com.whereyouad.WhereYouAd.domains.dashboard.domain.service.DashboardService;
@@ -87,10 +86,10 @@ public class DashboardController implements DashboardControllerDocs {
     public ResponseEntity<SseEmitter> streamRealClicks(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestParam(required = false) Provider provider
+            @RequestParam(required = false, defaultValue = "dummy") String mode
     )
     {
-        SseEmitter emitter = dashboardClickService.subscribe(userId, orgId, provider);
+        SseEmitter emitter = dashboardClickService.subscribe(userId, orgId, mode);
 
         return ResponseEntity.ok(emitter);
     }

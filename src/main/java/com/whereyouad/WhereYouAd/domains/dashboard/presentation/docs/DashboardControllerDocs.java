@@ -1,6 +1,5 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.presentation.docs;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -118,6 +117,6 @@ public interface DashboardControllerDocs {
     public ResponseEntity<SseEmitter> streamRealClicks(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestParam(required = false) Provider provider
+            @RequestParam(required = false, defaultValue = "dummy") String mode
     );
 }
