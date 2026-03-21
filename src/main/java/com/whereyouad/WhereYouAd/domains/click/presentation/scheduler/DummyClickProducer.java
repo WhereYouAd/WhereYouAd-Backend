@@ -9,6 +9,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Random;
 
 @Slf4j
@@ -20,7 +21,18 @@ public class DummyClickProducer {
     private final Random random = new Random();
 
     private static final String TOPIC = "ad-click-events";
-    private static final Long[] adContentIds = {1L, 2L, 3L};
+
+    // [핵심 수정] 광고 ID(Key)와 해당 광고가 속한 실제 조직 ID(Value)를 매핑
+    //   DB에 있는 실제 데이터 구조에 맞게 숫자 설정 필요
+    private static final Map<Long, Long> adContentOrgMap = Map.of(
+            1L, 1L,  // 1번 광고는 1번 조직 소속
+            2L, 1L,  // 2번 광고도 1번 조직 소속
+            3L, 1L   // 3번 광고도 1번 조직 소속
+    );
+
+
+    //    private static final Long[] adContentIds = {1L, 2L, 3L};
+    private static final Long[] adContentIds = adContentOrgMap.keySet().toArray(new Long[0]);
     private static final String[] userAgents = {"UNKNOWN", "MOBILE", "PC"};
 
     // 기본값 false (API를 통해 켤 때만 동작)
@@ -40,12 +52,15 @@ public class DummyClickProducer {
         }
         Long adContentId = adContentIds[random.nextInt(adContentIds.length)];
 
+        Long orgId = adContentOrgMap.get(adContentId);
+
         // 임의의 IP 주소, 기기 생성
         String ipAddress = "192.168.0." + (random.nextInt(50) + 1);
         String userAgent = userAgents[random.nextInt(userAgents.length)];
 
         ClickDto event = ClickDto.builder()
                 .adContentId(adContentId)
+                .orgId(orgId)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .clickedAt(System.currentTimeMillis())
@@ -55,6 +70,6 @@ public class DummyClickProducer {
         // Kafka로 메시지 send (key는 adContentId, 같은 광고끼리 같은 파티션으로 분배)
         kafkaTemplate.send(TOPIC, String.valueOf(adContentId), event);
 
-        log.info("Produced dummy click: adContentId={}, ip={}", adContentId, ipAddress);
+        log.info("Produced dummy click: adContentId={}, orgId={}, ip={}", adContentId, orgId, ipAddress);
     }
 }

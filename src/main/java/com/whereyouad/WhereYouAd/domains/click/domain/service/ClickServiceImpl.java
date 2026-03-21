@@ -77,9 +77,12 @@ public class ClickServiceImpl implements ClickService {
         AdContent adContent = adContentRepository.findByTrackingUrl(trackingUrl)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
+        Long orgId = adContent.getAdGroup().getAdCampaign().getProject().getOrganization().getId();
+
         // 2. 클릭 이벤트 생성 후 Kafka로 발행
         ClickDto clickDto = ClickDto.builder()
                 .adContentId(adContent.getId())
+                .orgId(orgId)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .clickedAt(System.currentTimeMillis())

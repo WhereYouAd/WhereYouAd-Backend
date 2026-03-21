@@ -40,6 +40,10 @@ public class ClickConsumer {
 
         Long currentClickCount = redisUtil.incrementDataExpire(clickKey, REDIS_TTL_SECONDS);
 
+        // 조직 단위 통합 집계 추가
+        String orgClickKey = String.format("click:%s:org:%s:%s", mode, event.getOrgId(), currentMinute);
+        redisUtil.incrementDataExpire(orgClickKey, REDIS_TTL_SECONDS);
+
         log.info("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
                 clickKey, event.getUserAgent(), event.getIpAddress(), currentClickCount);
     }
