@@ -16,6 +16,7 @@ public enum ImageErrorCode implements BaseErrorCode {
 
     // 500 Internal Server Error
     IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE_500_1", "S3 서버로의 이미지 업로드에 실패했습니다."),
+    IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE_500_2", "S3 서버에서 이미지 삭제를 실패했습니다.")
     ;
 
     private final HttpStatus httpStatus;
