@@ -168,18 +168,25 @@ public class UserService {
         String oldProfileImageUrl = user.getProfileImageUrl();
         String finalImageUrl = oldProfileImageUrl; // 기본값은 기존 이미지 유지
 
-        //변경할 이미지가 요청으로 들어왔다면,
-        if (image != null && !image.isEmpty()) {
+        //이미지를 기본 프로필 사진 바꾸는 거라면(프로필 사진 삭제 요청이라면)
+        if (request.isImageDeleted()) {
+            finalImageUrl = null; //최종 프로필 사진 URL 값을 null 로 지정
+
+            if (oldProfileImageUrl != null) { //기존 프로필 사진 존재했다면 삭제
+                s3UploadService.deleteImageFromUrl(oldProfileImageUrl);
+            }
+
+        } else if (image != null && !image.isEmpty()) { //새 프로필 이미지 등록이라면,
             finalImageUrl = s3UploadService.uploadImage(image); //새 이미지를 S3 업로드 하고 이미지 URL 받기
+
+            //기존 이미지 존재 시 삭제
+            if (oldProfileImageUrl != null) {
+                s3UploadService.deleteImageFromUrl(oldProfileImageUrl);
+            }
         }
 
         // 엔티티 수정 (이름, 이미지, 비밀번호)
         user.modifyInfo(finalName, finalImageUrl, finalEncodedPassword);
-
-        // DB 저장 성공 후 기존 이미지 삭제 (orphan 이미지 방지)
-        if (image != null && !image.isEmpty() && oldProfileImageUrl != null) {
-            s3UploadService.deleteImageFromUrl(oldProfileImageUrl);
-        }
 
         return UserConverter.toUserInfoResponse(user.getId(), user.getName(), user.getProfileImageUrl());
     }
