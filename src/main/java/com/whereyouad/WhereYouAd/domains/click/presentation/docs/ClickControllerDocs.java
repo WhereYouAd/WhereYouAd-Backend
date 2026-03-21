@@ -11,7 +11,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface ClickControllerDocs {
 
@@ -34,6 +36,7 @@ public interface ClickControllerDocs {
             @PathVariable Long adContentId,
             @Valid @RequestBody ClickRequest.CreateTrackingUrl request
     );
+
     @Operation(
             summary = "광고 트래킹 리다이렉트 API",
             description = "발급된 트래킹 링크 접속 시 클릭 이벤트 기록 후 광고 페이지로 리다이렉트"
@@ -45,5 +48,31 @@ public interface ClickControllerDocs {
     ResponseEntity<Void> processTracking(
             @PathVariable String code,
             HttpServletRequest request
+    );
+
+    @Operation(
+            summary = "(임시) 실시간 클릭수 데이터 조회 API",
+            description = "실시간 클릭수 데이터를 dummy 또는 실제 집계값으로 확인\n" +
+                    "- mode는 dummy 혹은 real, minutes에 원하는 집계 구간 (120분까지 가능) 입력"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404", description = "해당 adContentId의 광고가 존재하지 않는 경우")
+    })
+    ResponseEntity<DataResponse<java.util.List<ClickResponse.RealtimeClickCount>>> getRealtimeClickCounts(
+            @PathVariable Long adContentId,
+            @RequestParam(defaultValue = "real") String mode,
+            @RequestParam(defaultValue = "60") int minutes
+    );
+
+    @Operation(
+            summary = "실시간 클릭수 dummy 데이터 발생 여부 조정용 토글 API",
+            description = "해당 요청을 통해 isRunning = true가 된다면, 실시간 클릭수를 더미 데이터로 500ms마다 발생시켜 1분 단위로 집계 되게끔 할 수 있음. (결과는 실시간 데이터 조회 API 응답에서 확인)\n" +
+                    "- 사용을 끝낸 이후, 미사용 시 isRunning = false가 되게끔 토글시켜야 함. (불필요한 더미 데이터 발생 방지)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공")
+    })
+    ResponseEntity<DataResponse<String>> toggleDummyProducer(
     );
 }
