@@ -4,18 +4,22 @@ import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHa
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
+import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 import com.whereyouad.WhereYouAd.domains.click.exception.ClickHandler;
 import com.whereyouad.WhereYouAd.domains.click.exception.code.ClickErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.whereyouad.WhereYouAd.infrastructure.client.click.ClickEventPublisher;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,7 +28,8 @@ public class ClickServiceImpl implements ClickService {
 
     private final AdContentRepository adContentRepository;
     private final OrgMemberRepository orgMemberRepository;
-    private final ClickEventPublisher clickEventPublisher;
+    private final ClickEventProducer clickEventProducer;
+    private final RedisUtil redisUtil;
 
     @Value("${spring.application.base-url}")
     private String baseUrl;
@@ -72,11 +77,15 @@ public class ClickServiceImpl implements ClickService {
         AdContent adContent = adContentRepository.findByTrackingUrl(trackingUrl)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
-        // 2. 클릭 이벤트 생성
-        ClickResponse.ClickEvent event = new ClickResponse.ClickEvent(adContent.getId(), ipAddress, userAgent,
-                LocalDateTime.now());
-        // 클릭 이벤트 인터페이스에서 redis에 LPush (이후 ClickEventConsumerService에서 RPOP하며 DB에 insert)
-        clickEventPublisher.publish(event);
+        // 2. 클릭 이벤트 생성 후 Kafka로 발행
+        ClickDto clickDto = ClickDto.builder()
+                .adContentId(adContent.getId())
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .clickedAt(System.currentTimeMillis())
+                .isDummy(false)
+                .build();
+        clickEventProducer.produce(clickDto);
 
         // 3. 랜딩 Url 반환
         if (StringUtils.hasText(adContent.getLandingUrl())) {
@@ -84,5 +93,29 @@ public class ClickServiceImpl implements ClickService {
         }
         // 랜딩 Url이 없을 경우 홈으로
         return baseUrl;
+    }
+
+    @Override
+    public List<ClickResponse.RealtimeClickCount> getRealtimeClickCounts(Long adContentId, String mode, int minutes) {
+        // mode 값 검증 (real or dummy만 허용)
+        if (!"real".equals(mode) && !"dummy".equals(mode)) {
+            throw new ClickHandler(ClickErrorCode.CLICK_INVALID_MODE);
+        }
+
+        List<ClickResponse.RealtimeClickCount> result = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+
+        for (int i = minutes - 1; i >= 0; i--) {
+            LocalDateTime time = now.minusMinutes(i);
+            String minute = time.format(formatter);
+
+            // Redis Key: click:{mode}:{adContentId}:{minute}
+            String key = String.format("click:%s:%s:%s", mode, adContentId, minute);
+            String value = redisUtil.getData(key);
+            long count = value != null ? Long.parseLong(value) : 0L;
+            result.add(new ClickResponse.RealtimeClickCount(minute, count));
+        }
+        return result;
     }
 }
