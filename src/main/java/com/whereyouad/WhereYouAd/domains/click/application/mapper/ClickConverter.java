@@ -1,22 +1,28 @@
 package com.whereyouad.WhereYouAd.domains.click.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
-import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
+import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
 import com.whereyouad.WhereYouAd.domains.click.domain.constant.DeviceType;
 import com.whereyouad.WhereYouAd.domains.click.persistence.entity.ClickLog;
 
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 public class ClickConverter {
 
-    public static ClickLog toClickLog(AdContent adContent, ClickResponse.ClickEvent event, boolean isSuspect) {
-        DeviceType deviceType = extractDeviceType(event.userAgent());
-        
+    public static ClickLog toClickLog(AdContent adContent, ClickDto event, boolean isSuspect) {
+        DeviceType deviceType = extractDeviceType(event.getUserAgent());
+        LocalDateTime clickedAt = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(event.getClickedAt()), ZoneId.systemDefault());
+
         return ClickLog.builder()
                 .adContent(adContent)
-                .ipAddress(event.ipAddress())
+                .ipAddress(event.getIpAddress())
                 .device(deviceType)
-                .clickedAt(event.clickedAt())
+                .clickedAt(clickedAt)
                 .isSuspect(isSuspect)
                 .build();
     }

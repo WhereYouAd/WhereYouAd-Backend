@@ -9,4 +9,7 @@ public interface ClickService {
 
     // 트래킹 링크 접속 시 랜딩 Url 반환 및 이벤트 생성
     String handleTrackingRedirect(String code, String ipAddress, String userAgent);
+
+    // 실시간 클릭 수 조회 (mode: "real" or "dummy", 최근 N분)
+    java.util.List<ClickResponse.RealtimeClickCount> getRealtimeClickCounts(Long adContentId, String mode, int minutes);
 }
