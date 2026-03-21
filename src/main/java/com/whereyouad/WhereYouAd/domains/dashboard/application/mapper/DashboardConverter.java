@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 
 import java.time.LocalDate;
@@ -53,9 +54,9 @@ public class DashboardConverter {
     }
 
     //Data -> DTO
-    public static DashboardResponse.RealTimeClickResponse toRealTimeClickResponse(
-            Long clickCount, String providerType, Boolean isSuspect, DashboardResponse.SuspectDetail suspectDetail)
+    public static DashboardResponse.RealTimeGraphResponse toRealTimeGraphResponse(
+            List<ClickResponse.RealtimeClickCount> timeSeriesData, String mode, Boolean hasSuspect, DashboardResponse.SuspectDetail suspectDetail)
     {
-        return new DashboardResponse.RealTimeClickResponse(clickCount, providerType, isSuspect, suspectDetail);
+        return new DashboardResponse.RealTimeGraphResponse(timeSeriesData, mode, hasSuspect, suspectDetail);
     }
 }

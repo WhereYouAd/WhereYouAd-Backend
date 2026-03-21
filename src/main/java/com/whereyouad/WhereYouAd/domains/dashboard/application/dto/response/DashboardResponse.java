@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -59,12 +60,12 @@ public class DashboardResponse {
             Long count
     ) {}
 
-    //실시간 클릭수 스트림 반환 응답
-    public record RealTimeClickResponse(
-            Long currentClickCount,
-            String providerType,
-            Boolean isSuspect,
-            SuspectDetail suspectDetail
+//    //실시간 클릭수 스트림 반환 응답
+    public record RealTimeGraphResponse(
+            List<ClickResponse.RealtimeClickCount> timeSeriesData, // 최근 N분간의 클릭수 배열 (차트 X, Y축 데이터)
+            String mode,  // 현재 데이터 모드 ("real" 또는 "dummy")
+            Boolean hasSuspect,  // 이상 징후 발생 여부 (빨간 점 트리거)
+            SuspectDetail suspectDetail  // 이상 징후 상세 정보 (툴팁 내용)
     ) {}
 
     public record SuspectDetail(
