@@ -2,7 +2,7 @@ package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.SseEmitterRepository;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
@@ -19,9 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -35,10 +35,12 @@ public class DashboardClickServiceImpl implements DashboardClickService {
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
     private final ObjectMapper objectMapper;
+    private static final DateTimeFormatter MINUTE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
-    // 클라이언트 SSE 구독 요청 처리
-    @Override
-    public SseEmitter subscribe(Long userId, Long orgId, Provider provider) {
+
+    // 1. 구독 (클라이언트 연결)
+    public SseEmitter subscribe(Long userId, Long orgId, String mode) {
+
         orgRepository.findById(orgId).
                 orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
@@ -46,84 +48,92 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
         }
 
-        // 라우팅 키 생성 (예: "1_KAKAO", "1_NAVER", 파라미터가 없으면 "1_ALL")
-        String routingProvider = (provider != null) ? provider.name() : "ALL";
-        String routingKey = orgId + "_" + routingProvider;
-
-        // 어떤 유저의 어떤 브라우저 탭인지 식별하기 위한 고유 ID
-        // 같은 회원이 두개 이상의 브라우저 탭을 열었을 경우, user_id 가 같아 첫번째 탭에서 실시간 지표가 멈춰버리고, 두번째 탭에서 지표가 시작될 수 있다.
-        // 따라서 회원 식별자를 user_id + UUID 를 사용해, 회원 1명이 여러 브라우저 탭으로 열더라도 모두 정상동작하도록 설계
+        // 라우팅 키 및 Emitter ID 생성
+        // 라우팅 키 예: "1_real" (1번 조직의 실제 트래픽 채널)
+        String safeMode = ("dummy".equalsIgnoreCase(mode)) ? "dummy" : "real";
+        String routingKey = orgId + "_" + safeMode;
+        // 동시 접속한 여러 유저(또는 다중 탭)를 식별하기 위해 UUID 추가
         String emitterId = userId + "_" + UUID.randomUUID().toString();
 
-        // SseEmitter 를 생명주기를 30분으로 하여 생성
-        // 사용자가 실시간 클릭수를 띄워두고 정상적으로 30분이 지나면 자동으로 emitter.onTimeOut(...) 실행하여 삭제 진행
-        // TODO : 보통 실무에서 이 생명주기는 30분 ~ 1시간으로 잡는다고 해서, PR 진행하며 시간 값 합의해도 좋을 것 같습니다.
-        // 삭제 후 프론트 측에서 약 3초뒤에 연결이 끊어졌음을 인식하여 새로운 30분짜리 SseEmitter 구독 요청
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
 
-        // 연결이 끊어지거나 타임아웃 발생 시 저장소에서 제거되도록 콜백 등록
+        // Emitter 생명주기 콜백 설정 (연결 종료, 타임아웃, 에러 발생 시 메모리 누수 방지를 위해 저장소에서 제거)
         emitter.onCompletion(() -> emitterRepository.deleteByRoutingKeyAndEmitterId(routingKey, emitterId));
         emitter.onTimeout(() -> emitterRepository.deleteByRoutingKeyAndEmitterId(routingKey, emitterId));
         emitter.onError((e) -> emitterRepository.deleteByRoutingKeyAndEmitterId(routingKey, emitterId));
 
         emitterRepository.save(routingKey, emitterId, emitter);
 
-        // 503 Service Unavailable 에러 방지를 위한 최초 연결 더미 데이터 전송
-        DashboardResponse.RealTimeClickResponse initialData =
-                DashboardConverter.toRealTimeClickResponse(0L, routingProvider, false, null);
-
-        sendToClient(routingKey, emitterId, emitter, DataResponse.from(initialData));
+        // 최초 연결 시 즉시 데이터 전송 (프론트엔드 차트 초기 렌더링용)
+        sendToClient(routingKey, emitterId, emitter, DataResponse.from(getOrgGraphData(orgId, safeMode)));
 
         return emitter;
     }
 
-    // 1초마다 Redis에서 실시간 클릭수를 조회하여 SSE 구독 중인 클라이언트들에게 브로드캐스팅
+    //1초마다 백그라운드에서 실행되며, 현재 연결된 모든 클라이언트에게 최신 데이터를 브로드캐스팅하는 스케줄러
     @Scheduled(fixedRate = 1000)
     public void broadcastRealTimeClicks() {
+        // 현재 구독자가 있는 채널(라우팅 키) 목록만 가져옴 (구독자가 없으면 Redis 조회를 생략하여 리소스 절약)
         Set<String> activeRoutingKeys = emitterRepository.findAllRoutingKeys();
 
+        //모든 구독자 존재 채널(라우팅 키) 에 대하여,
         for (String routingKey : activeRoutingKeys) {
-            // Redis에서 집계된 실시간 클릭수 조회 (Kafka Consumer가 업데이트해둔 값)
-            String redisKey = "org:clicks:realtime:" + routingKey;
-            String countStr = redisUtil.getData(redisKey);
-            long clickCount = countStr != null ? Long.parseLong(countStr) : 0L;
+            //orgId, mode 추출
+            String[] parts = routingKey.split("_");
+            Long orgId = Long.parseLong(parts[0]);
+            String mode = parts[1];
 
-            //클릭수 이상징후 추출
-            String suspectAlertKey = "org:suspect:alert:" + routingKey;
-            String suspectJson = redisUtil.getData(suspectAlertKey);
+            // 이번 턴에 전송할 데이터(60분치 시계열 배열 + 봇 알림)를 Redis에서 조합
+            DashboardResponse.RealTimeGraphResponse payload = getOrgGraphData(orgId, mode);
+            DataResponse<DashboardResponse.RealTimeGraphResponse> responseBody = DataResponse.from(payload);
 
-            boolean isSuspect = false;
-
-            DashboardResponse.SuspectDetail detail = null;
-
-            //만약 이상징후 값이 존재하면,
-            if (suspectJson != null) {
-                isSuspect = true;
-                try {
-                    detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
-                    redisUtil.deleteData(suspectAlertKey);
-
-                } catch (JsonProcessingException e) {
-                    log.error("이상 징후 데이터 JSON 파싱 실패: {}", suspectJson, e);
-                }
-            }
-
-            // 라우팅 키에서 provider 파싱 ("1_KAKAO" -> "KAKAO")
-            String providerType = routingKey.split("_")[1];
-
-            // DTO 데이터 생성
-            DashboardResponse.RealTimeClickResponse payload =
-                    DashboardConverter.toRealTimeClickResponse(clickCount, providerType, isSuspect, detail);
-
-            // DataResponse로 포장
-            DataResponse<DashboardResponse.RealTimeClickResponse> responseBody = DataResponse.from(payload);
-
-            // 해당 routingKey 를 구독 중인 모든 케이블(SseEmitter)에게 전송
+            // 해당 채널(예: 1번 조직_real)을 보고 있는 모든 유저의 Emitter를 꺼내서 전송
             Map<String, SseEmitter> sseEmitters = emitterRepository.findAllByRoutingKey(routingKey);
             sseEmitters.forEach((emitterId, emitter) -> {
                 sendToClient(routingKey, emitterId, emitter, responseBody);
             });
         }
+    }
+
+    // 내부 헬퍼 메서드: 조직의 60분 시계열 데이터와 알림 정보를 묶어서 반환
+    private DashboardResponse.RealTimeGraphResponse getOrgGraphData(Long orgId, String mode) {
+        // 시계열 데이터 추출: 최근 60분(59분 전 ~ 현재 분) 동안의 Redis Key를 순회하며 카운트를 읽어옴
+        List<ClickResponse.RealtimeClickCount> timeSeriesData = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (int i = 59; i >= 0; i--) {
+            String minute = now.minusMinutes(i).format(MINUTE_FORMATTER);
+
+            // Redis Key 포맷
+            // 예: click:real:org:1:202603211530
+            String key = String.format("click:%s:org:%s:%s", mode, orgId, minute);
+
+            String value = redisUtil.getData(key);
+            long count = value != null ? Long.parseLong(value) : 0L;
+            timeSeriesData.add(new ClickResponse.RealtimeClickCount(minute, count));
+        }
+
+        // 이상 징후(봇) 알림 추출: 해당 조직에서 발생한 부정 클릭 정보가 있는지 확인
+        // 예: click:suspect:alert:org:1
+        String suspectAlertKey = "click:suspect:alert:org:" + orgId;
+        String suspectJson = redisUtil.getData(suspectAlertKey);
+
+        boolean hasSuspect = false;
+        DashboardResponse.SuspectDetail detail = null;
+
+        // Redis에 알림 데이터가 존재한다면 (봇이 감지되었다면)
+        if (suspectJson != null) {
+            hasSuspect = true;
+            try {
+                detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
+                // 알림은 1회성이므로, 읽자마자 삭제하여 경고가 중복으로 뜨는 것을 방지
+                redisUtil.deleteData(suspectAlertKey);
+            } catch (JsonProcessingException e) {
+                log.error("이상 징후 JSON 파싱 실패", e);
+            }
+        }
+
+        return DashboardConverter.toRealTimeGraphResponse(timeSeriesData, mode, hasSuspect, detail);
     }
 
     // 클라이언트로 데이터 전송 및 예외 처리
