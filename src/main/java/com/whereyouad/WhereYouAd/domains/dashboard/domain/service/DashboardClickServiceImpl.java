@@ -38,7 +38,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
     private static final DateTimeFormatter MINUTE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
 
-    // 1. 구독 (클라이언트 연결)
+    // 구독 (클라이언트 연결)
     public SseEmitter subscribe(Long userId, Long orgId, String mode) {
 
         orgRepository.findById(orgId).
@@ -70,7 +70,9 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         return emitter;
     }
 
-    //1초마다 백그라운드에서 실행되며, 현재 연결된 모든 클라이언트에게 최신 데이터를 브로드캐스팅하는 스케줄러
+    // 1초마다 백그라운드에서 실행되며, 현재 연결된 모든 클라이언트에게 최신 데이터를 브로드캐스팅하는 스케줄러
+    // TODO : 지금 로직에선 백 서버에서 프론트로 1초마다 SseEmitter 를 통해 클릭 데이터를 전송하고 있음.
+    //        1초마다 전송이 서버 성능에 부하를 많이 줄지?, 만약 부하가 크다면 1초보다 더 길게 주기를 잡아야할지?
     @Scheduled(fixedRate = 1000)
     public void broadcastRealTimeClicks() {
         // 현재 구독자가 있는 채널(라우팅 키) 목록만 가져옴 (구독자가 없으면 Redis 조회를 생략하여 리소스 절약)
@@ -95,7 +97,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         }
     }
 
-    // 내부 헬퍼 메서드: 조직의 60분 시계열 데이터와 알림 정보를 묶어서 반환
+    // 내부 메서드: 조직의 60분 시계열 데이터와 알림 정보를 묶어서 반환
     private DashboardResponse.RealTimeGraphResponse getOrgGraphData(Long orgId, String mode) {
         // 시계열 데이터 추출: 최근 60분(59분 전 ~ 현재 분) 동안의 Redis Key를 순회하며 카운트를 읽어옴
         List<ClickResponse.RealtimeClickCount> timeSeriesData = new ArrayList<>();

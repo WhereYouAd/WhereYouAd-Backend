@@ -21,16 +21,18 @@ public class DummyClickProducer {
 
     private static final String TOPIC = "ad-click-events";
 
-    // [핵심 수정] 광고 ID(Key)와 해당 광고가 속한 실제 조직 ID(Value)를 매핑
-    //   DB에 있는 실제 데이터 구조에 맞게 숫자 설정 필요
+    // 광고 ID(Key)와 해당 광고가 속한 실제 조직 ID(Value)를 매핑
+    // DB에 있는 실제 데이터 구조에 맞게 숫자 설정 필요
+    // TODO : 해당 Kafka 에서 Mock data 로 클릭수 발생시키는 광고의 Id 들이 임시로 1, 2 ,3 으로 되어있어,
+    //        해당 광고들이 속한 조직을 모두 Id = 1 이라 가정하고 진행함.
+    //        해당 orgId 매핑 값을 실제 배포 서버에선 변경해야 할지?
     private static final Map<Long, Long> adContentOrgMap = Map.of(
             1L, 1L,  // 1번 광고는 1번 조직 소속
             2L, 1L,  // 2번 광고도 1번 조직 소속
             3L, 1L   // 3번 광고도 1번 조직 소속
     );
 
-
-    //    private static final Long[] adContentIds = {1L, 2L, 3L};
+    //    private static final Long[] adContentIds = {1L, 2L, 3L}; 기존 광고 Id 주석 처리
     private static final Long[] adContentIds = adContentOrgMap.keySet().toArray(new Long[0]);
     private static final String[] userAgents = {"UNKNOWN", "MOBILE", "PC"};
 
@@ -51,6 +53,7 @@ public class DummyClickProducer {
         }
         Long adContentId = adContentIds[random.nextInt(adContentIds.length)];
 
+        //광고 Id - 조직 Id 매핑에서 조직 Id 추출
         Long orgId = adContentOrgMap.get(adContentId);
 
         // 임의의 IP 주소, 기기 생성
