@@ -98,16 +98,20 @@ public interface DashboardControllerDocs {
 
     @Operation(
             summary = "대시보드 - 실시간 클릭수 스트림 출력 API",
-            description = "해당 조직의 실시간 클릭수를 스트림으로 보내주는 API 입니다. param 으로 mode 를 받아 mode=dummy 이면 서버 내에서 생성하는 임의의 랜덤 클릭수를, mode=real 일 경우 실제 리다이렉트로 조회된 클릭수를 반환합니다.\n\n" +
-                    "SSE(Server-Sent-Events) 방식을 사용하므로 한 번 연결되면 1초마다 데이터가 지속적으로 푸시됩니다.\n\n" +
+            description = "해당 조직의 최근 60분간 실시간 클릭수 추이와 이상 징후(봇) 감지 여부를 스트림으로 보내주는 API입니다.\n\n" +
+                    "파라미터로 `mode`를 받아 `dummy`이면 서버 내에서 생성하는 가상 트래픽을, `real`일 경우 실제 수집된 클릭 데이터를 기반으로 반환합니다.\n\n" +
+                    "SSE(Server-Sent-Events) 방식을 사용하므로 한 번 연결되면 **1초마다 60분치 전체 시계열 데이터(Snapshot)가 지속적으로 푸시**됩니다. " +
+                    "프론트엔드에서는 복잡한 계산 없이, 전달받은 배열을 그대로 차트 데이터 상태(State)로 덮어씌워 렌더링하시면 됩니다.\n\n" +
                     "### 🚨 프론트엔드 연동 시 주의사항\n" +
-                    "본 API는 JWT 인증(`Authorization` 헤더)이 필수입니다. " +
-                    "하지만 브라우저 기본 내장 객체인 `new EventSource()`는 구조상 커스텀 헤더 전송을 지원하지 않아 401 Unauthorized 에러가 발생합니다.\n\n" +
-                    "따라서 프론트엔드에서는 **`@microsoft/fetch-event-source`** 와 같은 외부 라이브러리를 사용하여 " +
-                    "헤더에 `Authorization: Bearer {AccessToken}`을 반드시 담아 호출해 주시기 바랍니다.\n\n" +
+                    "1. **JWT 인증 헤더 필수:** 브라우저 기본 내장 객체인 `new EventSource()`는 구조상 커스텀 헤더 전송을 지원하지 않아 401 Unauthorized 에러가 발생합니다. " +
+                    "반드시 **`@microsoft/fetch-event-source`** 와 같은 외부 라이브러리를 사용하여 헤더에 `Authorization: Bearer {AccessToken}`을 담아 호출해 주시기 바랍니다.\n" +
+                    "2. **이벤트 리스너 등록:** 일반 메세지가 아닌 특정 이벤트 명으로 발송되므로 `addEventListener('org-click-update', callback)` 형태로 수신해야 합니다.\n\n" +
                     "---\n" +
-                    "* **수신 이벤트 명(Event Name):** `org-click-update`\n" +
-                    "* **데이터 규격:** 기존 API와 동일하게 파싱 (`response.data.currentClickCount`, `response.data.providerType`)"
+                    "### 📦 응답 데이터 규격 (Event Name: `org-click-update`)\n" +
+                    "* **`timeSeriesData`**: 최근 60분간의 분 단위 클릭수 배열 `[{minute: '202603221439', count: 16}, ...]` (차트 렌더링용)\n" +
+                    "* **`mode`**: 현재 응답 트래픽 모드 (`real` or `dummy`)\n" +
+                    "* **`hasSuspect`**: 이상 징후(봇 의심) 트래픽 발생 여부 (`true` / `false`)\n" +
+                    "* **`suspectDetail`**: 이상 징후 상세 정보 객체 (경고 팝업용, 발생 시 1회 전송 후 `null` 처리됨)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
