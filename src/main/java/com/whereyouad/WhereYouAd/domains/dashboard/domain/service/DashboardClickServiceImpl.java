@@ -117,7 +117,12 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             String key = String.format("click:%s:org:%s:%s", mode, orgId, minute);
 
             String value = redisUtil.getData(key);
-            long count = value != null ? Long.parseLong(value) : 0L;
+            long count = 0L;
+            try { //Long 타입 파싱에 대한 예외처리
+                count = Long.parseLong(value);
+            } catch (NumberFormatException e) { //invalid 형식 값 존재 시 로그 처리
+                log.warn("Redis 내부 invalid 한 클릭수 count 값 존재. key={}, value={}", key, value);
+            }
             timeSeriesData.add(new ClickResponse.RealtimeClickCount(minute, count));
         }
 
