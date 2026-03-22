@@ -6,6 +6,8 @@ import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickRes
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.SseEmitterRepository;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashboardErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
@@ -50,7 +52,11 @@ public class DashboardClickServiceImpl implements DashboardClickService {
 
         // 라우팅 키 및 Emitter ID 생성
         // 라우팅 키 예: "1_real" (1번 조직의 실제 트래픽 채널)
-        String safeMode = ("dummy".equalsIgnoreCase(mode)) ? "dummy" : "real";
+        String safeMode = Optional.ofNullable(mode)
+                .map(String::toLowerCase)
+                .filter(m -> m.equals("dummy") || m.equals("real"))
+                .orElseThrow(() -> new DashboardException(DashboardErrorCode.INVALID_MODE_PARAM));
+
         String routingKey = orgId + "_" + safeMode;
         // 동시 접속한 여러 유저(또는 다중 탭)를 식별하기 위해 UUID 추가
         String emitterId = userId + "_" + UUID.randomUUID().toString();
