@@ -27,6 +27,9 @@ public class AIInsightReport extends BaseEntity {
     @Column(name = "period_end", nullable = false)
     private LocalDateTime periodEnd;
 
+    @Column(name = "access_token", unique = true, nullable = false)
+    private String accessToken;
+
     @Column(name = "payload_json", columnDefinition = "JSON")
     private String payloadJson;
 
