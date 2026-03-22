@@ -129,8 +129,8 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         // 이상 징후(봇) 알림 추출: 해당 조직에서 발생한 부정 클릭 정보가 있는지 확인
         // 예: click:suspect:alert:org:1
         String suspectAlertKey = "click:suspect:alert:org:" + orgId;
-        //Redis 에서 값을 추출 후 제거(원자적 연산)
-        String suspectJson = redisUtil.getAndDeleteData(suspectAlertKey);
+        //Redis 에서 값을 추출 후 제거
+        String suspectJson = redisUtil.getData(suspectAlertKey);
 
         boolean hasSuspect = false;
         DashboardResponse.SuspectDetail detail = null;
@@ -140,6 +140,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             hasSuspect = true;
             try {
                 detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
+                redisUtil.deleteData(suspectAlertKey);
             } catch (JsonProcessingException e) {
                 log.error("이상 징후 JSON 파싱 실패", e);
             }
