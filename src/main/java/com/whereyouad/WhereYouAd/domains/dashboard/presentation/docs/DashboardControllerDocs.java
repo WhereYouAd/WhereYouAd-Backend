@@ -98,7 +98,7 @@ public interface DashboardControllerDocs {
 
     @Operation(
             summary = "대시보드 - 실시간 클릭수 스트림 출력 API",
-            description = "해당 조직의 실시간 클릭수를 스트림으로 보내주는 API 입니다. providerType 값을 입력하지 않으면 조직 내 모든 광고에 대해, 입력시 해당 플랫폼에 대해 클릭수를 스트림으로 반환합니다.\n\n" +
+            description = "해당 조직의 실시간 클릭수를 스트림으로 보내주는 API 입니다. param 으로 mode 를 받아 mode=dummy 이면 서버 내에서 생성하는 임의의 랜덤 클릭수를, mode=real 일 경우 실제 리다이렉트로 조회된 클릭수를 반환합니다.\n\n" +
                     "SSE(Server-Sent-Events) 방식을 사용하므로 한 번 연결되면 1초마다 데이터가 지속적으로 푸시됩니다.\n\n" +
                     "### 🚨 프론트엔드 연동 시 주의사항\n" +
                     "본 API는 JWT 인증(`Authorization` 헤더)이 필수입니다. " +
