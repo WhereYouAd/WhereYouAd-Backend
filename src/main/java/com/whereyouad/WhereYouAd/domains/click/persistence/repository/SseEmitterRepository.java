@@ -37,12 +37,12 @@ public class SseEmitterRepository {
 
     //routingKey 값과 emitterId 값 기반 메모리에 존재하는 SseEmitter 제거 메서드
     public void deleteByRoutingKeyAndEmitterId(String routingKey, String emitterId) {
-        if (emitters.containsKey(routingKey)) {
-            emitters.get(routingKey).remove(emitterId);
-            if (emitters.get(routingKey).isEmpty()) {
-                emitters.remove(routingKey);
-            }
-        }
+
+        //TOCTOU 경쟁 조건으로 인한 NPE 위험 방지
+        emitters.computeIfPresent(routingKey, (key, innerMap) ->{
+            innerMap.remove(emitterId);
+            return innerMap.isEmpty() ? null : innerMap;
+        });
     }
 
     //routingKey 값 가진 모든 SseEmitter 조회
