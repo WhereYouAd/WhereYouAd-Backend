@@ -20,20 +20,18 @@ public class AIController implements AIControllerDocs {
     private final AIService aiService;
 
     @PostMapping("/{orgId}/analysis")
-    public ResponseEntity<DataResponse<Long>> requestAnalysis(
+    public ResponseEntity<DataResponse<String>> requestAnalysis(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid AIRequest.PeriodRequest request) {
-        Long reportId = aiService.requestAnalysis(userId, orgId, request);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(DataResponse.from(reportId));
+        String accessToken = aiService.requestAnalysis(userId, orgId, request);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(DataResponse.from(accessToken));
     }
 
-    @GetMapping("/{orgId}/analysis/{reportId}")
-    public ResponseEntity<DataResponse<AIResponse.ReportStatusResponse>> getReport(
-            @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId,
-            @PathVariable Long reportId) {
-        AIResponse.ReportStatusResponse response = aiService.getReport(userId, orgId, reportId);
+    @GetMapping("/reports/{accessToken}")
+    public ResponseEntity<DataResponse<AIResponse.ReportStatusResponse>> getReportByAccessToken(
+            @PathVariable String accessToken) {
+        AIResponse.ReportStatusResponse response = aiService.getReportByAccessToken(accessToken);
         return ResponseEntity.ok(DataResponse.from(response));
     }
 }

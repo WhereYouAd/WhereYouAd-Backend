@@ -36,7 +36,7 @@ public class AIServiceImpl implements AIService {
 
     @Override
     @Transactional
-    public Long requestAnalysis(Long userId, Long orgId, AIRequest.PeriodRequest request) {
+    public String requestAnalysis(Long userId, Long orgId, AIRequest.PeriodRequest request) {
 
         // 1. 조직 존재 여부 확인
         orgRepository.findById(orgId)
@@ -77,30 +77,22 @@ public class AIServiceImpl implements AIService {
             }
         });
 
-        // 7. reportId 반환 (202 Accepted)
-        return report.getId();
+        // 7. accessToken 반환 (202 Accepted)
+        return report.getAccessToken();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public AIResponse.ReportStatusResponse getReport(Long userId, Long orgId, Long reportId) {
+    public AIResponse.ReportStatusResponse getReportByAccessToken(String accessToken) {
 
-        // 1. 조직 존재 여부 확인
-        orgRepository.findById(orgId)
-                .orElseThrow(() -> new AIHandler(OrgErrorCode.ORG_NOT_FOUND));
-
-        // 2. 유저가 해당 조직의 멤버인지 검증
-        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN));
-
-        // 3. Id에 해당하는 분석 리포트가 없는 경우
-        AIInsightReport report = reportRepository.findById(reportId)
+        // accessToken에 해당하는 분석 리포트가 없는 경우
+        AIInsightReport report = reportRepository.findByAccessToken(accessToken)
                 .orElseThrow(() -> new AIHandler(AIErrorCode.REPORT_NOT_FOUND));
 
         // PENDING / FAILED 일 때는 result = null
         if (report.getStatus() != AIStatus.SUCCESS || report.getPayloadJson() == null) {
             return new AIResponse.ReportStatusResponse(
-                    report.getId(),
+                    report.getAccessToken(),
                     report.getStatus().name(),
                     null);
         }
@@ -110,11 +102,11 @@ public class AIServiceImpl implements AIService {
             AIResponse.AnalysisResponse result = objectMapper.readValue(report.getPayloadJson(),
                     AIResponse.AnalysisResponse.class);
             return new AIResponse.ReportStatusResponse(
-                    report.getId(),
+                    report.getAccessToken(),
                     report.getStatus().name(),
                     result);
         } catch (Exception e) {
-            log.error("[AIServiceImpl] payloadJson 역직렬화 실패. reportId={}", reportId, e);
+            log.error("[AIServiceImpl] payloadJson 역직렬화 실패. report.id={}", report.getId(), e);
             throw new AIHandler(AIErrorCode.AI_CALL_FAILED);
         }
     }
