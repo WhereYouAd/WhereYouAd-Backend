@@ -69,6 +69,7 @@ public class OrgConverter {
     // 단일 OrgMember -> OrgMemberDTO 변환
     public static OrgResponse.OrgMemberDTO toOrgMemberDTO(OrgMember orgMember) {
         return new OrgResponse.OrgMemberDTO(
+                orgMember.getUser().getId(),
                 orgMember.getUser().getName(),
                 orgMember.getUser().getEmail(),
                 orgMember.getUser().getProfileImageUrl(),
