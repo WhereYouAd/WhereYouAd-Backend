@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface AIControllerDocs {
 
@@ -65,10 +66,19 @@ public interface AIControllerDocs {
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공 (PENDING / SUCCESS / FAILED)"),
+            @ApiResponse(responseCode = "403_1", description = "비공개 상태에서 권한 없는 사용자의 접근 (AI_ACCESS_FORBIDDEN)"),
             @ApiResponse(responseCode = "404", description = "해당 accessToken의 분석 리포트 없음 (REPORT_NOT_FOUND)")
     })
     ResponseEntity<DataResponse<AIResponse.ReportStatusResponse>> getReportByAccessToken(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @Parameter(description = "리포트 접근 토큰", required = true, example = "550e8400-e29b-41d4-a716-446655440000")
             @PathVariable String accessToken
+    );
+
+    @Operation(summary = "AI 광고 성과 분석 리포트 공유 상태 변경", description = "발급된 리포트의 공유 여부 변경(조직 멤버만 변경 가능)")
+    ResponseEntity<DataResponse<String>> updateShareStatus(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @Parameter(description = "리포트 접근 토큰", required = true) @PathVariable String accessToken,
+            @Parameter(description = "공유 ON/OFF 상태값", required = true) @RequestParam boolean isShared
     );
 }

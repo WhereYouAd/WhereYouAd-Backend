@@ -10,5 +10,8 @@ public interface AIService {
     String requestAnalysis(Long userId, Long orgId, AIRequest.PeriodRequest request);
 
     // accessToken에 해당하는 분석 리포트 반환 메서드
-    AIResponse.ReportStatusResponse getReportByAccessToken(String accessToken);
+    AIResponse.ReportStatusResponse getReportByAccessToken(Long userId, String accessToken);
+
+    // 공유 상태 변경 메서드
+    void updateShareStatus(Long userId, String accessToken, boolean isShared);
 }

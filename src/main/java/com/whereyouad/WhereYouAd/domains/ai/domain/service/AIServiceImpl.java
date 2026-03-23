@@ -13,6 +13,9 @@ import com.whereyouad.WhereYouAd.domains.ai.persistence.repository.AIInsightRepo
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
+import com.whereyouad.WhereYouAd.domains.project.exception.code.ProjectErrorCode;
+import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
+import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -83,11 +86,26 @@ public class AIServiceImpl implements AIService {
 
     @Override
     @Transactional(readOnly = true)
-    public AIResponse.ReportStatusResponse getReportByAccessToken(String accessToken) {
+    public AIResponse.ReportStatusResponse getReportByAccessToken(Long userId, String accessToken) {
 
         // accessToken에 해당하는 분석 리포트가 없는 경우
         AIInsightReport report = reportRepository.findByAccessToken(accessToken)
                 .orElseThrow(() -> new AIHandler(AIErrorCode.REPORT_NOT_FOUND));
+
+        if (!report.isShared()) {
+            if (userId == null) {
+                throw new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN);
+            }
+            Long orgId = report.getProject().getOrganization().getId();
+
+            // 1. 조직 존재 여부 확인
+            orgRepository.findById(orgId)
+                    .orElseThrow(() -> new AIHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+            // 2. 유저가 해당 조직의 멤버인지 검증
+            orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                    .orElseThrow(() -> new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN));
+        }
 
         // PENDING / FAILED 일 때는 result = null
         if (report.getStatus() != AIStatus.SUCCESS || report.getPayloadJson() == null) {
@@ -109,5 +127,24 @@ public class AIServiceImpl implements AIService {
             log.error("[AIServiceImpl] payloadJson 역직렬화 실패. report.id={}", report.getId(), e);
             throw new AIHandler(AIErrorCode.AI_CALL_FAILED);
         }
+    }
+
+    @Override
+    @Transactional
+    public void updateShareStatus(Long userId, String accessToken, boolean isShared) {
+        AIInsightReport report = reportRepository.findByAccessToken(accessToken)
+                .orElseThrow(() -> new AIHandler(AIErrorCode.REPORT_NOT_FOUND));
+
+        Long orgId = report.getProject().getOrganization().getId();
+
+        // 1. 조직 존재 여부 확인
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new AIHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 2. 유저가 해당 조직의 멤버인지 검증
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN));
+
+        report.updateIsShared(isShared);
     }
 }

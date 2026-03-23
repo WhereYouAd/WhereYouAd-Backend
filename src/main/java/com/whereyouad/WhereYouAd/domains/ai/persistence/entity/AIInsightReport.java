@@ -27,8 +27,13 @@ public class AIInsightReport extends BaseEntity {
     @Column(name = "period_end", nullable = false)
     private LocalDateTime periodEnd;
 
+
     @Column(name = "access_token", unique = true, nullable = false)
     private String accessToken;
+
+    @Builder.Default
+    @Column(name = "is_shared", nullable = false)
+    private boolean isShared = false;
 
     @Column(name = "payload_json", columnDefinition = "JSON")
     private String payloadJson;
@@ -43,6 +48,10 @@ public class AIInsightReport extends BaseEntity {
     private Project project;
 
     // 상태 변경 메서드
+    public void updateIsShared(boolean isShared) {
+        this.isShared = isShared;
+    }
+
     // ai 응답 성공 시 status 변경, 결과 저장
     public void updateSuccess(String payloadJson) {
         this.status = AIStatus.SUCCESS;

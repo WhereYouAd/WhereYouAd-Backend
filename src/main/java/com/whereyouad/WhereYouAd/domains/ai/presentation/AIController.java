@@ -30,8 +30,18 @@ public class AIController implements AIControllerDocs {
 
     @GetMapping("/reports/{accessToken}")
     public ResponseEntity<DataResponse<AIResponse.ReportStatusResponse>> getReportByAccessToken(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable String accessToken) {
-        AIResponse.ReportStatusResponse response = aiService.getReportByAccessToken(accessToken);
+        AIResponse.ReportStatusResponse response = aiService.getReportByAccessToken(userId, accessToken);
         return ResponseEntity.ok(DataResponse.from(response));
+    }
+
+    @PatchMapping("/reports/{accessToken}/share")
+    public ResponseEntity<DataResponse<String>> updateShareStatus(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable String accessToken,
+            @RequestParam boolean isShared) {
+        aiService.updateShareStatus(userId, accessToken, isShared);
+        return ResponseEntity.ok(DataResponse.from("SUCCESS"));
     }
 }

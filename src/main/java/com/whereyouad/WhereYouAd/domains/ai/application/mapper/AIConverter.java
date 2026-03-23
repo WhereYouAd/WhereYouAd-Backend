@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 
 @Slf4j
 public class AIConverter {
@@ -77,6 +78,7 @@ public class AIConverter {
                 .periodEnd(end)
                 .status(AIStatus.PENDING)
                 .accessToken(UUID.randomUUID().toString())
+                .isShared(false)
                 .build();
     }
 }
