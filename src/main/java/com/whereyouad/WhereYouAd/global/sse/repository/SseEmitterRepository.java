@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.click.persistence.repository;
+package com.whereyouad.WhereYouAd.global.sse.repository;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

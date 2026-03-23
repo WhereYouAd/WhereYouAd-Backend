@@ -3,7 +3,7 @@ package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
-import com.whereyouad.WhereYouAd.domains.click.persistence.repository.SseEmitterRepository;
+import com.whereyouad.WhereYouAd.global.sse.repository.SseEmitterRepository;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
 import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
