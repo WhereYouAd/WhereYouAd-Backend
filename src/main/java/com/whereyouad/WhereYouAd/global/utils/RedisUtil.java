@@ -64,8 +64,4 @@ public class RedisUtil {
         return count;
     }
 
-//    public String getAndDeleteData(String key) {
-//        ValueOperations<String, String> valueOperations = template.opsForValue();
-//        return valueOperations.getAndDelete(key);
-//    }
 }
