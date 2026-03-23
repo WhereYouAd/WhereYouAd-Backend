@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ClickDto {
     private Long adContentId;
+    private Long orgId;
     private String ipAddress;
     private String userAgent;
     private long clickedAt;

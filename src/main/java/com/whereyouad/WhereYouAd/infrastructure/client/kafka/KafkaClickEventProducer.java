@@ -19,6 +19,6 @@ public class KafkaClickEventProducer implements ClickEventProducer {
     @Override
     public void produce(ClickDto event) {
         kafkaTemplate.send(TOPIC, String.valueOf(event.getAdContentId()), event);
-        log.debug("[Kafka] 실제 클릭 이벤트 발행: adId={}, ip={}", event.getAdContentId(), event.getIpAddress());
+        log.debug("[Kafka] 실제 클릭 이벤트 발행: adId={}, orgId={}, ip={}", event.getAdContentId(), event.getOrgId(), event.getIpAddress());
     }
 }

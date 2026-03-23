@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.presentation;
 
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
+import com.whereyouad.WhereYouAd.domains.dashboard.domain.service.DashboardClickService;
 import com.whereyouad.WhereYouAd.domains.dashboard.domain.service.DashboardService;
 import com.whereyouad.WhereYouAd.domains.dashboard.presentation.docs.DashboardControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
@@ -8,9 +9,11 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDate;
 
@@ -20,6 +23,7 @@ import java.time.LocalDate;
 public class DashboardController implements DashboardControllerDocs {
 
     private final DashboardService dashboardService;
+    private final DashboardClickService dashboardClickService;
 
     @GetMapping("/{orgId}/metrics")
     public ResponseEntity<DataResponse<DashboardResponse.AggregatedSummaryResponse>> getMetricsSummary(
@@ -76,5 +80,17 @@ public class DashboardController implements DashboardControllerDocs {
                 userId, orgId, adjustedStart, adjustedEnd);
 
         return ResponseEntity.ok(DataResponse.from(response));
+    }
+
+    @GetMapping(value = "/{orgId}/clicks/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<SseEmitter> streamRealClicks(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false, defaultValue = "dummy") String mode
+    )
+    {
+        SseEmitter emitter = dashboardClickService.subscribe(userId, orgId, mode);
+
+        return ResponseEntity.ok(emitter);
     }
 }

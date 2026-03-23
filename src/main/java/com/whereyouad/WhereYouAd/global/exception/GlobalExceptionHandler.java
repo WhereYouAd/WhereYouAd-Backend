@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.global.exception;
 
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashboardErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.AuthErrorCode;
 import com.whereyouad.WhereYouAd.global.response.ErrorResponse;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.stream.Collectors;
 
@@ -135,6 +137,37 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(AuthErrorCode.INVALID_TOKEN_FORMAT.getHttpStatus())
+                .body(errorResponse);
+    }
+
+    /**
+     * RequestParam 으로 전달된 값이 Enum 타입 등으로 변환되지 못할 때 발생하는 예외 처리 (ex. @RequestParam Provider provider)
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Object> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
+        log.error("타입 변환 실패 오류 발생: 파라미터명 '{}', 입력값 '{}'", e.getName(), e.getValue());
+
+        // Provider Enum 변환 실패인 경우
+        if (e.getRequiredType() != null && e.getRequiredType().isEnum()) {
+
+            ErrorResponse errorResponse = ErrorResponse.of(
+                    DashboardErrorCode.PROVIDER_NOT_VALID,
+                    request
+            );
+
+            return ResponseEntity
+                    .status(DashboardErrorCode.PROVIDER_NOT_VALID.getHttpStatus())
+                    .body(errorResponse);
+        }
+
+        // Enum 변환 실패가 아닌 일반적인 타입 매스매치(예: Long 타입에 문자열 입력)인 경우
+        ErrorResponse errorResponse = ErrorResponse.of(
+                ErrorCode.INVALID_PARAMETER,
+                request
+        );
+
+        return ResponseEntity
+                .status(ErrorCode.INVALID_PARAMETER.getHttpStatus())
                 .body(errorResponse);
     }
 }

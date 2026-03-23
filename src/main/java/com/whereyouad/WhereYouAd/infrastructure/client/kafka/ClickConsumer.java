@@ -40,6 +40,14 @@ public class ClickConsumer {
 
         Long currentClickCount = redisUtil.incrementDataExpire(clickKey, REDIS_TTL_SECONDS);
 
+        // 조직 단위 통합 집계 추가
+        if (event.getOrgId() != null) {
+            String orgClickKey = String.format("click:%s:org:%s:%s", mode, event.getOrgId(), currentMinute);
+            redisUtil.incrementDataExpire(orgClickKey, REDIS_TTL_SECONDS);
+        } else { //orgId 가 null 인 이벤트 들어올 시 로그 처리
+            log.warn("orgId 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
+        }
+
         log.info("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
                 clickKey, event.getUserAgent(), event.getIpAddress(), currentClickCount);
     }

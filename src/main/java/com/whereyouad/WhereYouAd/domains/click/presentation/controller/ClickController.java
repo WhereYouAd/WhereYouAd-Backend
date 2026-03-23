@@ -6,6 +6,7 @@ import com.whereyouad.WhereYouAd.domains.click.domain.service.ClickService;
 import com.whereyouad.WhereYouAd.domains.click.presentation.docs.ClickControllerDocs;
 import com.whereyouad.WhereYouAd.domains.click.presentation.scheduler.DummyClickProducer;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,7 @@ public class ClickController implements ClickControllerDocs {
 
     // (임시) 실시간 클릭수 조회 (dummy 또는 실제 실시간 집계)
     // GET /api/clicks/realtime/{adContentId}?mode=real&minutes=60
+    @Hidden //임시 실시간 클릭수 조회 Swagger 에서 숨김처리
     @GetMapping("/realtime/{adContentId}")
     public ResponseEntity<DataResponse<java.util.List<ClickResponse.RealtimeClickCount>>> getRealtimeClickCounts(
             @PathVariable Long adContentId,
