@@ -63,8 +63,8 @@ public class AIServiceImpl implements AIService {
         LocalDateTime start = request.startDate().atStartOfDay();
         LocalDateTime end = request.endDate().atTime(23, 59, 59);
 
-        // 4. 해당 조직의 데이터 존재 여부 사전 확인
-        boolean hasData = metricFactRepository.existsByTimeBucketBetweenAndOrg(start, end, orgId);
+        // 4. 해당 프로젝트의 데이터 존재 여부 사전 확인
+        boolean hasData = metricFactRepository.existsByTimeBucketBetweenAndProject(start, end, projectId);
         if (!hasData) {
             throw new AIHandler(AIErrorCode.NO_METRIC_DATA);
         }
@@ -82,7 +82,7 @@ public class AIServiceImpl implements AIService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                aiAsyncService.analyzeAsync(reportId, orgId, request.startDate(), request.endDate());
+                aiAsyncService.analyzeAsync(reportId, projectId, request.startDate(), request.endDate());
             }
         });
 

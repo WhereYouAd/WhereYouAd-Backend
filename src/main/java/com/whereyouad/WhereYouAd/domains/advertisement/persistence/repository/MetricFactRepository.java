@@ -105,20 +105,19 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("end") LocalDateTime end
     );
 
-    // 정해진 기간동안의 MetricFact 데이터 조회 (AI 분석에 사용, 조직 필터)
+    // 정해진 기간동안의 MetricFact 데이터 조회 (AI 분석에 사용, 프로젝트 필터)
     @Query("SELECT m FROM MetricFact m " +
            "JOIN FETCH m.adContent ac " +
            "JOIN FETCH ac.adGroup ag " +
            "JOIN FETCH ag.adCampaign camp " +
-           "JOIN camp.project p " +
-           "WHERE m.timeBucket >= :start " +
+           "WHERE m.project.id = :projectId " +
+           "AND m.timeBucket >= :start " +
            "AND m.timeBucket <= :end " +
-           "AND p.organization.id = :orgId " +
            "ORDER BY m.timeBucket ASC")
-    List<MetricFact> findAllByDateRangeAndOrgForAiAnalysis(
+    List<MetricFact> findAllByDateRangeAndProjectForAiAnalysis(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
-            @Param("orgId") Long orgId
+            @Param("projectId") Long projectId
     );
 
     // 프로젝트 ID 목록으로 지출(spend) 총합 일괄 조회
@@ -128,13 +127,12 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
 
     // 정해진 기간동안의 데이터 유무 검사
     @Query("SELECT COUNT(m) > 0 FROM MetricFact m " +
-           "JOIN m.project p " +
            "WHERE m.timeBucket >= :start " +
            "AND m.timeBucket <= :end " +
-           "AND p.organization.id = :orgId")
-    boolean existsByTimeBucketBetweenAndOrg(
+           "AND m.project.id = :projectId")
+    boolean existsByTimeBucketBetweenAndProject(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
-            @Param("orgId") Long orgId
+            @Param("projectId") Long projectId
     );
 }

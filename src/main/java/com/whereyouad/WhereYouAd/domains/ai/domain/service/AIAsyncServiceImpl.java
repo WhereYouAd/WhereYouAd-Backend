@@ -30,9 +30,9 @@ public class AIAsyncServiceImpl implements AIAsyncService{
 
     @Async
     @Transactional
-    public void analyzeAsync(Long reportId, Long orgId, LocalDate startDate, LocalDate endDate) {
-        log.info("[AIAsyncService] 비동기 분석 시작. reportId={}, orgId={}, 기간={} ~ {}",
-                reportId, orgId, startDate, endDate);
+    public void analyzeAsync(Long reportId, Long projectId, LocalDate startDate, LocalDate endDate) {
+        log.info("[AIAsyncService] 비동기 분석 시작. reportId={}, projectId={}, 기간={} ~ {}",
+                reportId, projectId, startDate, endDate);
 
         AIInsightReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> {
@@ -41,11 +41,11 @@ public class AIAsyncServiceImpl implements AIAsyncService{
                 });
 
         try {
-            // 1. 해당 조직의 기간 내 MetricFact 조회
-            List<MetricFact> metrics = metricFactRepository.findAllByDateRangeAndOrgForAiAnalysis(
+            // 1. 해당 프로젝트의 기간 내 MetricFact 조회
+            List<MetricFact> metrics = metricFactRepository.findAllByDateRangeAndProjectForAiAnalysis(
                     startDate.atStartOfDay(),
                     endDate.atTime(23, 59, 59),
-                    orgId);
+                    projectId);
 
             // 2. OpenAI API 호출 -> AnalysisResponse
             AIResponse.AnalysisResponse analysisResponse = openApiUtil.generateAnalysis(startDate, endDate, metrics);
