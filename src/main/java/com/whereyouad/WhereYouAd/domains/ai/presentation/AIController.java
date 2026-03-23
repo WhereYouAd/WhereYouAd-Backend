@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,17 +31,19 @@ public class AIController implements AIControllerDocs {
 
     @GetMapping("/reports/{accessToken}")
     public ResponseEntity<DataResponse<AIResponse.ReportStatusResponse>> getReportByAccessToken(
-            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable String accessToken) {
+        Long userId = userDetails != null ? userDetails.getUserId() : null;
         AIResponse.ReportStatusResponse response = aiService.getReportByAccessToken(userId, accessToken);
         return ResponseEntity.ok(DataResponse.from(response));
     }
 
     @PatchMapping("/reports/{accessToken}/share")
     public ResponseEntity<DataResponse<String>> updateShareStatus(
-            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable String accessToken,
             @RequestParam boolean isShared) {
+        Long userId = userDetails != null ? userDetails.getUserId() : null;
         aiService.updateShareStatus(userId, accessToken, isShared);
         return ResponseEntity.ok(DataResponse.from("SUCCESS"));
     }
