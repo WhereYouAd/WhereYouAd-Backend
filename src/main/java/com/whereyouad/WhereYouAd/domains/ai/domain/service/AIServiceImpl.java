@@ -36,10 +36,16 @@ public class AIServiceImpl implements AIService {
     private final ObjectMapper objectMapper;
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
+    private final ProjectRepository projectRepository;
 
     @Override
     @Transactional
-    public String requestAnalysis(Long userId, Long orgId, AIRequest.PeriodRequest request) {
+    public String requestAnalysis(Long userId, Long projectId, AIRequest.PeriodRequest request) {
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new AIHandler(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        Long orgId = project.getOrganization().getId();
 
         // 1. 조직 존재 여부 확인
         orgRepository.findById(orgId)
@@ -64,11 +70,11 @@ public class AIServiceImpl implements AIService {
         }
 
         // 5. AIInsightReport PENDING 상태로 DB 저장
-        AIInsightReport report = AIConverter.toAIInsightConverter(start, end);
+        AIInsightReport report = AIConverter.toAIInsightConverter(start, end, project);
         reportRepository.save(report);
 
-        log.info("[AIServiceImpl] 분석 요청 접수. reportId={}, orgId={}, 기간={} ~ {}",
-                report.getId(), orgId, request.startDate(), request.endDate());
+        log.info("[AIServiceImpl] 분석 요청 접수. reportId={}, projectId={}, orgId={}, 기간={} ~ {}",
+                report.getId(), projectId, orgId, request.startDate(), request.endDate());
 
         // 6. 트랜잭션 커밋 완료 후 비동기 분석 트리거
         // afterCommit(): PENDING 레코드가 DB에 확정된 뒤에 @Async 실행

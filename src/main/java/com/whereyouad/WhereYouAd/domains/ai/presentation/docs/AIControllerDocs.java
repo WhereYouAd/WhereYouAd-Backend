@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface AIControllerDocs {
 
     @Operation(summary = "AI 광고 성과 분석 요청 API", description = """
-            특정 조직(orgId)의 기간(startDate ~ endDate) 동안의 광고 성과 데이터를 AI가 분석하도록 요청합니다.
+            특정 프로젝트(projectId) 기반으로 조직(orgId)의 기간(startDate ~ endDate) 동안의 광고 성과 데이터를 AI가 분석하도록 요청합니다.
 
             **[처리 흐름]**
             1. 요청을 수신하면 즉시 `ai_insight_report` 테이블에 `PENDING` 상태로 저장합니다.
@@ -43,7 +43,7 @@ public interface AIControllerDocs {
     })
     ResponseEntity<DataResponse<String>> requestAnalysis(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @Parameter(description = "조직 ID", required = true, example = "1") @PathVariable Long orgId,
+            @Parameter(description = "프로젝트 ID", required = true, example = "1") @PathVariable Long projectId,
             @RequestBody @Valid AIRequest.PeriodRequest request
     );
 

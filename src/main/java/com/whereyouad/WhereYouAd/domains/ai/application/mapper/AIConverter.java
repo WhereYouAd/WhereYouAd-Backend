@@ -72,8 +72,9 @@ public class AIConverter {
     }
 
     // AI 분석 요청 값 entity PENDING 상태로 저장
-    public static AIInsightReport toAIInsightConverter(LocalDateTime start, LocalDateTime end) {
+    public static AIInsightReport toAIInsightConverter(LocalDateTime start, LocalDateTime end, Project project) {
         return AIInsightReport.builder()
+                .project(project)
                 .periodStart(start)
                 .periodEnd(end)
                 .status(AIStatus.PENDING)
