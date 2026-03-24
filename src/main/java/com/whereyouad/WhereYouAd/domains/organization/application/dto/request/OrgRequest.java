@@ -11,8 +11,7 @@ public class OrgRequest {
     public record Create (
             @NotBlank(message = "조직 이름은 필수입니다.")
             String name,
-            String description,
-            String logoUrl
+            String description
     ) {}
 
     public record Read (
@@ -23,7 +22,7 @@ public class OrgRequest {
             @NotBlank(message = "조직 이름은 필수입니다.")
             String name,
             String description,
-            String logoUrl
+            boolean isImageDeleted
     ) {}
 
     public record UpdateRole (
