@@ -17,7 +17,7 @@ public class PromptBuilder {
     public String buildSystemPrompt() {
         return """
                당신은 디지털 광고 성과 분석 전문가입니다.
-               사용자가 제공하는 특정 프로젝트(연관된 캠페인들의 집합)의 일별 광고 성과 데이터를 기반으로 날카롭고 실리적인 자연어 리포트를 작성해주세요.
+               사용자가 제공하는 선택한 플랫폼(또는 조직 전체)의 일별 광고 성과 데이터를 기반으로 날카롭고 실리적인 자연어 리포트를 작성해주세요.
 
                반드시 아래 JSON 형식으로만 응답하세요. JSON 이외의 설명이나 마크다운 코드블록은 포함하지 마세요.
 
@@ -41,12 +41,13 @@ public class PromptBuilder {
     // 유저 프롬프트 생성
     // Section 1: 캠페인별 예산 vs 실제 소진액 요약
     // Section 2: 일별 MetricFact 원본 CSV
-    public String buildUserPrompt(LocalDate startDate, LocalDate endDate, List<MetricFact> metrics) {
+    public String buildUserPrompt(String provider, LocalDate startDate, LocalDate endDate, List<MetricFact> metrics) {
         StringBuilder sb = new StringBuilder();
+        String targetProvider = "ALL".equalsIgnoreCase(provider) ? "조직 전체 데이터" : provider + " 플랫폼";
         sb.append(String.format(
-                "아래는 %s ~ %s 기간 동안의 광고 성과 원본 데이터입니다.\n" +
+                "아래는 %s의 %s ~ %s 기간 동안의 광고 성과 원본 데이터입니다.\n" +
                 "데이터를 분석하여 지정된 JSON 형식으로 리포트를 작성해주세요.\n\n",
-                startDate, endDate));
+                targetProvider, startDate, endDate));
 
         // Section 1: 캠페인별 예산 소진 현황
         sb.append("[캠페인 예산 소진 현황]\n");
@@ -82,7 +83,7 @@ public class PromptBuilder {
 
         for (MetricFact m : metrics) {
             String date = m.getTimeBucket() != null ? m.getTimeBucket().toLocalDate().toString() : "";
-            String provider = m.getProvider() != null ? m.getProvider().name() : "UNKN";
+            String platform = m.getProvider() != null ? m.getProvider().name() : "UNKN";
             String campId = m.getAdContent().getAdGroup().getAdCampaign().getId() != null
                     ? m.getAdContent().getAdGroup().getAdCampaign().getId().toString()
                     : "-";
@@ -94,12 +95,12 @@ public class PromptBuilder {
             String rev = m.getRevenue() != null ? m.getRevenue().toPlainString() : "0";
 
             sb.append(String.format("%s,%s,%s,%d,%d,%d,%s,%s\n",
-                    date, provider, campId, imp, clk, conv, spend, rev));
+                    date, platform, campId, imp, clk, conv, spend, rev));
         }
 
         sb.append("""
                   
-                  위 원본 데이터를 바탕으로 이 특정 프로젝트에 대한:
+                  위 원본 데이터를 바탕으로 이 특정 플랫폼(혹은 조직 대상) 데이터에 대한:
                   1. 기간 전체 성과 종합 평가
                   2. 성과 우수/부진 일자 파악
                   3. 플랫폼별 및 소속 캠페인 간의 성과 차이 분석
