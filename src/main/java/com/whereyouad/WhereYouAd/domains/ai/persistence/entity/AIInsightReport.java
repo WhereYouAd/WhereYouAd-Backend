@@ -1,7 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.ai.persistence.entity;
 
 import com.whereyouad.WhereYouAd.domains.ai.domain.constant.AIStatus;
-import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,8 +44,8 @@ public class AIInsightReport extends BaseEntity {
 
     // 연관 관계
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
-    private Project project;
+    @JoinColumn(name = "org_id")
+    private Organization organization;
 
     // 상태 변경 메서드
     public void updateIsShared(boolean isShared) {
