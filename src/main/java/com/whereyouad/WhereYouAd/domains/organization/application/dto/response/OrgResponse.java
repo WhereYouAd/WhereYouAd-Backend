@@ -63,6 +63,7 @@ public class OrgResponse {
     ) {}
 
     public record OrgMemberDTO(
+            Long memberId,
             String name,
             String email,
             String profileImageUrl,

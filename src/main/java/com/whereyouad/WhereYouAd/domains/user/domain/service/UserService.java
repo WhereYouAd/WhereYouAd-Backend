@@ -1,6 +1,9 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.user.application.dto.request.UserInfoModifyRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.UserInfoModifiedResponse;
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
@@ -10,11 +13,14 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpRes
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
+import com.whereyouad.WhereYouAd.infrastructure.client.aws.s3.S3UploadService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional
@@ -24,6 +30,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
+    private final S3UploadService s3UploadService;
 
     //회원가입 메서드
     public SignUpResponse signUpUser(SignUpRequest request) {
@@ -103,5 +110,84 @@ public class UserService {
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
         return UserConverter.toMyPageResponse(user, provider);
+    }
+
+    //회원 정보(이름, 프로필 이미지, 비밀번호 변경)
+    @CacheEvict(value = "user:profile", key = "#userId + ':' + #provider") //정보 변경시 마이페이지 관련 Redis 캐시 삭제하여 이전 데이터 반환 방지
+    public UserInfoModifiedResponse modifyUserInfo(Long userId, Provider provider, UserInfoModifyRequest request, MultipartFile image) {
+        // 회원 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 최종적으로 DB에 저장될 이름 (기본값: 기존 이름)
+        String finalName = user.getName();
+        if (request.name() != null && !request.name().isBlank()) {
+            finalName = request.name();
+        }
+
+        // 최종적으로 DB에 저장될 비밀번호 (기본값: 기존 비밀번호)
+        String finalEncodedPassword = user.getPassword();
+
+        if (provider == Provider.EMAIL) {
+            // 이메일 로그인 : 비밀번호 변경을 시도했는지 확인 (새 비밀번호 값이 들어왔는지)
+            boolean isPwdChangeRequested = request.newPassword() != null && !request.newPassword().isBlank();
+
+            if (isPwdChangeRequested) {
+                // 새 비밀번호는 입력했는데, 기존 비밀번호를 안 적은 경우 오류
+                if (request.oldPassword() == null || request.oldPassword().isBlank()) {
+                    throw new UserHandler(UserErrorCode.USER_OLD_PASSWORD_REQUIRED);
+                }
+
+                // 기존 비밀번호 일치 확인
+                if (!passwordEncoder.matches(request.oldPassword(), finalEncodedPassword)) {
+                    throw new UserHandler(UserErrorCode.USER_PASSWORD_NOT_CORRECT);
+                }
+
+                // 기존 비밀번호와 새 비밀번호가 같은지 확인
+                if (request.oldPassword().equals(request.newPassword())) {
+                    throw new UserHandler(UserErrorCode.USER_PASSWORD_SAME_AS_OLD);
+                }
+
+                // 모든 검증 통과 시 새 비밀번호 암호화해서 덮어쓰기
+                finalEncodedPassword = passwordEncoder.encode(request.newPassword());
+            }
+            // 비밀번호 변경 의도가 없다면(isPasswordChangeRequested == false)
+            // finalEncodedPassword는 맨 위에서 가져온 기존 비밀번호 그대로 유지
+
+        } else {
+            // 소셜 로그인 : 비밀번호 관련 값이 하나라도 들어왔다면 에러 발생
+            boolean hasPasswordRequest = (request.newPassword() != null && !request.newPassword().isBlank()) ||
+                    (request.oldPassword() != null && !request.oldPassword().isBlank());
+
+            if (hasPasswordRequest) {
+                throw new UserHandler(UserErrorCode.SOCIAL_USER_PASSWORD_CANNOT_MODIFY);
+            }
+        }
+
+        // 프로필 이미지 변경 로직
+        String oldProfileImageUrl = user.getProfileImageUrl();
+        String finalImageUrl = oldProfileImageUrl; // 기본값은 기존 이미지 유지
+
+        //이미지를 기본 프로필 사진 바꾸는 거라면(프로필 사진 삭제 요청이라면)
+        if (request.isImageDeleted()) {
+            finalImageUrl = null; //최종 프로필 사진 URL 값을 null 로 지정
+
+            if (oldProfileImageUrl != null) { //기존 프로필 사진 존재했다면 삭제
+                s3UploadService.deleteImageFromUrl(oldProfileImageUrl);
+            }
+
+        } else if (image != null && !image.isEmpty()) { //새 프로필 이미지 등록이라면,
+            finalImageUrl = s3UploadService.uploadImage(image); //새 이미지를 S3 업로드 하고 이미지 URL 받기
+
+            //기존 이미지 존재 시 삭제
+            if (oldProfileImageUrl != null) {
+                s3UploadService.deleteImageFromUrl(oldProfileImageUrl);
+            }
+        }
+
+        // 엔티티 수정 (이름, 이미지, 비밀번호)
+        user.modifyInfo(finalName, finalImageUrl, finalEncodedPassword);
+
+        return UserConverter.toUserInfoResponse(user.getId(), user.getName(), user.getProfileImageUrl());
     }
 }

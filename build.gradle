@@ -81,6 +81,9 @@ dependencies {
 
 	// Feign Client (OpenAI API 연동)
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+	// Kafka
+	implementation 'org.springframework.kafka:spring-kafka'
 }
 
 tasks.named('test') {

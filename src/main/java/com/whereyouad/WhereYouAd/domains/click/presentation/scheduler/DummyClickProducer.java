@@ -1,0 +1,77 @@
+package com.whereyouad.WhereYouAd.domains.click.presentation.scheduler;
+
+import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.Random;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+public class DummyClickProducer {
+
+    private final KafkaTemplate<String, ClickDto> kafkaTemplate;
+    private final Random random = new Random();
+
+    private static final String TOPIC = "ad-click-events";
+
+    // 광고 ID(Key)와 해당 광고가 속한 실제 조직 ID(Value)를 매핑
+    // DB에 있는 실제 데이터 구조에 맞게 숫자 설정 필요
+    // TODO : 해당 Kafka 에서 Mock data 로 클릭수 발생시키는 광고의 Id 들이 임시로 1, 2 ,3 으로 되어있어,
+    //        해당 광고들이 속한 조직을 모두 Id = 1 이라 가정하고 진행함.
+    //        해당 orgId 매핑 값을 실제 배포 서버에선 변경해야 할지?
+    private static final Map<Long, Long> adContentOrgMap = Map.of(
+            1L, 1L,  // 1번 광고는 1번 조직 소속
+            2L, 1L,  // 2번 광고도 1번 조직 소속
+            3L, 1L   // 3번 광고도 1번 조직 소속
+    );
+
+    //    private static final Long[] adContentIds = {1L, 2L, 3L}; 기존 광고 Id 주석 처리
+    private static final Long[] adContentIds = adContentOrgMap.keySet().toArray(new Long[0]);
+    private static final String[] userAgents = {"UNKNOWN", "MOBILE", "PC"};
+
+    // 기본값 false (API를 통해 켤 때만 동작)
+    private boolean isRunning = false;
+
+    public boolean toggle() {
+        this.isRunning = !this.isRunning;
+        log.info("Dummy Click Producer is now {}", isRunning ? "RUNNING" : "STOPPED");
+        return isRunning;
+    }
+
+    // 500ms마다 실행
+    @Scheduled(fixedRate = 500)
+    public void generateDummyClick() {
+        if (!isRunning) {
+            return;
+        }
+        Long adContentId = adContentIds[random.nextInt(adContentIds.length)];
+
+        //광고 Id - 조직 Id 매핑에서 조직 Id 추출
+        Long orgId = adContentOrgMap.get(adContentId);
+
+        // 임의의 IP 주소, 기기 생성
+        String ipAddress = "192.168.0." + (random.nextInt(50) + 1);
+        String userAgent = userAgents[random.nextInt(userAgents.length)];
+
+        ClickDto event = ClickDto.builder()
+                .adContentId(adContentId)
+                .orgId(orgId)
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .clickedAt(System.currentTimeMillis())
+                .isDummy(true)
+                .build();
+
+        // Kafka로 메시지 send (key는 adContentId, 같은 광고끼리 같은 파티션으로 분배)
+        kafkaTemplate.send(TOPIC, String.valueOf(adContentId), event);
+
+        log.info("Produced dummy click: adContentId={}, orgId={}, ip={}", adContentId, orgId, ipAddress);
+    }
+}

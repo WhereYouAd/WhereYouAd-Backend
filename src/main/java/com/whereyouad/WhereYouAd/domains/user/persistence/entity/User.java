@@ -48,8 +48,13 @@ public class User extends BaseEntity {
         this.name = name;
     }
 
-
     public void resetPassword(String password) {
         this.password = password;
+    }
+
+    public void modifyInfo(String name, String profileImageUrl, String encodedNewPwd) {
+        this.name = name;
+        this.profileImageUrl = profileImageUrl;
+        this.password = encodedNewPwd;
     }
 }

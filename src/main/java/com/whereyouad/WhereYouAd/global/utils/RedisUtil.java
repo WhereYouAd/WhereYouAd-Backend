@@ -51,4 +51,17 @@ public class RedisUtil {
     public Boolean expire(String key, long timeout, TimeUnit unit) {
         return template.expire(key, timeout, unit);
     }
+
+    // (클릭수) 1 증가
+    public Long incrementDataExpire(String key, long durationSeconds) {
+        ValueOperations<String, String> valueOperations = template.opsForValue();
+        Long count = valueOperations.increment(key);
+
+        // 클릭수 정보 새로 생성 됐을 시 만료 정보 설정
+        if (count != null && count == 1L)
+            template.expire(key, Duration.ofSeconds(durationSeconds));
+
+        return count;
+    }
+
 }
