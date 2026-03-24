@@ -76,8 +76,13 @@ public class OrgServiceImpl implements OrgService {
 
             return OrgConverter.toCreatedResponse(organization);
         } catch (Exception e) { //조직 생성 중 오류 발생 시
+            log.error("조직 생성 실패: {}", e.getMessage(), e);
             if (imageUrl != null) { //로고 이미지 S3 에서 삭제 진행 (orphan 방지)
-                s3UploadService.deleteImageFromUrl(imageUrl);
+                try {
+                    s3UploadService.deleteImageFromUrl(imageUrl);
+                } catch (Exception deleteException) {
+                    log.warn("조직 생성 실패 후 S3 이미지 삭제 실패: {}", imageUrl, deleteException);
+                }
             }
 
             throw new OrgHandler(OrgErrorCode.ORG_CREATE_FAILED);
@@ -159,7 +164,6 @@ public class OrgServiceImpl implements OrgService {
                 } catch (Exception e) {
                     log.warn("조직 정보 수정 진행간에 S3 이미지 삭제 실패: {}", oldLogoUrl, e);
                 }
-                s3UploadService.deleteImageFromUrl(oldLogoUrl);
             }
 
         } else if (imageFile != null && !imageFile.isEmpty()) { //이미지 변경이라면,
