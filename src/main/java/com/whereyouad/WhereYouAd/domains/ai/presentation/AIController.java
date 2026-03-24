@@ -20,12 +20,12 @@ public class AIController implements AIControllerDocs {
 
     private final AIService aiService;
 
-    @PostMapping("/projects/{projectId}/analysis")
+    @PostMapping("/organizations/{orgId}/analysis")
     public ResponseEntity<DataResponse<String>> requestAnalysis(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long projectId,
-            @RequestBody @Valid AIRequest.PeriodRequest request) {
-        String accessToken = aiService.requestAnalysis(userId, projectId, request);
+            @PathVariable Long orgId,
+            @RequestBody @Valid AIRequest.AnalysisRequest request) {
+        String accessToken = aiService.requestAnalysis(userId, orgId, request);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(DataResponse.from(accessToken));
     }
 

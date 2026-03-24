@@ -31,12 +31,13 @@ public class OpenApiService {
 
     // 기간 내 MetricFact 목록을 받아 AI 분석 리포트를 생성
     public AIResponse.AnalysisResponse generateAnalysis(
+            String provider,
             LocalDate startDate,
             LocalDate endDate,
             List<MetricFact> metrics) {
         // 1. 일별 MetricFact 원본 데이터를 포함한 프롬프트 생성
         String systemPrompt = promptBuilder.buildSystemPrompt();
-        String userPrompt = promptBuilder.buildUserPrompt(startDate, endDate, metrics);
+        String userPrompt = promptBuilder.buildUserPrompt(provider, startDate, endDate, metrics);
 
         // 2. AIConverter로 요청 DTO 빌드
         OpenAIRequest.Request request = AIConverter.toOpenAiRequest(model, systemPrompt, userPrompt);
@@ -44,8 +45,8 @@ public class OpenApiService {
         // 3. OpenAI API 호출
         OpenAIResponse.Response response;
         try {
-            log.info("[generateAnalysis] OpenAI 호출 시작. 기간: {} ~ {}, 레코드 수: {}",
-                    startDate, endDate, metrics.size());
+            log.info("[generateAnalysis] OpenAI 호출 시작. provider: {}, 기간: {} ~ {}, 레코드 수: {}",
+                    provider, startDate, endDate, metrics.size());
             response = openAiClient.chatCompletions(request);
             log.info("[generateAnalysis] OpenAI 응답 수신 완료.");
 

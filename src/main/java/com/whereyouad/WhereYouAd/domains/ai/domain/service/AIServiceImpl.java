@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.ai.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.request.AIRequest;
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.AIResponse;
@@ -13,9 +14,7 @@ import com.whereyouad.WhereYouAd.domains.ai.persistence.repository.AIInsightRepo
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
-import com.whereyouad.WhereYouAd.domains.project.exception.code.ProjectErrorCode;
-import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
-import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectRepository;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,19 +35,13 @@ public class AIServiceImpl implements AIService {
     private final ObjectMapper objectMapper;
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
-    private final ProjectRepository projectRepository;
 
     @Override
     @Transactional
-    public String requestAnalysis(Long userId, Long projectId, AIRequest.PeriodRequest request) {
-
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new AIHandler(ProjectErrorCode.PROJECT_NOT_FOUND));
-
-        Long orgId = project.getOrganization().getId();
+    public String requestAnalysis(Long userId, Long orgId, AIRequest.AnalysisRequest request) {
 
         // 1. 조직 존재 여부 확인
-        orgRepository.findById(orgId)
+        Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new AIHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         // 2. 유저가 해당 조직의 멤버인지 검증
@@ -63,18 +56,25 @@ public class AIServiceImpl implements AIService {
         LocalDateTime start = request.startDate().atStartOfDay();
         LocalDateTime end = request.endDate().atTime(23, 59, 59);
 
-        // 4. 해당 프로젝트의 데이터 존재 여부 사전 확인
-        boolean hasData = metricFactRepository.existsByTimeBucketBetweenAndProject(start, end, projectId);
+        // 4. 해당 조직의(또는 플랫폼) 데이터 존재 여부 사전 확인
+        boolean hasData;
+        if ("ALL".equalsIgnoreCase(request.provider())) {
+            hasData = metricFactRepository.existsByTimeBucketBetweenAndOrg(start, end, orgId);
+        } else {
+            hasData = metricFactRepository.existsByTimeBucketBetweenAndOrgAndProvider(
+                    start, end, orgId, Provider.valueOf(request.provider().toUpperCase()));
+        }
+
         if (!hasData) {
             throw new AIHandler(AIErrorCode.NO_METRIC_DATA);
         }
 
         // 5. AIInsightReport PENDING 상태로 DB 저장
-        AIInsightReport report = AIConverter.toAIInsightConverter(start, end, project);
+        AIInsightReport report = AIConverter.toAIInsightConverter(start, end, organization, request.provider());
         reportRepository.save(report);
 
-        log.info("[AIServiceImpl] 분석 요청 접수. reportId={}, projectId={}, orgId={}, 기간={} ~ {}",
-                report.getId(), projectId, orgId, request.startDate(), request.endDate());
+        log.info("[AIServiceImpl] 분석 요청 접수. reportId={}, orgId={}, provider={}, 기간={} ~ {}",
+                report.getId(), orgId, request.provider(), request.startDate(), request.endDate());
 
         // 6. 트랜잭션 커밋 완료 후 비동기 분석 트리거
         // afterCommit(): PENDING 레코드가 DB에 확정된 뒤에 @Async 실행
@@ -82,7 +82,7 @@ public class AIServiceImpl implements AIService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                aiAsyncService.analyzeAsync(reportId, projectId, request.startDate(), request.endDate());
+                aiAsyncService.analyzeAsync(reportId, orgId, request.provider(), request.startDate(), request.endDate());
             }
         });
 
@@ -102,7 +102,7 @@ public class AIServiceImpl implements AIService {
             if (userId == null) {
                 throw new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN);
             }
-            Long orgId = report.getProject().getOrganization().getId();
+            Long orgId = report.getOrganization().getId();
 
             // 1. 조직 존재 여부 확인
             orgRepository.findById(orgId)
@@ -141,7 +141,7 @@ public class AIServiceImpl implements AIService {
         AIInsightReport report = reportRepository.findByAccessToken(accessToken)
                 .orElseThrow(() -> new AIHandler(AIErrorCode.REPORT_NOT_FOUND));
 
-        Long orgId = report.getProject().getOrganization().getId();
+        Long orgId = report.getOrganization().getId();
 
         // 1. 조직 존재 여부 확인
         orgRepository.findById(orgId)
