@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,9 +24,11 @@ public class OrgController implements OrgControllerDocs {
     @PostMapping("/create")
     public ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @RequestBody @Valid OrgRequest.Create request
-    ) {
-        OrgResponse.Create response = orgService.createOrganization(userId, request);
+            @RequestPart(value = "request") @Valid OrgRequest.Create request,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    )
+    {
+        OrgResponse.Create response = orgService.createOrganization(userId, request, image);
         return ResponseEntity.ok(
                 DataResponse.created(response)
         );
@@ -70,10 +73,11 @@ public class OrgController implements OrgControllerDocs {
     public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestBody @Valid OrgRequest.Update request
+            @RequestPart(value = "request") @Valid OrgRequest.Update request,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile
     )
     {
-        OrgResponse.Update response = orgService.modifyOrganization(userId, orgId, request);
+        OrgResponse.Update response = orgService.modifyOrganization(userId, orgId, request, imageFile);
         return ResponseEntity.ok(
                 DataResponse.from(response)
         );
