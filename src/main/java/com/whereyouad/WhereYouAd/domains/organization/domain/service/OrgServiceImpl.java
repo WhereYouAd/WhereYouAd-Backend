@@ -18,9 +18,11 @@ import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
+import com.whereyouad.WhereYouAd.infrastructure.client.aws.s3.S3UploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
@@ -35,9 +37,10 @@ public class OrgServiceImpl implements OrgService {
 
     private final RedisUtil redisUtil;
     private final EmailService emailService;
+    private final S3UploadService s3UploadService;
 
     // 조직(워크스페이스) 생성 메서드
-    public OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request) {
+    public OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request, MultipartFile imageFile) {
 
         // 유저 정보 추출
         User user = userRepository.findById(userId)
@@ -53,8 +56,14 @@ public class OrgServiceImpl implements OrgService {
             }
         }
 
+        //추가 : 로고 이미지 처리
+        String imageUrl = null;
+        if (imageFile != null && !imageFile.isEmpty()) {
+            imageUrl = s3UploadService.uploadImage(imageFile);
+        }
+
         // 조직 생성
-        Organization organization = OrgConverter.toOrganization(userId, request);
+        Organization organization = OrgConverter.toOrganization(userId, request, imageUrl);
 
         // OrgMember 생성
         OrgMember orgMember = OrgMemberConverter.toOrgMemberADMIN(user, organization);
@@ -115,7 +124,7 @@ public class OrgServiceImpl implements OrgService {
     }
 
     // 조직 정보 수정 메서드
-    public OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request) {
+    public OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request, MultipartFile imageFile) {
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
@@ -124,8 +133,34 @@ public class OrgServiceImpl implements OrgService {
             throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); // 예외처리
         }
 
+        //조직 로고 이미지 처리 추가
+        String oldLogoUrl = organization.getLogoUrl();
+        //기본적으로는 기존 이미지 유지
+        String finalLogoImageUrl = oldLogoUrl;
+
+        //로고 이미지를 기본 공백 이미지로 하는 거라면
+        if (request.isImageDeleted()) {
+            finalLogoImageUrl = null; //URL 을 null 처리
+
+            //기존 로고 이미지 존재 시 삭제
+            if (oldLogoUrl != null) {
+                s3UploadService.deleteImageFromUrl(oldLogoUrl);
+            }
+
+        } else if (imageFile != null && !imageFile.isEmpty()) { //이미지 변경이라면,
+            //이미지 업로드
+            finalLogoImageUrl = s3UploadService.uploadImage(imageFile);
+
+            //기존 로고 이미지 존재 시 삭제
+            if (oldLogoUrl != null) {
+                s3UploadService.deleteImageFromUrl(oldLogoUrl);
+            }
+
+        }
+
         // 조직 정보 수정
         organization.modifyInfo(request);
+        organization.modifyLogoImage(finalLogoImageUrl);
 
         // 변환 된 필드값과 해당 조직의 Id, updatedAt 가 포함된 DTO 로 반환
         return OrgConverter.toUpdatedResponse(organization);
@@ -158,6 +193,13 @@ public class OrgServiceImpl implements OrgService {
         // 만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
         if (!organization.getOwnerUserId().equals(userId)) {
             throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); // 예외처리
+        }
+
+        //추가 : 조직 로고 이미지 존재 시, 이미지를 S3 에서 삭제하는 로직 추가
+        String logoUrl = organization.getLogoUrl();
+
+        if (logoUrl != null) {
+            s3UploadService.deleteImageFromUrl(logoUrl);
         }
 
         // 해당 조직에 가입된 모든 회원들의 가입 정보 삭제

@@ -2,10 +2,11 @@ package com.whereyouad.WhereYouAd.domains.organization.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface OrgService {
 
-    OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request);
+    OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request, MultipartFile imageFile);
 
     OrgResponse.MyOrganizations getMyOrganizations(Long userId);
 
@@ -13,7 +14,7 @@ public interface OrgService {
 
     OrgResponse.MyOrganizations getSoftDeletedOrgs(Long userId);
 
-    OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request);
+    OrgResponse.Update modifyOrganization(Long userId, Long orgId, OrgRequest.Update request, MultipartFile imageFile);
 
     void removeOrganization(Long userId, Long orgId);
 
