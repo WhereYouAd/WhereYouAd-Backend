@@ -154,6 +154,11 @@ public class OrgServiceImpl implements OrgService {
 
             //기존 로고 이미지 존재 시 삭제
             if (oldLogoUrl != null) {
+                try {
+                    s3UploadService.deleteImageFromUrl(oldLogoUrl);
+                } catch (Exception e) {
+                    log.warn("조직 정보 수정 진행간에 S3 이미지 삭제 실패: {}", oldLogoUrl, e);
+                }
                 s3UploadService.deleteImageFromUrl(oldLogoUrl);
             }
 
@@ -163,7 +168,12 @@ public class OrgServiceImpl implements OrgService {
 
             //기존 로고 이미지 존재 시 삭제
             if (oldLogoUrl != null) {
-                s3UploadService.deleteImageFromUrl(oldLogoUrl);
+                try {
+                    s3UploadService.deleteImageFromUrl(oldLogoUrl);
+                } catch (Exception e) {
+                    log.warn("조직 정보 수정 진행간에 S3 이미지 삭제 실패: {}", oldLogoUrl, e);
+                }
+
             }
 
         }
@@ -221,7 +231,7 @@ public class OrgServiceImpl implements OrgService {
             try {
                 s3UploadService.deleteImageFromUrl(logoUrl);
             } catch (Exception e) {
-                log.warn("S3 이미지 삭제 실패: {}", logoUrl, e);
+                log.warn("조직 삭제 간에 S3 이미지 삭제 실패: {}", logoUrl, e);
             }
 
         }
