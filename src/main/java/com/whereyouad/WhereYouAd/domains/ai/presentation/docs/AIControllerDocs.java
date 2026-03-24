@@ -18,20 +18,20 @@ import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 public interface AIControllerDocs {
 
     @Operation(summary = "AI 광고 성과 분석 요청 API", description = """
-            특정 프로젝트(projectId) 기반으로 조직(orgId)의 기간(startDate ~ endDate) 동안의 광고 성과 데이터를 AI가 분석하도록 요청합니다.
+            특정 조직(orgId)과 플랫폼(provider: `NAVER`, `KAKAO`, `GOOGLE`, `ALL`) 기반으로 지정된 기간(startDate ~ endDate) 동안의 광고 성과 데이터를 AI가 분석하도록 요청합니다.
 
             **[처리 흐름]**
-            1. 요청을 수신하면 즉시 `ai_insight_report` 테이블에 `PENDING` 상태로 저장합니다.
-            2. AI 분석은 백그라운드(@Async)에서 비동기로 실행됩니다.
-            3. 응답으로 `accessToken`을 반환합니다. (202 Accepted)
-            4. 클라이언트는 반환된 `accessToken`으로 GET API를 호출해(공유 링크 포함) 결과를 확인합니다.
+            1. 요청을 수신하면 즉시 ai_insight_report 테이블에 PENDING 상태로 저장
+            2. AI 분석은 백그라운드에서 비동기로 실행
+            3. 응답으로 accessToken을 반환 (202 Accepted)
+            4. 클라이언트는 반환된 `accessToken`으로 GET API를 호출해(공유 링크 포함) 결과를 확인
 
             **[AI 분석 데이터]**
             - 캠페인별 예산(budget) vs 실제 소진액(spend) 및 소진율(%)
             - 기간 내 일별 광고 성과 원본 데이터 (노출, 클릭, 전환, 광고비, 매출)
 
             **[응답 구조]**
-            - `data`: 생성된 분석 리포트의 `accessToken` (String)
+            - data: 생성된 분석 리포트의 accessToken (String)
 
             공유 가능한 형태의 토큰이 발급됩니다.
             """)
@@ -44,8 +44,8 @@ public interface AIControllerDocs {
     })
     ResponseEntity<DataResponse<String>> requestAnalysis(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @Parameter(description = "프로젝트 ID", required = true, example = "1") @PathVariable Long projectId,
-            @RequestBody @Valid AIRequest.PeriodRequest request
+            @Parameter(description = "조직 ID", required = true, example = "1") @PathVariable Long orgId,
+            @RequestBody @Valid AIRequest.AnalysisRequest request
     );
 
     @Operation(summary = "AI 광고 성과 분석 공유 링크 결과 조회 API", description = """
