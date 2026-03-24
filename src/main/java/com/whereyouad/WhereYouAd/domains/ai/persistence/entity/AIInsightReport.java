@@ -42,6 +42,9 @@ public class AIInsightReport extends BaseEntity {
     @Column(name = "status", nullable = false)
     private AIStatus status;
 
+    @Column(name = "report_type", nullable = false)
+    private String reportType;
+
     // 연관 관계
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id")
