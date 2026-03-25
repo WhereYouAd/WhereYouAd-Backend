@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -61,4 +62,9 @@ public class MetricFact extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_content_id", nullable = false)
     private AdContent adContent;
+
+//    // TODO: 추가 연관관계 -> PlatformAccount 연결시 기존 로직 오류 있지 않을지...
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "platform_account_id")
+//    private PlatformAccount platformAccount;
 }

@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.CampaignPlatform;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -65,6 +66,10 @@ public class AdCampaign extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id")
     private Organization organization;
+
+    // TODO: 연관관계 추가? -> 기존 로직 오류 발생하지 않을지...
+//    @OneToMany(mappedBy = "adCampaign", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<CampaignPlatform> campaignPlatforms = new ArrayList<>();
 
     public void relateProject(Project project) {
         this.project = project;
