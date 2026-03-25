@@ -43,7 +43,7 @@ public class PlatformAccount extends BaseEntity {
     private Timezone timezone;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 10)
+    @Column(name = "status", length = 20)
     @ColumnDefault("'ACTIVE'")
     private PlatformStatus status;
 
