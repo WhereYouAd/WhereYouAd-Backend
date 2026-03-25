@@ -10,18 +10,26 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface OrgControllerDocs {
     @Operation(
             summary = "조직 생성 API",
-            description = "조직 이름, 설명, 로고 이미지 URL 을 받아 저장(로그인이 진행된 회원만 가능)"
+            description = "조직 이름, 설명, 로고 이미지 파일을 받아 저장(로그인이 진행된 회원만 가능)\n\n"
+                    + "🚨 **[프론트엔드 연동 주의사항]** 🚨\n"
+                    + "- 요청 시 반드시 `multipart/form-data` 형식으로 전송해야 합니다.\n"
+                    + "- `request` 파트는 단순 문자열이나 객체가 아닌, **`application/json` 타입의 Blob 객체**로 변환하여 append 해야 합니다.\n"
+                    + "- `image` 파트는 파일 객체를 그대로 append 합니다. (변경하지 않을 경우 생략 가능)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "400_1", description = "조직 이름 중복")
     })
-    public ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(@AuthenticationPrincipal(expression = "userId") Long userId,
-                                                                               @RequestBody @Valid OrgRequest.Create request);
+    public ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @RequestPart(value = "request") @Valid OrgRequest.Create request,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    );
 
     @Operation(
             summary = "내가 속한 조직 전체 조회 API",
@@ -59,7 +67,12 @@ public interface OrgControllerDocs {
 
     @Operation(
             summary = "조직 정보 수정 API",
-            description = "새로운 조직 이름, 설명, 로고 이미지 URL 을 받아 저장(해당 조직을 생성한 회원만 정보 변경 가능)"
+            description = "새로운 조직 이름, 설명, 로고 이미지 파일을 받아 저장(해당 조직을 생성한 회원만 정보 변경 가능)\n\n"
+                    + "request 에서 boolean 값인 isImageDeleted 를 true 로 하고 image 파일에 null 값을 담아 전송하면 조직 로고 이미지를 null 값으로 지정하고, isImageDeleted 를 true 로 하고 image 파일에 null 값을 담아 전송하면 기존 조직 로고 이미지를 유지합니다.\n\n"
+                    + "🚨 **[프론트엔드 연동 주의사항]** 🚨\n"
+                    + "- 요청 시 반드시 `multipart/form-data` 형식으로 전송해야 합니다.\n"
+                    + "- `request` 파트는 단순 문자열이나 객체가 아닌, **`application/json` 타입의 Blob 객체**로 변환하여 append 해야 합니다.\n"
+                    + "- `image` 파트는 파일 객체를 그대로 append 합니다. (변경하지 않을 경우 생략 가능)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공(변경된 필드 값들과 조직Id, 변경 시각 반환)"),
@@ -69,7 +82,8 @@ public interface OrgControllerDocs {
     public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestBody @Valid OrgRequest.Update request
+            @RequestPart(value = "request") @Valid OrgRequest.Update request,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile
     );
 
     @Operation(
@@ -91,7 +105,8 @@ public interface OrgControllerDocs {
     @Operation(
             summary = "조직 삭제 API",
             description = "조직 Id 를 PathVariable 로 받아 해당 조직 삭제(해당 조직을 생성한 회원만 삭제 가능) \n\n" +
-                    "param 인 isHard = true 이면 Hard Delete (DB에서 삭제), isHard = false 이면 Soft Delete (status 만 DELETED 로 변경)"
+                    "param 인 isHard = true 이면 Hard Delete (DB에서 삭제), isHard = false 이면 Soft Delete (status 만 DELETED 로 변경)\n\n"
+                    + "*추가* Hard Delete 시 조직 로고 이미지가 S3 에서 자동 삭제됩니다. Soft Delete 시에는 삭제되지 않습니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),

@@ -56,11 +56,11 @@ public class OrgConverter {
     }
 
     //DTO -> Entity
-    public static Organization toOrganization(Long userId, OrgRequest.Create request) {
+    public static Organization toOrganization(Long userId, OrgRequest.Create request, String imageUrl) {
         return Organization.builder()
                 .name(request.name())
                 .description(request.description())
-                .logoUrl(request.logoUrl())
+                .logoUrl(imageUrl)
                 .ownerUserId(userId)
                 .status(OrgStatus.ACTIVE)
                 .build();
