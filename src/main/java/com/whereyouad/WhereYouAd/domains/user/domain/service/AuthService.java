@@ -26,7 +26,7 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
 
     //최초 로그인을 통해 AccessToken 과 RefreshToken 발급 받는 메서드
-    @Transactional
+    //Transactional 어노테이션 제거 -> 메서드 전체에 Transactional 을 걸 시 DB 커넥션 풀 고갈 가능
     public TokenResponse login(LoginRequest request) {
         //email, password 기반 Spring Security가 사용할 인증 객체(AuthenticationToken) 생성
         UsernamePasswordAuthenticationToken authenticationToken =
@@ -34,12 +34,14 @@ public class AuthService {
 
         //실제 password 검증
         // authenticate()가 실행되면 CustomUserDetailsService.loadUserByUsername이 호출되어 DB의 유저 정보와 비교합니다.
+        // CustomUserDetailsService 내부적으로만 짧게 DB 커넥션을 사용하고 반납
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
 
-        //인증 정보 기반 JWT 토큰(Access & Refresh) 생성
+        //인증 정보 기반 JWT 토큰(Access & Refresh) 생성 (DB 커넥션 없이 순수 CPU 연산으로 진행)
         TokenResponse tokenResponse = jwtTokenProvider.generateToken(authentication);
 
         //RefreshToken 저장 -> 없으면 생성, 이미 있으면 update
+        //Spring Data JPA의 findBy... 와 save 메서드는 자체적으로 트랜잭션이 적용되어 있어 Transactional 어노테이션 없어도 안전
         RefreshToken refreshToken = refreshTokenRepository.findByKeyId(request.email())
                 .map(entity -> entity.updateValue(tokenResponse.refreshToken()))
                 .orElse(RefreshToken.builder()
@@ -47,6 +49,7 @@ public class AuthService {
                         .value(tokenResponse.refreshToken()).
                         build());
 
+        // RefreshToken save 에도 짧게 커넥션을 다시 맺고 데이터를 저장 후 반환
         refreshTokenRepository.save(refreshToken);
 
         return tokenResponse;
