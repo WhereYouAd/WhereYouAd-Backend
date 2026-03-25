@@ -68,7 +68,7 @@ public interface OrgControllerDocs {
     @Operation(
             summary = "조직 정보 수정 API",
             description = "새로운 조직 이름, 설명, 로고 이미지 파일을 받아 저장(해당 조직을 생성한 회원만 정보 변경 가능)\n\n"
-                    + "request 에서 boolean 값인 isImageDeleted 를 true 로 하고 image 파일에 null 값을 담아 전송하면 조직 로고 이미지를 null 값으로 지정하고, isImageDeleted 를 true 로 하고 image 파일에 null 값을 담아 전송하면 기존 조직 로고 이미지를 유지합니다.\n\n"
+                    + "request 에서 boolean 값인 isImageDeleted 를 true 로 하고 image 파일에 null 값을 담아 전송하면 조직 로고 이미지를 null 값으로 지정하고, isImageDeleted 를 false 로 하고 image 파일에 null 값을 담아 전송하면 기존 조직 로고 이미지를 유지합니다.\n\n"
                     + "🚨 **[프론트엔드 연동 주의사항]** 🚨\n"
                     + "- 요청 시 반드시 `multipart/form-data` 형식으로 전송해야 합니다.\n"
                     + "- `request` 파트는 단순 문자열이나 객체가 아닌, **`application/json` 타입의 Blob 객체**로 변환하여 append 해야 합니다.\n"
