@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,21 +20,31 @@ public class AIController implements AIControllerDocs {
 
     private final AIService aiService;
 
-    @PostMapping("/{orgId}/analysis")
-    public ResponseEntity<DataResponse<Long>> requestAnalysis(
+    @PostMapping("/organizations/{orgId}/analysis")
+    public ResponseEntity<DataResponse<String>> requestAnalysis(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestBody @Valid AIRequest.PeriodRequest request) {
-        Long reportId = aiService.requestAnalysis(userId, orgId, request);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(DataResponse.from(reportId));
+            @RequestBody @Valid AIRequest.AnalysisRequest request) {
+        String accessToken = aiService.requestAnalysis(userId, orgId, request);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(DataResponse.from(accessToken));
     }
 
-    @GetMapping("/{orgId}/analysis/{reportId}")
-    public ResponseEntity<DataResponse<AIResponse.ReportStatusResponse>> getReport(
-            @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId,
-            @PathVariable Long reportId) {
-        AIResponse.ReportStatusResponse response = aiService.getReport(userId, orgId, reportId);
+    @GetMapping("/reports/{accessToken}")
+    public ResponseEntity<DataResponse<AIResponse.ReportStatusResponse>> getReportByAccessToken(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String accessToken) {
+        Long userId = userDetails != null ? userDetails.getUserId() : null;
+        AIResponse.ReportStatusResponse response = aiService.getReportByAccessToken(userId, accessToken);
         return ResponseEntity.ok(DataResponse.from(response));
+    }
+
+    @PatchMapping("/reports/{accessToken}/share")
+    public ResponseEntity<DataResponse<String>> updateShareStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String accessToken,
+            @RequestParam boolean isShared) {
+        Long userId = userDetails != null ? userDetails.getUserId() : null;
+        aiService.updateShareStatus(userId, accessToken, isShared);
+        return ResponseEntity.ok(DataResponse.from("SUCCESS"));
     }
 }

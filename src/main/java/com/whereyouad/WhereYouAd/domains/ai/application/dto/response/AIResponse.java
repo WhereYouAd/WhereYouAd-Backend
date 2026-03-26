@@ -27,7 +27,7 @@ public class AIResponse {
 
     // 분석 결과 요청 응답 DTO (result는 PENDING/FAILED일 때 null)
     public record ReportStatusResponse(
-            Long reportId,
+            String accessToken,
             String status,
             AnalysisResponse result // PENDING/FAILED 일 때 null
     ) {}
