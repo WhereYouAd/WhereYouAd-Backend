@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.ai.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.AIResponse;
@@ -30,9 +31,9 @@ public class AIAsyncServiceImpl implements AIAsyncService{
 
     @Async
     @Transactional
-    public void analyzeAsync(Long reportId, Long orgId, LocalDate startDate, LocalDate endDate) {
-        log.info("[AIAsyncService] 비동기 분석 시작. reportId={}, orgId={}, 기간={} ~ {}",
-                reportId, orgId, startDate, endDate);
+    public void analyzeAsync(Long reportId, Long orgId, String provider, LocalDate startDate, LocalDate endDate) {
+        log.info("[AIAsyncService] 비동기 분석 시작. reportId={}, orgId={}, provider={}, 기간={} ~ {}",
+                reportId, orgId, provider, startDate, endDate);
 
         AIInsightReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> {
@@ -41,14 +42,23 @@ public class AIAsyncServiceImpl implements AIAsyncService{
                 });
 
         try {
-            // 1. 해당 조직의 기간 내 MetricFact 조회
-            List<MetricFact> metrics = metricFactRepository.findAllByDateRangeAndOrgForAiAnalysis(
-                    startDate.atStartOfDay(),
-                    endDate.atTime(23, 59, 59),
-                    orgId);
+            // 1. 해당 조직/플랫폼의 기간 내 MetricFact 조회
+            List<MetricFact> metrics;
+            if ("ALL".equalsIgnoreCase(provider)) {
+                metrics = metricFactRepository.findAllByDateRangeAndOrgForAiAnalysis(
+                        startDate.atStartOfDay(),
+                        endDate.atTime(23, 59, 59),
+                        orgId);
+            } else {
+                metrics = metricFactRepository.findAllByDateRangeAndOrgAndProviderForAiAnalysis(
+                        startDate.atStartOfDay(),
+                        endDate.atTime(23, 59, 59),
+                        orgId,
+                        Provider.valueOf(provider.toUpperCase()));
+            }
 
             // 2. OpenAI API 호출 -> AnalysisResponse
-            AIResponse.AnalysisResponse analysisResponse = openApiUtil.generateAnalysis(startDate, endDate, metrics);
+            AIResponse.AnalysisResponse analysisResponse = openApiUtil.generateAnalysis(provider, startDate, endDate, metrics);
 
             // 3. 결과 JSON 직렬화 후 SUCCESS 업데이트
             String payloadJson = objectMapper.writeValueAsString(analysisResponse);

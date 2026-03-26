@@ -105,15 +105,43 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("end") LocalDateTime end
     );
 
-    // 정해진 기간동안의 MetricFact 데이터 조회 (AI 분석에 사용, 조직 필터)
+    // 프로젝트 ID 목록으로 지출(spend) 총합 일괄 조회
+    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$SpendSummary(m.project.id, SUM(m.spend)) " +
+            "FROM MetricFact m WHERE m.project.id IN :projectIds GROUP BY m.project.id")
+    List<ProjectQueryDto.SpendSummary> findSpendSummariesByProjectIds(@Param("projectIds") List<Long> projectIds);
+
+    // 특정 조직의 일정 기간 내 MetricFact 데이터 유무 확인
+    @Query("SELECT COUNT(m) > 0 FROM MetricFact m " +
+           "WHERE m.project.organization.id = :orgId " +
+           "AND m.timeBucket >= :start " +
+           "AND m.timeBucket <= :end")
+    boolean existsByTimeBucketBetweenAndOrg(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("orgId") Long orgId
+    );
+
+    // 특정 조직 + 플랫폼의 일정 기간 내 데이터 유무 확인
+    @Query("SELECT COUNT(m) > 0 FROM MetricFact m " +
+           "WHERE m.project.organization.id = :orgId " +
+           "AND m.provider = :provider " +
+           "AND m.timeBucket >= :start " +
+           "AND m.timeBucket <= :end")
+    boolean existsByTimeBucketBetweenAndOrgAndProvider(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("orgId") Long orgId,
+            @Param("provider") Provider provider
+    );
+
+    // 정해진 기간동안의 조직 단위 MetricFact 데이터 조회
     @Query("SELECT m FROM MetricFact m " +
            "JOIN FETCH m.adContent ac " +
            "JOIN FETCH ac.adGroup ag " +
            "JOIN FETCH ag.adCampaign camp " +
-           "JOIN camp.project p " +
-           "WHERE m.timeBucket >= :start " +
+           "WHERE m.project.organization.id = :orgId " +
+           "AND m.timeBucket >= :start " +
            "AND m.timeBucket <= :end " +
-           "AND p.organization.id = :orgId " +
            "ORDER BY m.timeBucket ASC")
     List<MetricFact> findAllByDateRangeAndOrgForAiAnalysis(
             @Param("start") LocalDateTime start,
@@ -121,20 +149,20 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("orgId") Long orgId
     );
 
-    // 프로젝트 ID 목록으로 지출(spend) 총합 일괄 조회
-    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$SpendSummary(m.project.id, SUM(m.spend)) " +
-            "FROM MetricFact m WHERE m.project.id IN :projectIds GROUP BY m.project.id")
-    List<ProjectQueryDto.SpendSummary> findSpendSummariesByProjectIds(@Param("projectIds") List<Long> projectIds);
-
-    // 정해진 기간동안의 데이터 유무 검사
-    @Query("SELECT COUNT(m) > 0 FROM MetricFact m " +
-           "JOIN m.project p " +
-           "WHERE m.timeBucket >= :start " +
+    // 정해진 기간동안의 플랫폼 단위 MetricFact 데이터 조회
+    @Query("SELECT m FROM MetricFact m " +
+           "JOIN FETCH m.adContent ac " +
+           "JOIN FETCH ac.adGroup ag " +
+           "JOIN FETCH ag.adCampaign camp " +
+           "WHERE m.project.organization.id = :orgId " +
+           "AND m.provider = :provider " +
+           "AND m.timeBucket >= :start " +
            "AND m.timeBucket <= :end " +
-           "AND p.organization.id = :orgId")
-    boolean existsByTimeBucketBetweenAndOrg(
+           "ORDER BY m.timeBucket ASC")
+    List<MetricFact> findAllByDateRangeAndOrgAndProviderForAiAnalysis(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
-            @Param("orgId") Long orgId
+            @Param("orgId") Long orgId,
+            @Param("provider") Provider provider
     );
 }

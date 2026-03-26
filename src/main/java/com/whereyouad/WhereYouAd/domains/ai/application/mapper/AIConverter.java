@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 
 @Slf4j
 public class AIConverter {
@@ -70,11 +72,15 @@ public class AIConverter {
     }
 
     // AI 분석 요청 값 entity PENDING 상태로 저장
-    public static AIInsightReport toAIInsightConverter(LocalDateTime start, LocalDateTime end) {
+    public static AIInsightReport toAIInsightConverter(LocalDateTime start, LocalDateTime end, Organization organization, String reportType) {
         return AIInsightReport.builder()
+                .organization(organization)
+                .reportType(reportType)
                 .periodStart(start)
                 .periodEnd(end)
                 .status(AIStatus.PENDING)
+                .accessToken(UUID.randomUUID().toString())
+                .isShared(false)
                 .build();
     }
 }
