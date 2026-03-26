@@ -123,6 +123,6 @@ public interface DashboardControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestParam(required = false, defaultValue = "dummy") String mode,
-            HttpServletResponse response
+            @Parameter(hidden = true) HttpServletResponse response
     );
 }
