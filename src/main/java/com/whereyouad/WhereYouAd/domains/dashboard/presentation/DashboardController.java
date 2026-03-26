@@ -5,6 +5,7 @@ import com.whereyouad.WhereYouAd.domains.dashboard.domain.service.DashboardClick
 import com.whereyouad.WhereYouAd.domains.dashboard.domain.service.DashboardService;
 import com.whereyouad.WhereYouAd.domains.dashboard.presentation.docs.DashboardControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -86,11 +87,13 @@ public class DashboardController implements DashboardControllerDocs {
     public ResponseEntity<SseEmitter> streamRealClicks(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestParam(required = false, defaultValue = "dummy") String mode
+            @RequestParam(required = false, defaultValue = "dummy") String mode,
+            HttpServletResponse response
     )
     {
         SseEmitter emitter = dashboardClickService.subscribe(userId, orgId, mode);
 
+        response.setHeader("X-Accel-Buffering", "no");
         return ResponseEntity.ok(emitter);
     }
 }
