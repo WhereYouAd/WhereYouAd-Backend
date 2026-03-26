@@ -40,7 +40,10 @@ public class Organization extends BaseEntity {
     public void modifyInfo(OrgRequest.Update request) {
         this.name = request.name();
         this.description = request.description();
-        this.logoUrl = request.logoUrl();
+    }
+
+    public void modifyLogoImage(String imageUrl) {
+        this.logoUrl = imageUrl;
     }
 
     public void softDelete() {

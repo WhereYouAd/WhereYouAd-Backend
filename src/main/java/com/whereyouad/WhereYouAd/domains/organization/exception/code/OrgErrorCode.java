@@ -31,6 +31,9 @@ public enum OrgErrorCode implements BaseErrorCode {
     //410
     ORG_SOFT_DELETED(HttpStatus.GONE, "ORG_410_1", "해당 조직은 삭제된 조직입니다.(Soft Delete)"),
     ORG_INVITATION_INVALID(HttpStatus.BAD_REQUEST, "ORG_INVITATION_400", "조직 초대 토큰이 만료되었거나 유효하지 않습니다."),
+
+    //500
+    ORG_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "ORG_500_1", "조직 생성 중 서버 오류가 발생했습니다."),
     ;
 
     private final HttpStatus httpStatus;
