@@ -24,6 +24,7 @@ spring:
     properties:
       hibernate:
         format_sql: true     # SQL 예쁘게 출력
+    open-in-view: false     #OSIV 비활성화 -> SSE Db 커넥션 풀 고갈 방지
 
   # 3. Redis 설정
   data:
