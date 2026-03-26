@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -121,6 +122,7 @@ public interface DashboardControllerDocs {
     public ResponseEntity<SseEmitter> streamRealClicks(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestParam(required = false, defaultValue = "dummy") String mode
+            @RequestParam(required = false, defaultValue = "dummy") String mode,
+            HttpServletResponse response
     );
 }
