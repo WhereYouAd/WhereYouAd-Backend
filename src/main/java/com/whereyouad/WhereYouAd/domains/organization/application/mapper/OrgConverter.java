@@ -44,14 +44,20 @@ public class OrgConverter {
     }
 
     public static OrgResponse.SimpleInfo toOrgSimpleInfo(OrgMember orgMember) {
-        //OrgMember 내부에 존재하는 Role 활용
-        Organization organization = orgMember.getOrganization();
+        return toOrgSimpleInfo(orgMember, null);
+    }
 
-        return new OrgResponse.SimpleInfo(organization.getId(),
+    public static OrgResponse.SimpleInfo toOrgSimpleInfo(OrgMember orgMember, Long currentOrgId) {
+        Organization organization = orgMember.getOrganization();
+        boolean isCurrentWorkSpace = currentOrgId != null && currentOrgId.equals(organization.getId());
+
+        return new OrgResponse.SimpleInfo(
+                organization.getId(),
                 organization.getName(),
                 organization.getDescription(),
                 organization.getLogoUrl(),
-                orgMember.getRole()
+                orgMember.getRole(),
+                isCurrentWorkSpace
         );
     }
 
