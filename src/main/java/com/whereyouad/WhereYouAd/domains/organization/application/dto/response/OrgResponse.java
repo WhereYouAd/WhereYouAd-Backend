@@ -75,4 +75,8 @@ public class OrgResponse {
             String message,
             String email
     ) {}
+
+    public record CurrentWorkSpace (
+            Long orgId
+    ) {}
 }
