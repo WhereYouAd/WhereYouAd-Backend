@@ -1,17 +1,14 @@
 package com.whereyouad.WhereYouAd.domains.platform.persistence.entity;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.platform.domain.constant.Currency;
 import com.whereyouad.WhereYouAd.domains.platform.domain.constant.PlatformStatus;
 import com.whereyouad.WhereYouAd.domains.platform.domain.constant.Timezone;
-import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "platform_account")
@@ -52,10 +49,7 @@ public class PlatformAccount extends BaseEntity {
     private Provider provider;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
-    private Project project;
+    @JoinColumn(name = "org_id")
+    private Organization organization;
 
-    //AdCampaign 과의 다대다 매핑을 위한 중간 테이블과 1:N 매핑
-    @OneToMany(mappedBy = "platformAccount", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CampaignPlatform> campaignPlatforms = new ArrayList<>();
 }
