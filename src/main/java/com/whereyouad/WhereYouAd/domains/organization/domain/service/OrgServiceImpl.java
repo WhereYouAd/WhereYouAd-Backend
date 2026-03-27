@@ -127,6 +127,9 @@ public class OrgServiceImpl implements OrgService {
 
         Long currentOrgId = user.getCurrentOrgId();
 
+        if (currentOrgId == null)
+            throw new OrgHandler(OrgErrorCode.CURRENT_WORKSPACE_NOT_SET);
+
         return new OrgResponse.CurrentWorkSpace(currentOrgId);
     }
 
