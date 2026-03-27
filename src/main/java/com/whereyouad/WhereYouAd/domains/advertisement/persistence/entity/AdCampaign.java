@@ -4,7 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
-import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.CampaignPlatform;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -67,9 +67,10 @@ public class AdCampaign extends BaseEntity {
     @JoinColumn(name = "org_id")
     private Organization organization;
 
-    // TODO: 연관관계 추가? -> 기존 로직 오류 발생하지 않을지...
-//    @OneToMany(mappedBy = "adCampaign", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<CampaignPlatform> campaignPlatforms = new ArrayList<>();
+    // 연관관계 추가 : PlatformAccount 와 1:N 연관
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "platform_account_id")
+    private PlatformAccount platformAccount;
 
     public void relateProject(Project project) {
         this.project = project;
