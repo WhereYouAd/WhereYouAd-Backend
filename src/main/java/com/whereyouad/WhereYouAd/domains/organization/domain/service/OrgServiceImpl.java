@@ -103,6 +103,19 @@ public class OrgServiceImpl implements OrgService {
         return OrgConverter.toMyOrganizations(infos);
     }
 
+    @Override
+    public OrgResponse.CurrentWorkSpace setCurrentWorkSpace(Long userId, Long orgId) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId).orElseThrow(() ->
+                new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        user.setCurrentOrgId(orgId);
+
+        return new OrgResponse.CurrentWorkSpace(orgId);
+    }
+
     //하나의 조직에 대한 세부 사항(ID, 이름, 설명, logoUrl, createdAt)
     public OrgResponse.OrgDetail getOrganizationDetail(Long orgId) {
         //해당 조직 id 로 Organization 조회
