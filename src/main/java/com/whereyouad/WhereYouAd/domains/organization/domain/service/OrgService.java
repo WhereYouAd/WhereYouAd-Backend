@@ -10,9 +10,9 @@ public interface OrgService {
 
     OrgResponse.MyOrganizations getMyOrganizations(Long userId);
 
-    OrgResponse.CurrentWorkSpace setCurrentWorkSpace(Long userId, Long orgId);
+    OrgResponse.CurrentWorkspace setCurrentWorkspace(Long userId, Long orgId);
 
-    OrgResponse.CurrentWorkSpace getCurrentWorkSpace(Long userId);
+    OrgResponse.CurrentWorkspace getCurrentWorkspace(Long userId);
 
     OrgResponse.OrgDetail getOrganizationDetail(Long orgId);
 

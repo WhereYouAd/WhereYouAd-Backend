@@ -108,7 +108,7 @@ public class OrgServiceImpl implements OrgService {
     }
 
     @Override
-    public OrgResponse.CurrentWorkSpace setCurrentWorkSpace(Long userId, Long orgId) {
+    public OrgResponse.CurrentWorkspace setCurrentWorkspace(Long userId, Long orgId) {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
@@ -117,11 +117,11 @@ public class OrgServiceImpl implements OrgService {
 
         user.setCurrentOrgId(orgId);
 
-        return new OrgResponse.CurrentWorkSpace(orgId);
+        return new OrgResponse.CurrentWorkspace(orgId);
     }
 
     @Override
-    public OrgResponse.CurrentWorkSpace getCurrentWorkSpace(Long userId) {
+    public OrgResponse.CurrentWorkspace getCurrentWorkspace(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
@@ -130,7 +130,7 @@ public class OrgServiceImpl implements OrgService {
         if (currentOrgId == null)
             throw new OrgHandler(OrgErrorCode.CURRENT_WORKSPACE_NOT_SET);
 
-        return new OrgResponse.CurrentWorkSpace(currentOrgId);
+        return new OrgResponse.CurrentWorkspace(currentOrgId);
     }
 
     //하나의 조직에 대한 세부 사항(ID, 이름, 설명, logoUrl, createdAt)

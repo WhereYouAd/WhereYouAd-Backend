@@ -19,7 +19,7 @@ public class OrgResponse {
             String description,
             String logoUrl,
             OrgRole myRole,
-            boolean isCurrentWorkSpace
+            boolean isCurrentWorkspace
     ) {}
 
     //내 조직 정보는 SimpleInfo 를 List 로 반환
@@ -77,7 +77,7 @@ public class OrgResponse {
             String email
     ) {}
 
-    public record CurrentWorkSpace (
+    public record CurrentWorkspace (
             Long orgId
     ) {}
 }
