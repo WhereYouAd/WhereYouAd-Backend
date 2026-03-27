@@ -51,7 +51,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "401_3", description = "토큰 없이 접근 시 실패"),
             @ApiResponse(responseCode = "404_2", description = "해당 조직의 멤버가 아닌 경우")
     })
-    ResponseEntity<DataResponse<OrgResponse.CurrentWorkSpace>> setCurrentWorkSpace(
+    ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> setCurrentWorkspace(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId);
 
@@ -64,7 +64,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "401_3", description = "토큰 없이 접근 시 실패"),
             @ApiResponse(responseCode = "404_3", description = "현재 워크스페이스 미설정")
     })
-    ResponseEntity<DataResponse<OrgResponse.CurrentWorkSpace>> getCurrentWorkSpace(
+    ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> getCurrentWorkspace(
             @AuthenticationPrincipal(expression = "userId") Long userId);
 
     @Operation(

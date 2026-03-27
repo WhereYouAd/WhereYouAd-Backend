@@ -47,11 +47,11 @@ public class OrgController implements OrgControllerDocs {
     }
 
     @PostMapping("/{orgId}/workspace")
-    public ResponseEntity<DataResponse<OrgResponse.CurrentWorkSpace>> setCurrentWorkSpace(
+    public ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> setCurrentWorkspace(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId)
     {
-        OrgResponse.CurrentWorkSpace response = orgService.setCurrentWorkSpace(userId, orgId);
+        OrgResponse.CurrentWorkspace response = orgService.setCurrentWorkspace(userId, orgId);
 
         return ResponseEntity.ok(
                 DataResponse.from(response)
@@ -59,10 +59,10 @@ public class OrgController implements OrgControllerDocs {
     }
 
     @GetMapping("/my/workspace")
-    public ResponseEntity<DataResponse<OrgResponse.CurrentWorkSpace>> getCurrentWorkSpace(
+    public ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> getCurrentWorkspace(
             @AuthenticationPrincipal(expression = "userId") Long userId)
     {
-        OrgResponse.CurrentWorkSpace response = orgService.getCurrentWorkSpace(userId);
+        OrgResponse.CurrentWorkspace response = orgService.getCurrentWorkspace(userId);
 
         return ResponseEntity.ok(
                 DataResponse.from(response)
