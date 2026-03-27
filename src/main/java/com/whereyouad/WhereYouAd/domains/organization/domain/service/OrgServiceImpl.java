@@ -91,12 +91,16 @@ public class OrgServiceImpl implements OrgService {
 
     //로그인한 회원이 속한 조직 모두 조회 메서드
     public OrgResponse.MyOrganizations getMyOrganizations(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new UserHandler(UserErrorCode.USER_NOT_FOUND));
+        Long currentOrgId = user.getCurrentOrgId();
+
         //회원 id 로 OrgMember 모두 조회 -> DB 조회에서 OrgStatus.ACTIVE 인 Organization 만 포함하는 OrgMember 만 조회해 온다.
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
 
         //각각의 OrgMember 에서 SimpleInfo DTO 로 매핑
         List<OrgResponse.SimpleInfo> infos = orgMembers.stream()
-                .map(OrgConverter::toOrgSimpleInfo)
+                .map( m -> OrgConverter.toOrgSimpleInfo(m, currentOrgId))
                 .toList();
 
         //마지막 반환 DTO 로 변환

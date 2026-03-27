@@ -18,7 +18,8 @@ public class OrgResponse {
             String name,
             String description,
             String logoUrl,
-            OrgRole myRole
+            OrgRole myRole,
+            boolean isCurrent
     ) {}
 
     //내 조직 정보는 SimpleInfo 를 List 로 반환
