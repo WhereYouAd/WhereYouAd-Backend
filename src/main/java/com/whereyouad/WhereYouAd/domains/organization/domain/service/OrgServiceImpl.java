@@ -252,6 +252,13 @@ public class OrgServiceImpl implements OrgService {
         // 해당 조직에 가입된 모든 회원들의 가입 정보 삭제
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
 
+        // 현재 워크스페이스가 삭제되는 조직인 멤버들의 currentOrgId를 null로 초기화
+        for (OrgMember member : orgMembers) {
+            if (Objects.equals(member.getUser().getCurrentOrgId(), orgId)) {
+                member.getUser().setCurrentOrgId(null);
+            }
+        }
+
         orgMemberRepository.deleteAll(orgMembers);
 
         // 조직 실제 삭제
@@ -277,6 +284,14 @@ public class OrgServiceImpl implements OrgService {
         // 만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
         if (!organization.getOwnerUserId().equals(userId)) {
             throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN);
+        }
+
+        // 현재 워크스페이스가 삭제되는 조직인 멤버들의 currentOrgId를 null로 초기화
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
+        for (OrgMember member : orgMembers) {
+            if (Objects.equals(member.getUser().getCurrentOrgId(), orgId)) {
+                member.getUser().setCurrentOrgId(null);
+            }
         }
 
         // 조직 status 만 DELETED 로 변경 후 종료
@@ -309,6 +324,11 @@ public class OrgServiceImpl implements OrgService {
         // 4. 대상 맴버가 ADMIN이라면 추방 불가
         if (targetMember.getRole() == OrgRole.ADMIN) {
             throw new OrgHandler(OrgErrorCode.ORG_CANNOT_KICK_ADMIN);
+        }
+
+        // 추방되는 멤버의 현재 워크스페이스가 해당 조직이라면 null로 초기화
+        if (Objects.equals(targetMember.getUser().getCurrentOrgId(), orgId)) {
+            targetMember.getUser().setCurrentOrgId(null);
         }
 
         // 5. 중간 테이블에서 해당 멤버 삭제
