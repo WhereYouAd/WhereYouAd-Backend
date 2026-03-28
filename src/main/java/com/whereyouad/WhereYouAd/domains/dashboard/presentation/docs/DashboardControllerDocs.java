@@ -112,7 +112,7 @@ public interface DashboardControllerDocs {
                     "* **`timeSeriesData`**: 최근 60분간의 분 단위 클릭수 배열 `[{minute: '202603221439', count: 16}, ...]` (차트 렌더링용)\n" +
                     "* **`mode`**: 현재 응답 트래픽 모드 (`real` or `dummy`)\n" +
                     "* **`hasSuspect`**: 이상 징후(봇 의심) 트래픽 발생 여부 (`true` / `false`)\n" +
-                    "* **`suspectDetail`**: 이상 징후 상세 정보 객체 (경고 팝업용, 발생 시 1회 전송 후 `null` 처리됨)"
+                    "* **`suspectDetail`**: 이상 징후 상세 정보 객체 (경고 팝업용, 발생 시 1회 전송 후 `null` 처리됨), 내부 필드는 provider(플랫폼), campaignName(광고에 해당하는 캠페인 이름), adName(광고 이름), message 로 구성"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
