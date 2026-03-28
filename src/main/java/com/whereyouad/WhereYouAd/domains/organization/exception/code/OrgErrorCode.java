@@ -23,7 +23,6 @@ public enum OrgErrorCode implements BaseErrorCode {
     // 404
     ORG_NOT_FOUND(HttpStatus.NOT_FOUND, "ORG_404_1", "해당 id 의 조직이 존재하지 않습니다."),
     ORG_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORG_404_2", "해당 멤버가 조직에 존재하지 않습니다."),
-    CURRENT_WORKSPACE_NOT_SET(HttpStatus.NOT_FOUND, "ORG_404_3", "현재 워크스페이스가 설정되어 있지 않습니다."),
 
     //409
     ORG_ALREADY_ACTIVE(HttpStatus.CONFLICT, "ORG_409_1", "해당 조직은 이미 활성화 상태 입니다."),
