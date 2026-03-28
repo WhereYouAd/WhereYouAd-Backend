@@ -25,7 +25,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "400_1", description = "조직 이름 중복")
     })
-    public ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(
+    ResponseEntity<DataResponse<OrgResponse.Create>> createOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestPart(value = "request") @Valid OrgRequest.Create request,
             @RequestPart(value = "image", required = false) MultipartFile image
@@ -33,13 +33,38 @@ public interface OrgControllerDocs {
 
     @Operation(
             summary = "내가 속한 조직 전체 조회 API",
-            description = "로그인한 회원이 속한 조직들의 DB id, 이름, 설명, 로고URL, 내 역할(ADMIN/MEMBER) 을 반환"
+            description = "로그인한 회원이 속한 조직들의 DB id, 이름, 설명, 로고URL, 내 역할(ADMIN/MEMBER), 조직이 현재 내 워크스페이스인지 여부를 반환"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "401_3", description = "토큰 없이 접근 시 실패")
     })
-    public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getMyOrganizations(
+    ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getMyOrganizations(
+            @AuthenticationPrincipal(expression = "userId") Long userId);
+
+    @Operation(
+            summary = "현재 워크스페이스 설정 API",
+            description = "현재 워크스페이스로 설정할 조직의 id를 받아 유저의 현재 워크스페이스로 설정"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401_3", description = "토큰 없이 접근 시 실패"),
+            @ApiResponse(responseCode = "404_2", description = "해당 조직의 멤버가 아닌 경우")
+    })
+    ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> setCurrentWorkspace(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId);
+
+    @Operation(
+            summary = "현재 워크스페이스 조회 API",
+            description = "유저의 현재 워크스페이스를 조회"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401_3", description = "토큰 없이 접근 시 실패"),
+            @ApiResponse(responseCode = "404_3", description = "현재 워크스페이스 미설정")
+    })
+    ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> getCurrentWorkspace(
             @AuthenticationPrincipal(expression = "userId") Long userId);
 
     @Operation(
@@ -51,7 +76,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "404_1", description = "해당 id 값 조직 존재 X"),
             @ApiResponse(responseCode = "410_1", description = "해당 조직은 삭제되었습니다 (Soft Delete)")
     })
-    public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId);
+    ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId);
 
     @Operation(
             summary = "회원이 만든 조직 중 Soft Deleted 된 조직 목록 조회",
@@ -61,7 +86,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "404_1", description = "회원 존재 X")
     })
-    public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getSoftDeletedOrganizations(
+    ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getSoftDeletedOrganizations(
             @AuthenticationPrincipal(expression = "userId") Long userId
     );
 
@@ -79,7 +104,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "403_1", description = "허가되지 않은 회원의 요청(조직 생성 회원 X)"),
             @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
     })
-    public ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
+    ResponseEntity<DataResponse<OrgResponse.Update>> modifyOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestPart(value = "request") @Valid OrgRequest.Update request,
@@ -96,7 +121,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X"),
             @ApiResponse(responseCode = "409_1", description = "이미 활성화 상태인 조직")
     })
-    public ResponseEntity<DataResponse<OrgResponse.Delete>> restoreOrganization(
+    ResponseEntity<DataResponse<OrgResponse.Delete>> restoreOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId
     );
@@ -113,7 +138,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "403_1", description = "허가되지 않은 회원의 요청(조직 생성 회원 X)"),
             @ApiResponse(responseCode = "404_1", description = "해당 id 조직 존재 X")
     })
-    public ResponseEntity<DataResponse<String>> removeOrganization(
+    ResponseEntity<DataResponse<String>> removeOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestParam(defaultValue = "false") boolean isHard
@@ -155,7 +180,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "403", description = "권한이 부족한 경우(요청을 보낸 유저의 권한이 ADMIN이 아닌 경우)"),
             @ApiResponse(responseCode = "404", description = "해당 id의 데이터 존재 X")
     })
-    public ResponseEntity<DataResponse<String>> removeMember(
+    ResponseEntity<DataResponse<String>> removeMember(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @PathVariable Long memberId
@@ -186,7 +211,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "404", description = "조직을 찾을 수 없음"),
             @ApiResponse(responseCode = "409", description = "이미 조직에 가입된 사용자")
     })
-    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(
+    ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> sendOrgInvitation(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid OrgRequest.Invite request
@@ -199,7 +224,7 @@ public interface OrgControllerDocs {
             @ApiResponse(responseCode = "401", description = "로그인 필요"),
             @ApiResponse(responseCode = "403", description = "초대된 이메일과 로그인한 사용자가 불일치")
     })
-    public ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(
+    ResponseEntity<DataResponse<OrgResponse.OrgInvitationResponse>> acceptOrgInvitation(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable String token
     );

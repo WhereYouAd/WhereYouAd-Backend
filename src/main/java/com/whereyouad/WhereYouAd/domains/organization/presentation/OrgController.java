@@ -46,6 +46,29 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
+    @PostMapping("/{orgId}/workspace")
+    public ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> setCurrentWorkspace(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId)
+    {
+        OrgResponse.CurrentWorkspace response = orgService.setCurrentWorkspace(userId, orgId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
+    @GetMapping("/my/workspace")
+    public ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> getCurrentWorkspace(
+            @AuthenticationPrincipal(expression = "userId") Long userId)
+    {
+        OrgResponse.CurrentWorkspace response = orgService.getCurrentWorkspace(userId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
     @GetMapping("/{orgId}")
     public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId)
     {
