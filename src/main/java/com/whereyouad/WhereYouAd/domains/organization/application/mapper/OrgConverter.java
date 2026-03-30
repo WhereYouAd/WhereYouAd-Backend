@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.organization.application.mapper;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgInvitation;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 
@@ -98,5 +99,33 @@ public class OrgConverter {
                 nextCursor,
                 memberDTOs
         );
+    }
+
+    // dto -> entity
+    public static OrgInvitation toOrgInvitation(String email, Organization organization) {
+        return OrgInvitation.builder()
+                .email(email)
+                .organization(organization)
+                .invitedAt(java.time.LocalDateTime.now())
+                .expireAt(java.time.LocalDateTime.now().plusHours(24))
+                .build();
+    }
+
+    // 단일 OrgInvitation -> OrgPendingMemberDTO 변환
+    public static OrgResponse.OrgPendingMemberDTO toOrgPendingMemberDTO(OrgInvitation invitation) {
+        return new OrgResponse.OrgPendingMemberDTO(
+                invitation.getId(),
+                invitation.getEmail(),
+                invitation.getInvitedAt(),
+                invitation.getExpireAt()
+        );
+    }
+
+    // List<OrgInvitation> -> OrgPendingMembersResponse 변환
+    public static OrgResponse.OrgPendingMembersResponse toOrgPendingMembersResponse(List<OrgInvitation> invitations) {
+        List<OrgResponse.OrgPendingMemberDTO> dtos = invitations.stream()
+                .map(OrgConverter::toOrgPendingMemberDTO)
+                .toList();
+        return new OrgResponse.OrgPendingMembersResponse(dtos);
     }
 }
