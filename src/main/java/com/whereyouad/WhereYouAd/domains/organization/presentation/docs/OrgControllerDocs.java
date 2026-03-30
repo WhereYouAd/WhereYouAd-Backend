@@ -172,6 +172,19 @@ public interface OrgControllerDocs {
     );
 
     @Operation(
+            summary = "초대 대기 중인 맴버 조회 API",
+            description = "조직에 초대 대기 중인 맴버 리스트를 조회합니다. 해당 맴버의 이메일과 초대 시작일, 만료일을 반환합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404", description = "해당 id 조직 존재 X")
+    })
+    ResponseEntity<DataResponse<OrgResponse.OrgPendingMembersResponse>> getPendingMembers(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    );
+
+    @Operation(
             summary = "조직 맴버 삭제 API",
             description = "맴버 삭제를 요청한 유저의 권한이 ADMIN인 경우 실행이 가능합니다. memberId에 해당하는 맴버를 조직에서 제외시킵니다."
     )
