@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.organization.application.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 
 import java.time.LocalDateTime;
@@ -79,5 +80,18 @@ public class OrgResponse {
 
     public record CurrentWorkspace (
             Long orgId
+    ) {}
+
+    public record OrgPendingMemberDTO(
+            Long invitationId,
+            String email,
+            @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
+            LocalDateTime invitedAt,
+            @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
+            LocalDateTime expireAt
+    ) {}
+
+    public record OrgPendingMembersResponse(
+            List<OrgPendingMemberDTO> pendingMembers
     ) {}
 }
