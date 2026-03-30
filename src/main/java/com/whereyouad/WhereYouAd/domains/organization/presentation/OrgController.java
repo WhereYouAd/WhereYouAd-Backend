@@ -165,6 +165,15 @@ public class OrgController implements OrgControllerDocs {
         return ResponseEntity.ok(DataResponse.from("해당 맴버가 조직에서 제외되었습니다."));
     }
 
+    @GetMapping("/members/{orgId}/pending")
+    public ResponseEntity<DataResponse<OrgResponse.OrgPendingMembersResponse>> getPendingMembers(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    ) {
+        OrgResponse.OrgPendingMembersResponse response = orgQueryService.getPendingMembers(userId, orgId);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
+
     @PatchMapping("/members/{orgId}/{memberId}")
     public ResponseEntity<DataResponse<OrgResponse.OrgMemberDTO>> updateOrgMembersRole(
             @AuthenticationPrincipal(expression = "userId") Long userId,
