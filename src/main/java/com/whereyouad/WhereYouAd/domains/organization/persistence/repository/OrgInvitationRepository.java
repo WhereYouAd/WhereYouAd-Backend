@@ -3,6 +3,9 @@ package com.whereyouad.WhereYouAd.domains.organization.persistence.repository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgInvitation;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,5 +20,7 @@ public interface OrgInvitationRepository extends JpaRepository<OrgInvitation, Lo
     Optional<OrgInvitation> findByEmailAndOrganization(String email, Organization organization);
 
     // 만료일 기준 삭제
-    void deleteByExpireAtBefore(LocalDateTime now);
+    @Modifying
+    @Query("DELETE FROM OrgInvitation ov WHERE ov.expireAt < :now")
+    void deleteByExpireAtBefore(@Param("now") LocalDateTime now);
 }
