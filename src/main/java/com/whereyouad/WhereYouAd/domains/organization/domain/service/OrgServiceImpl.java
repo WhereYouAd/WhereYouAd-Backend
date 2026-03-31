@@ -8,8 +8,10 @@ import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgInvitation;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgInvitationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
@@ -25,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -35,6 +39,7 @@ public class OrgServiceImpl implements OrgService {
 
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
+    private final OrgInvitationRepository orgInvitationRepository;
     private final UserRepository userRepository;
 
     private final RedisUtil redisUtil;
@@ -398,6 +403,25 @@ public class OrgServiceImpl implements OrgService {
             }
         });
 
+        // 이미 동일한 이메일로 대기 중인 초대가 있는지 확인
+        Optional<OrgInvitation> existingInvitation = orgInvitationRepository.findByEmailAndOrganization(email, organization);
+        if (existingInvitation.isPresent()) {
+
+            LocalDateTime inviteAt = existingInvitation.get().getInvitedAt();
+            LocalDateTime now = LocalDateTime.now();
+
+            // 초대 간격 5분 설정
+            if(Duration.between(inviteAt, now).toMinutes() < 5){
+                throw new OrgHandler(OrgErrorCode.ORG_ALREADY_INVITE);
+            }
+            // 5분 이상의 중복 초대의 경우 갱신만 진행(만료 시간도 같이 갱신)
+            existingInvitation.get().updateInvitedAt();
+        } else {
+            // 신규 초대 테이블 저장
+            OrgInvitation newInvitation = OrgConverter.toOrgInvitation(email, organization);
+            orgInvitationRepository.save(newInvitation);
+        }
+
         // Redis key = 임의의 UUID 토큰(조직 초대 이메일 내 링크를 구별)
         String token = UUID.randomUUID().toString();
         // Redis value = 조직 아이디와 이메일의 조합
@@ -441,6 +465,11 @@ public class OrgServiceImpl implements OrgService {
         if (orgMemberRepository.existsByUserAndOrganization(user, organization))
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
 
+        // OrgInvitation 에서 해당 초대 내역이 있는지 확인 후 삭제 (대기열 제거)
+        orgInvitationRepository.findByEmailAndOrganization(email, organization)
+                .ifPresent(orgInvitationRepository::delete);
+
+        // 멤버 편입
         orgMemberRepository.save(OrgMemberConverter.toOrgMemberMEMBER(user, organization));
 
         // Redis 사용 토큰 삭제
