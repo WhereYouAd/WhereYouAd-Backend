@@ -27,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -404,7 +406,15 @@ public class OrgServiceImpl implements OrgService {
         // 이미 동일한 이메일로 대기 중인 초대가 있는지 확인
         Optional<OrgInvitation> existingInvitation = orgInvitationRepository.findByEmailAndOrganization(email, organization);
         if (existingInvitation.isPresent()) {
-            // 중복 초대의 경우 갱신만 진행(만료 시간도 같이 갱신)
+
+            LocalDateTime inviteAt = existingInvitation.get().getInvitedAt();
+            LocalDateTime now = LocalDateTime.now();
+
+            // 초대 간격 5분 설정
+            if(Duration.between(inviteAt, now).toMinutes() < 5){
+                throw new OrgHandler(OrgErrorCode.ORG_ALREADY_INVITE);
+            }
+            // 5분 이상의 중복 초대의 경우 갱신만 진행(만료 시간도 같이 갱신)
             existingInvitation.get().updateInvitedAt();
         } else {
             // 신규 초대 테이블 저장
