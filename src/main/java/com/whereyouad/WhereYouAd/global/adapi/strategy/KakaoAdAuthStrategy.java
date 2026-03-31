@@ -29,7 +29,7 @@ public class KakaoAdAuthStrategy implements AdAuthStrategy {
         Map<String, String> headers = new HashMap<>();
 
         // 1. 암호화된 액세스 토큰 복호화
-        String accessToken = new String(aesUtil.decryptAES(connection.getAccessTokenEnc()), StandardCharsets.UTF_8);
+        String accessToken = new String(aesUtil.decryptAES(connection.getAuthIdentifier()), StandardCharsets.UTF_8);
 
         // 헤더 생성 로직 추가
 

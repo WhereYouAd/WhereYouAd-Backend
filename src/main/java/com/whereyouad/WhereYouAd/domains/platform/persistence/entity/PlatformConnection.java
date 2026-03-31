@@ -27,11 +27,11 @@ public class PlatformConnection extends BaseEntity {
     @ColumnDefault("'API_KEY'")
     private AuthType authType;
 
-    @Column(name = "access_token_enc", length = 4000)
-    private String accessTokenEnc;
+    @Column(name = "auth_identifier", length = 4000)
+    private String authIdentifier; // 주 인증 정보 (예: OAuth Access Token, API Client ID, Login ID)
 
-    @Column(name = "refresh_token_enc", length = 4000)
-    private String refreshTokenEnc;
+    @Column(name = "auth_credential", length = 4000)
+    private String authCredential; // 부 인증 정보 (예: OAuth Refresh Token, API Client Secret, Password)
 
     @Column(name = "token_expire_at")
     private LocalDateTime tokenExpireAt;
