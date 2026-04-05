@@ -386,12 +386,15 @@ public class MetaAdApiService {
                 .findByAdContentAndTimeBucketAndProvider(
                         adContent, newData.getTimeBucket(), Provider.META)
                 .ifPresentOrElse(
-                        existing -> existing.updateFromApi(
-                                newData.getImpressions(),
-                                newData.getClicks(),
-                                newData.getConversions(),
-                                newData.getSpend(),
-                                newData.getRevenue()),
+                        existing -> {
+                            existing.updateFromApi(
+                                    newData.getImpressions(),
+                                    newData.getClicks(),
+                                    newData.getConversions(),
+                                    newData.getSpend(),
+                                    newData.getRevenue());
+                            metricFactRepository.save(existing);
+                        },
                         () -> metricFactRepository.save(newData)
                 );
 
