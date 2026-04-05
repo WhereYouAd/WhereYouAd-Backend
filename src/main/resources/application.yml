@@ -151,3 +151,13 @@ feign:
     config:
       openAiClient:
         loggerLevel: BASIC   # NONE / BASIC / HEADERS / FULL
+      metaClient:
+        loggerLevel: BASIC
+
+# 11. Meta Marketing API 설정
+meta:
+  ad:
+    app-id: ${META_APP_ID}
+    app-secret: ${META_APP_SECRET}
+    redirect-uri: ${META_REDIRECT_URI}
+    graph-api-version: v25.0
