@@ -51,4 +51,11 @@ public class AdContent extends BaseEntity {
     public void updateLandingUrl(String landingUrl) {
         this.landingUrl = landingUrl;
     }
+
+    // UPSERT 용 메서드
+    public void updateFromApi(String type, Status status, String description) {
+        this.type = type;
+        this.status = status;
+        this.description = description;
+    }
 }

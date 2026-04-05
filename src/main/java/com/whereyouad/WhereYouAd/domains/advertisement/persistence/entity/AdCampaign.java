@@ -75,4 +75,15 @@ public class AdCampaign extends BaseEntity {
     public void relateProject(Project project) {
         this.project = project;
     }
+
+    // UPSERT 용 메서드
+    public void updateFromApi(String name, Status status, Long budget, Goal goal,
+                              LocalDate startDate, LocalDate endDate) {
+        this.name = name;
+        this.status = status;
+        this.budget = budget;
+        this.goal = goal;
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
 }

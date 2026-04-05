@@ -40,4 +40,11 @@ public class AdGroup extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_campaign_id")
     private AdCampaign adCampaign;
+
+    // UPSERT 용 메서드
+    public void updateFromApi(String name, Status status, String targetingInfo) {
+        this.name = name;
+        this.status = status;
+        this.targetingInfo = targetingInfo;
+    }
 }
