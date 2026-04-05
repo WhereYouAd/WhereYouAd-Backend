@@ -40,10 +40,9 @@ public interface MetaAdApiControllerDocs {
             @ApiResponse(responseCode = "500", description = "토큰 정보 암호화 저장 실패 또는 데이터 맵핑 파싱 오류")
     })
     ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> callback(
-            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestParam String code,
-            @Parameter(description = "OAuth state 파라미터로 넘겨받은 원본 조직(Organization) ID", example = "1", required = true)
-            @RequestParam(name = "state") Long orgId
+            @Parameter(description = "OAuth state 파라미터 값", required = true)
+            @RequestParam(name = "state") String state
     );
 
     @Operation(

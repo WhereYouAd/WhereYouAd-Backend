@@ -105,13 +105,27 @@ public class MetaAdApiService {
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
         }
 
-        String authUrl = metaAdConfig.buildAuthorizationUrl(orgId);
+        String state = orgId + "-" + userId;
+        String authUrl = metaAdConfig.buildAuthorizationUrl(state);
 
         return MetaConverter.toAuthUrlResponse(authUrl);
     }
 
     // 2. OAuth 콜백 → 토큰 발급 + 즉시 전체 동기화
-    public MetaResponse.MetaSyncSummary handleCallback(Long orgId, Long userId, String code) {
+    public MetaResponse.MetaSyncSummary handleCallback(String state, String code) {
+
+        Long orgId;
+        Long userId;
+
+        try {
+            String[] splitState = state.split("-");
+            orgId = Long.parseLong(splitState[0]);   // 조직 ID 복원
+            userId = Long.parseLong(splitState[1]);  // 유저 ID 복원
+        } catch (Exception e) {
+            // 악의적인 요청이나 형식이 깨진 state가 들어왔을 때 오류
+            throw new AdApiHandler(AdApiErrorCode.INVALID_API_CREDENTIALS);
+        }
+
         // 트랜잭션 밖에서 외부 통신 수행
         MetaDTO.TokenResponse shortLived = exchangeCodeForToken(code);
         MetaDTO.TokenResponse longLived = exchangeForLongLivedToken(shortLived.accessToken());

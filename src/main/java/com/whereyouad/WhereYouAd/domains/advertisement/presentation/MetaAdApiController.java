@@ -35,11 +35,11 @@ public class MetaAdApiController implements MetaAdApiControllerDocs {
     // 2. OAuth 콜백 → 토큰 발급 + 즉시 전체 동기화
     @GetMapping("/callback")
     public ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> callback(
-            @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestParam String code,
-            @RequestParam(name = "state") Long orgId) // state에서 orgId 값 수신
+            @RequestParam(name = "state") String state)
     {
-        MetaResponse.MetaSyncSummary response = metaAdApiService.handleCallback(orgId, userId, code);
+
+        MetaResponse.MetaSyncSummary response = metaAdApiService.handleCallback(state, code);
         return ResponseEntity.ok(
                 DataResponse.from(response)
         );
