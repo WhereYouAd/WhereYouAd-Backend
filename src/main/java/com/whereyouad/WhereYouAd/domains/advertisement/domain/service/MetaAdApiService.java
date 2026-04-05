@@ -140,15 +140,12 @@ public class MetaAdApiService {
             PlatformConnection conn = resolveMetaConnection(orgId);
             PlatformAccount pAccount = conn.getPlatformAccount();
             Organization org = pAccount.getOrganization();
-            org.getId();
-            org.getName();
-            pAccount.getAccountName();
 
             return new PlatformSessionContext(
                     conn.getId(),
                     pAccount.getExternalAccountId(),
-                    org,
-                    pAccount);
+                    org.getId(),
+                    pAccount.getId());
         });
 
         Map<String, String> authData;
@@ -174,9 +171,12 @@ public class MetaAdApiService {
                         metaClient.getCampaigns(accessToken, context.adAccountId(), CAMPAIGN_FIELDS, campaignCursor);
                 if (campaignsResp == null || campaignsResp.data() == null || campaignsResp.data().isEmpty()) break;
                 for (MetaDTO.Campaign metaCampaign : campaignsResp.data()) {
-                    AdCampaign campaign = transactionTemplate.execute(status ->
-                            upsertCampaign(metaCampaign, context.org(), context.platformAccount())
-                    );
+                    AdCampaign campaign = transactionTemplate.execute(status -> {
+                        Organization orgRef = orgRepository.getReferenceById(context.orgId());
+                        PlatformAccount pAccountRef = platformAccountRepository.getReferenceById(context.platformAccountId());
+
+                        return upsertCampaign(metaCampaign, orgRef, pAccountRef);
+                    });
                     campaignMap.put(metaCampaign.id(), campaign);
                     campaignCount++;
                 }
@@ -272,9 +272,11 @@ public class MetaAdApiService {
                             continue;
                         }
 
-                        transactionTemplate.executeWithoutResult(status ->
-                                upsertMetricFact(insight, content, campaign, context.platformAccount())
-                        );
+                        transactionTemplate.executeWithoutResult(status -> {
+
+                            PlatformAccount pAccountRef = platformAccountRepository.getReferenceById(context.platformAccountId());
+                            upsertMetricFact(insight, content, campaign, pAccountRef);
+                        });
 
                         metricCount++;
                     }
@@ -592,8 +594,8 @@ public class MetaAdApiService {
     private record PlatformSessionContext(
             Long connId,
             String adAccountId,
-            Organization org,
-            PlatformAccount platformAccount)
+            Long orgId,
+            Long platformAccountId)
     {}
 
 }
