@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -64,4 +65,7 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
                 "JOIN FETCH ag.adCampaign " +
                 "WHERE ac.id = :id")
         Optional<AdContent> findByIdWithGroupAndCampaign(@Param("id") Long id);
+
+        // name + adGroup으로 기존 소재 조회 (Meta UPSERT 용)
+        Optional<AdContent> findByNameAndAdGroup(String name, AdGroup adGroup);
 }

@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface AdGroupRepository extends JpaRepository<AdGroup, Long> {
 
     @Modifying
@@ -16,4 +18,7 @@ public interface AdGroupRepository extends JpaRepository<AdGroup, Long> {
     @Modifying
     @Query("UPDATE AdGroup a SET a.status = :status WHERE a.adCampaign.project.organization.id = :orgId")
     void updateStatusByOrganizationId(@Param("orgId") Long orgId, @Param("status") Status status);
+
+    // externalGroupId로 기존 광고그룹 조회 (Meta UPSERT 용)
+    Optional<AdGroup> findByExternalGroupId(String externalGroupId);
 }
