@@ -1,6 +1,5 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.AdvertisementRequest;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaRequest;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaResponse;
