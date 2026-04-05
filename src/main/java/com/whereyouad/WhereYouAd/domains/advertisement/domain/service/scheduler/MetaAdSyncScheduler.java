@@ -2,7 +2,6 @@ package com.whereyouad.WhereYouAd.domains.advertisement.domain.service.scheduler
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.MetaAdApiService;
-import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaResponse;
 import lombok.RequiredArgsConstructor;
