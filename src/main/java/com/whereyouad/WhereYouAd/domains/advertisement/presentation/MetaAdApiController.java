@@ -53,7 +53,7 @@ public class MetaAdApiController implements MetaAdApiControllerDocs {
     )
     {
 
-        MetaResponse.MetaSyncSummary response = metaAdApiService.syncAll(orgId, request.startDate(), request.endDate());
+        MetaResponse.MetaSyncSummary response = metaAdApiService.syncAll(orgId, request.startDate().toString(), request.endDate().toString());
         return ResponseEntity.ok(
                 DataResponse.from(response)
         );
