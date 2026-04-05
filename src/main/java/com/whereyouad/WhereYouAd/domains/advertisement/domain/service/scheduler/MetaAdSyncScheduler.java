@@ -26,7 +26,7 @@ public class MetaAdSyncScheduler {
      * 매일 새벽 2시에 실행
      * 모든 Meta 연동 계정의 광고 데이터를 UPSERT 동기화
      */
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "0 0 2 * * *", zone = "Asia/Seoul")
     public void scheduledSync() {
         log.info("[META SCHEDULER] 자동 동기화 시작");
 
