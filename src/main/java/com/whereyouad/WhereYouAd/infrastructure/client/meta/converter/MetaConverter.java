@@ -28,9 +28,12 @@ public class MetaConverter {
 
         Long budget = null;
         if (src.lifetimeBudget() != null) {
-            budget = Long.parseLong(src.lifetimeBudget());
+            budget = parseLong(src.lifetimeBudget());
+            if (budget == 0L && src.lifetimeBudget() != null && !src.lifetimeBudget().isEmpty()) {
+                log.warn("[META] lifetimeBudget 파싱 실패 - value: {}", src.lifetimeBudget());
+            }
         } else if (src.dailyBudget() != null) {
-            budget = Long.parseLong(src.dailyBudget());
+            budget = parseLong(src.dailyBudget());
         }
 
         if (budget != null && platformAccount != null && platformAccount.getCurrency() != null) {
@@ -201,7 +204,12 @@ public class MetaConverter {
     }
     private static BigDecimal parseBigDecimal(String value) {
         if (value == null || value.isEmpty()) return BigDecimal.ZERO;
-        return new BigDecimal(value);
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException e) {
+            log.warn("[META] BigDecimal 파싱 실패 - value: {}", value);
+            return BigDecimal.ZERO;
+        }
     }
 
     // 페이스북 날짜 문자열(예: 2024-03-01T00:00:00-0800) 파싱 메서드
