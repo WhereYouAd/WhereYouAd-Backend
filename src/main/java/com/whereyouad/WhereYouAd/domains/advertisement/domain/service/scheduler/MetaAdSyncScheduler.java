@@ -36,16 +36,13 @@ public class MetaAdSyncScheduler {
         String endDate = LocalDate.now()
                 .format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-        // 모든 META PlatformConnection 조회
-        List<PlatformConnection> metaConnections =
-                connectionRepository.findAllByPlatformAccount_Provider(Provider.META);
+        // 모든 META PlatformConnection 기반 조직 Id 리스트 조회
+        List<Long> targetOrgIds = connectionRepository.findOrganizationIdsByProvider(Provider.META);
 
         int successCount = 0;
         int failCount = 0;
 
-        for (PlatformConnection conn : metaConnections) {
-            Long orgId = conn.getPlatformAccount().getOrganization().getId();
-
+        for (Long orgId : targetOrgIds) {
             try {
 
                 MetaResponse.MetaSyncSummary response = metaAdApiService.syncAll(orgId, startDate, endDate);
@@ -81,6 +78,6 @@ public class MetaAdSyncScheduler {
         }
 
         log.info("[META SCHEDULER] 자동 동기화 완료 - 성공:{}, 실패:{}, 총:{}",
-                successCount, failCount, metaConnections.size());
+                successCount, failCount, targetOrgIds.size());
     }
 }

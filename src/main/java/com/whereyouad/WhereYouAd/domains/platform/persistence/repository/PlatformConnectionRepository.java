@@ -3,6 +3,8 @@ package com.whereyouad.WhereYouAd.domains.platform.persistence.repository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -13,4 +15,7 @@ public interface PlatformConnectionRepository extends JpaRepository<PlatformConn
 
     // 특정 Provider의 모든 Connection 조회 (Meta 스케줄러에서 사용)
     List<PlatformConnection> findAllByPlatformAccount_Provider(Provider provider);
+
+    @Query("SELECT c.platformAccount.organization.id FROM PlatformConnection c WHERE c.platformAccount.provider = :provider")
+    List<Long> findOrganizationIdsByProvider(@Param("provider") Provider provider);
 }
