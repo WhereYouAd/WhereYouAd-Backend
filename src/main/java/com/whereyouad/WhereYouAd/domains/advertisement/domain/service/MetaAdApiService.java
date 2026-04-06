@@ -371,6 +371,7 @@ public class MetaAdApiService {
                 .findByExternalAdId(src.id())
                 .map(existing -> {
                     existing.updateFromApi(
+                            newData.getName(),
                             newData.getType(),
                             newData.getStatus(),
                             newData.getDescription());

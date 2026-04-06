@@ -57,7 +57,8 @@ public class AdContent extends BaseEntity {
     }
 
     // UPSERT 용 메서드
-    public void updateFromApi(String type, Status status, String description) {
+    public void updateFromApi(String name, String type, Status status, String description) {
+        this.name = name;
         this.type = type;
         this.status = status;
         this.description = description;
