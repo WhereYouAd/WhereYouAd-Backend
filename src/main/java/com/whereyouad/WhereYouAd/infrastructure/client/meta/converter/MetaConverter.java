@@ -101,6 +101,7 @@ public class MetaConverter {
 
         return AdContent.builder()
                 .name(src.name())
+                .externalAdId(src.id())
                 .type(mappedType)
                 .status(mapStatus(src.status()))
                 .description(fallbackDescription)

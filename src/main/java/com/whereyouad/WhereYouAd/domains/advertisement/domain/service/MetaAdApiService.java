@@ -366,7 +366,9 @@ public class MetaAdApiService {
         AdContent newData = MetaConverter.toAdContent(src, adGroup);
 
         return adContentRepository
-                .findByNameAndAdGroup(src.name(), adGroup)
+                //기존 AdContent 내부 externalAdId 존재하지 않아 name + adGroup 으로 조회하던 로직
+//                .findByNameAndAdGroup(src.name(), adGroup)
+                .findByExternalAdId(src.id())
                 .map(existing -> {
                     existing.updateFromApi(
                             newData.getType(),
