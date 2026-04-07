@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.organization.application.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 
 import java.time.LocalDateTime;
@@ -18,7 +19,8 @@ public class OrgResponse {
             String name,
             String description,
             String logoUrl,
-            OrgRole myRole
+            OrgRole myRole,
+            boolean isCurrentWorkspace
     ) {}
 
     //내 조직 정보는 SimpleInfo 를 List 로 반환
@@ -74,5 +76,22 @@ public class OrgResponse {
             Long orgId,
             String message,
             String email
+    ) {}
+
+    public record CurrentWorkspace (
+            Long orgId
+    ) {}
+
+    public record OrgPendingMemberDTO(
+            Long invitationId,
+            String email,
+            @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
+            LocalDateTime invitedAt,
+            @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
+            LocalDateTime expireAt
+    ) {}
+
+    public record OrgPendingMembersResponse(
+            List<OrgPendingMemberDTO> pendingMembers
     ) {}
 }

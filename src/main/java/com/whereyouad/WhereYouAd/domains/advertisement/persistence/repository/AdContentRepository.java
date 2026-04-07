@@ -57,4 +57,11 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
         boolean existsByTrackingUrl(String trackingUrl);
 
         Optional<AdContent> findByTrackingUrl(String trackingUrl);
+
+        // Fetch Join을 사용하여 AdContent, AdGroup, AdCampaign을 한 번의 쿼리로 모두 가져옴
+        @Query("SELECT ac FROM AdContent ac " +
+                "JOIN FETCH ac.adGroup ag " +
+                "JOIN FETCH ag.adCampaign " +
+                "WHERE ac.id = :id")
+        Optional<AdContent> findByIdWithGroupAndCampaign(@Param("id") Long id);
 }

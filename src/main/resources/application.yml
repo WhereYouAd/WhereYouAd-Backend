@@ -121,9 +121,12 @@ spring:
       region:
         static: ap-northeast-2
 
-# 6. JWT 설정
+# 6. JWT 및 AES 설정
 jwt:
   secret: ${JWT_SECRET}
+
+aes:
+  secret: ${AES_SECRET}
 #  expiration: 86400000
 
 # 7. OAuth2 로그인 성공 후 프론트엔드 리다이렉트 URL

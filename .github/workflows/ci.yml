@@ -57,3 +57,4 @@ jobs:
           SMS_SENDER_NUMBER: 01000000000
           OPENAI_API_KEY: test_openai_key
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          AES_SECRET: test_aes_key

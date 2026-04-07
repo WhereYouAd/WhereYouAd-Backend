@@ -10,6 +10,10 @@ public interface OrgService {
 
     OrgResponse.MyOrganizations getMyOrganizations(Long userId);
 
+    OrgResponse.CurrentWorkspace setCurrentWorkspace(Long userId, Long orgId);
+
+    OrgResponse.CurrentWorkspace getCurrentWorkspace(Long userId);
+
     OrgResponse.OrgDetail getOrganizationDetail(Long orgId);
 
     OrgResponse.MyOrganizations getSoftDeletedOrgs(Long userId);

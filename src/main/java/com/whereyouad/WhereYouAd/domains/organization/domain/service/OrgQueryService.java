@@ -9,4 +9,7 @@ public interface OrgQueryService {
 
     // 조직의 전체 멤버 수 조회
     OrgResponse.OrgMemberCountDTO getOrgMembersCount(Long orgId);
+
+    // 조직 초대 대기 중인 멤버 목록 조회
+    OrgResponse.OrgPendingMembersResponse getPendingMembers(Long userId, Long orgId);
 }

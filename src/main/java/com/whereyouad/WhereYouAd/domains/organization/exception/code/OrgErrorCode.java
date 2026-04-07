@@ -27,6 +27,7 @@ public enum OrgErrorCode implements BaseErrorCode {
     //409
     ORG_ALREADY_ACTIVE(HttpStatus.CONFLICT, "ORG_409_1", "해당 조직은 이미 활성화 상태 입니다."),
     ORG_MEMBER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "ORG_MEMBER_409_1", "이미 해당 조직에 초대되어있습니다."),
+    ORG_ALREADY_INVITE(HttpStatus.CONFLICT, "ORG_MEMBER_409_2", "초대 메시지 재전송은 5분 이후 가능합니다."),
 
     //410
     ORG_SOFT_DELETED(HttpStatus.GONE, "ORG_410_1", "해당 조직은 삭제된 조직입니다.(Soft Delete)"),
