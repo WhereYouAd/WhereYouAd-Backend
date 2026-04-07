@@ -146,6 +146,7 @@ public class MetaAdApiService {
         // ─── Phase 0: 모든 활성 META 연결을 광고계정별로 조회 ───
         List<PlatformSessionContext> contexts = transactionTemplate.execute(status -> {
             List<PlatformConnection> connections = resolveMetaConnections(orgId);
+
             return connections.stream()
                     .map(conn -> {
                         PlatformAccount pAccount = conn.getPlatformAccount();
@@ -234,8 +235,7 @@ public class MetaAdApiService {
         AdContent newData = MetaConverter.toAdContent(src, adGroup);
 
         return adContentRepository
-                //기존 AdContent 내부 externalAdId 존재하지 않아 name + adGroup 으로 조회하던 로직
-//                .findByNameAndAdGroup(src.name(), adGroup)
+                //externalAdId 를 통해 AdContent 조회
                 .findByExternalAdId(src.id())
                 .map(existing -> {
                     existing.updateFromApi(
@@ -253,8 +253,7 @@ public class MetaAdApiService {
 
         MetricFact newData = MetaConverter.toMetricFact(src, adContent, adCampaign, platformAccount);
 
-        metricFactRepository
-                .findByAdContentAndTimeBucketAndProvider(
+        metricFactRepository.findByAdContentAndTimeBucketAndProvider(
                         adContent, newData.getTimeBucket(), Provider.META)
                 .ifPresentOrElse(
                         existing -> {
@@ -285,6 +284,7 @@ public class MetaAdApiService {
         if (connections.isEmpty()) {
             throw new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND);
         }
+
         // 광고계정(PlatformAccount)별로 그룹핑 → 각 그룹에서 가장 최신(max id) Connection만 선택
         return connections.stream()
                 .collect(Collectors.groupingBy(
@@ -296,7 +296,6 @@ public class MetaAdApiService {
                 .map(Optional::get)
                 .toList();
 
-//
     }
 
     // ============================
@@ -434,7 +433,8 @@ public class MetaAdApiService {
                                         .currency(finalDynamicCurrency)
                                         .timezone(finalDynamicTimezone)
                                         .status(PlatformStatus.ACTIVE)
-                                        .organization(org).build()));
+                                        .organization(org)
+                                        .build()));
 
                 PlatformConnection connection = PlatformConnection.builder()
                         .authType(AuthType.OAUTH)
@@ -463,26 +463,29 @@ public class MetaAdApiService {
         if (paging == null || paging.next() == null || paging.cursors() == null) {
             return null;
         }
+
         String after = paging.cursors().after();
         return (after != null && !after.trim().isEmpty()) ? after : null;
     }
 
+    //계정 하나 기준 동기화 메서드
     private MetaResponse.MetaSyncSummary syncSingleAccount(PlatformSessionContext context, String startDate, String endDate) {
 
         Map<String, String> authData;
+
         try {
             authData = adApiAuthUtil.generateAuthHeaders(context.connId(), AdAuthRequest.empty());
         } catch (Exception e) {
+
             log.error("Meta 인증 데이터 생성 실패 (connId: {})", context.connId(), e);
             throw new AdApiHandler(AdApiErrorCode.INVALID_API_CREDENTIALS);
         }
 
         String accessToken = authData.get("access_token");
-
         int campaignCount = 0, adSetCount = 0, adCount = 0, metricCount = 0;
 
         try {
-            // ─── 3-1. 캠페인 UPSERT ───
+            // ─── 캠페인 UPSERT ───
             Map<String, AdCampaign> campaignMap = new HashMap<>();
             String campaignCursor = null;
 
@@ -510,84 +513,120 @@ public class MetaAdApiService {
                 return MetaConverter.toSyncSummary(0,0,0,0);
             }
 
-            // ─── 3-2. 광고세트(AdSet) UPSERT ───
+            // ─── 광고세트(AdSet) UPSERT ───
             Map<String, AdGroup> adSetMap = new HashMap<>();
             String adSetCursor = null;
             do {
+
                 MetaDTO.AdSetListResponse adSetsResp =
                         metaClient.getAdSets(accessToken, context.adAccountId(), ADSET_FIELDS, adSetCursor);
+
                 if (adSetsResp == null || adSetsResp.data() == null || adSetsResp.data().isEmpty()) {
                     break;
                 }
+
                 for (MetaDTO.AdSet metaAdSet : adSetsResp.data()) {
+
                     AdCampaign parentCampaign = campaignMap.get(metaAdSet.campaignId());
+
                     if (parentCampaign == null) {
                         continue;
                     }
+
                     AdGroup adGroup = transactionTemplate.execute(status -> upsertAdGroup(metaAdSet, parentCampaign));
                     adSetMap.put(metaAdSet.id(), adGroup);
                     adSetCount++;
                 }
+
                 adSetCursor = getNextCursor(adSetsResp.paging());
             } while (adSetCursor != null);
-            // ─── 3-3. 광고(Ad) UPSERT ───
+
+            // ─── 광고(Ad) UPSERT ───
             Map<String, AdContent> adMap = new HashMap<>();
+
             if (!adSetMap.isEmpty()) {
+
                 String adCursor = null;
+
                 do {
                     MetaDTO.AdListResponse adsResp =
                             metaClient.getAds(accessToken, context.adAccountId(), AD_FIELDS, adCursor);
+
                     if (adsResp == null || adsResp.data() == null || adsResp.data().isEmpty()) {
                         break;
                     }
+
                     for (MetaDTO.Ad metaAd : adsResp.data()) {
+
                         AdGroup parentAdGroup = adSetMap.get(metaAd.adSetId());
+
                         if (parentAdGroup == null) {
                             continue;
                         }
+
                         AdContent content = transactionTemplate.execute(status -> upsertAdContent(metaAd, parentAdGroup));
                         adMap.put(metaAd.id(), content);
                         adCount++;
                     }
+
                     adCursor = getNextCursor(adsResp.paging());
+
                 } while (adCursor != null);
             }
-            // ─── 3-4. 인사이트(MetricFact) UPSERT ───
+
+            // ─── 인사이트(MetricFact) UPSERT ───
             if (startDate != null && endDate != null && !adMap.isEmpty()) {
+
                 String timeRange = "{\"since\":\"" + startDate + "\",\"until\":\"" + endDate + "\"}";
                 String insightCursor = null;
+
                 do {
+
                     MetaDTO.InsightListResponse insightsResp =
                             metaClient.getInsights(accessToken, context.adAccountId(), INSIGHT_FIELDS,
                                     "ad", timeRange, "1", insightCursor);
+
                     if (insightsResp == null || insightsResp.data() == null || insightsResp.data().isEmpty()) {
                         break;
                     }
+
                     for (MetaDTO.Insight insight : insightsResp.data()) {
+
                         AdContent content = adMap.get(insight.adId());
                         AdCampaign campaign = campaignMap.get(insight.campaignId());
+
                         if (content == null || campaign == null) {
                             continue;
                         }
+
                         transactionTemplate.executeWithoutResult(status -> {
                             PlatformAccount pAccountRef = platformAccountRepository.getReferenceById(context.platformAccountId());
                             upsertMetricFact(insight, content, campaign, pAccountRef);
                         });
+
                         metricCount++;
                     }
+
                     insightCursor = getNextCursor(insightsResp.paging());
+
                 } while (insightCursor != null);
+
             }
+
         } catch (FeignException e) {
+
             log.error("[META] 페이스북 API 통신 에러 (Feign) - adAccountId={}, status={}, body={}",
                     context.adAccountId(), e.status(), e.contentUTF8());
             throw new AdApiHandler(AdApiErrorCode.EXTERNAL_API_COMMUNICATION_ERROR);
         } catch (Exception e) {
+
             log.error("[META] 데이터 동기화 중 알 수 없는 에러 - adAccountId={}", context.adAccountId(), e);
             throw new AdApiHandler(AdApiErrorCode.SYNC_DATA_PROCESSING_ERROR);
         }
+
         log.info("[META] 계정 동기화 완료 - adAccountId:{}, 캠페인:{}, 광고세트:{}, 광고:{}, 지표:{}",
                 context.adAccountId(), campaignCount, adSetCount, adCount, metricCount);
+
         return MetaConverter.toSyncSummary(campaignCount, adSetCount, adCount, metricCount);
     }
 
