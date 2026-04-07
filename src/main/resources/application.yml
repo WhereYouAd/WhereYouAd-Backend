@@ -153,6 +153,8 @@ feign:
         loggerLevel: BASIC   # NONE / BASIC / HEADERS / FULL
       metaClient:
         loggerLevel: BASIC
+        connectionTimeout: 5000
+        readTimeout: 10000
 
 # 11. Meta Marketing API 설정
 meta:

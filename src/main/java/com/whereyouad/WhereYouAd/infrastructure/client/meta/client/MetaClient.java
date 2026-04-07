@@ -12,6 +12,22 @@ import org.springframework.web.bind.annotation.RequestParam;
 )
 public interface MetaClient {
 
+    // 인가 코드 → short-lived Access Token
+    @GetMapping("/oauth/access_token")
+    MetaDTO.TokenResponse exchangeCodeForToken(
+            @RequestParam("client_id") String clientId,
+            @RequestParam("client_secret") String clientSecret,
+            @RequestParam("redirect_uri") String redirectUri,
+            @RequestParam("code") String code);
+
+    // short-lived → long-lived Access Token
+    @GetMapping("/oauth/access_token")
+    MetaDTO.TokenResponse exchangeForLongLivedToken(
+            @RequestParam("grant_type") String grantType,
+            @RequestParam("client_id") String clientId,
+            @RequestParam("client_secret") String clientSecret,
+            @RequestParam("fb_exchange_token") String fbExchangeToken);
+
     // 내 광고계정 목록 조회
     @GetMapping("/me/adaccounts")
     MetaDTO.AdAccountListResponse getAdAccounts(
