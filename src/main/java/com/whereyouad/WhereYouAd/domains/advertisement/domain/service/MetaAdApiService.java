@@ -276,7 +276,7 @@ public class MetaAdApiService {
     // ============================
 
     //orgId 기반으로 META Connection을 찾아 반환
-    private PlatformConnection resolveMetaConnection(Long orgId) {
+    private List<PlatformConnection> resolveMetaConnections(Long orgId) {
 
         List<PlatformConnection> connections = platformConnectionRepository
                 .findByPlatformAccount_Organization_IdAndPlatformAccount_Provider(
@@ -285,10 +285,18 @@ public class MetaAdApiService {
         if (connections.isEmpty()) {
             throw new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND);
         }
-
+        // 광고계정(PlatformAccount)별로 그룹핑 → 각 그룹에서 가장 최신(max id) Connection만 선택
         return connections.stream()
-                .max(Comparator.comparing(PlatformConnection::getId))
-                .get();
+                .collect(Collectors.groupingBy(
+                        conn -> conn.getPlatformAccount().getId(),
+                        Collectors.maxBy(Comparator.comparing(PlatformConnection::getId))
+                ))
+                .values().stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+
+//
     }
 
     // ============================
