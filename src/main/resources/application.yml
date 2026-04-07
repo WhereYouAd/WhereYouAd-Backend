@@ -148,3 +148,11 @@ feign:
     config:
       openAiClient:
         loggerLevel: BASIC   # NONE / BASIC / HEADERS / FULL
+
+# 11. Google Ads API
+google:
+  ads:
+    client-id: ${GOOGLE_ADS_CLIENT_ID}
+    client-secret: ${GOOGLE_ADS_CLIENT_SECRET}
+    redirect-uri: ${GOOGLE_ADS_OAUTH2_REDIRECT_URL}
+    developer-token: ${GOOGLE_ADS_DEVELOPER_TOKEN}
