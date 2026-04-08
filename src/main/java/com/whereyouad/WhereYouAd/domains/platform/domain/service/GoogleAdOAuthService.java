@@ -120,8 +120,8 @@ public class GoogleAdOAuthService {
                 // PlatformConnection 생성 및 저장
                 PlatformConnection platformConnection = PlatformConnection.builder()
                         .authType(AuthType.OAUTH)
-                        .authIdentifier(clientId) // 식별자 (클라이언트 ID 등)
-                        .authCredential(refreshToken)
+                        .authIdentifier(clientId) // authIdentifier: 식별자 (클라이언트 ID 등)
+                        .authCredential(refreshToken) // authCredential: refreshToken
                         .tokenExpireAt(expiresInSeconds != null ? LocalDateTime.now().plusSeconds(expiresInSeconds) : null)
                         .user(user)
                         .platformAccount(platformAccount)
