@@ -1,14 +1,10 @@
 package com.whereyouad.WhereYouAd.domains.platform.presentation;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
-import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
+
 import com.whereyouad.WhereYouAd.domains.platform.domain.service.GoogleAdOAuthService;
 import com.whereyouad.WhereYouAd.domains.platform.presentation.docs.GoogleAdOAuthDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
