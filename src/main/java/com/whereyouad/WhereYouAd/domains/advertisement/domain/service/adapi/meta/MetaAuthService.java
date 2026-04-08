@@ -200,7 +200,10 @@ public class MetaAuthService {
                 }
                 Timezone finalDynamicTimezone = dynamicTimezone;
 
-                PlatformAccount account = platformAccountRepository.findByExternalAccountIdAndProvider(metaAccount.id(), Provider.META)
+                // (externalAccountId, provider, organization) 조합으로 조회하여
+                // 동일 Meta 광고계정을 다른 조직이 연결해도 서로 격리된 PlatformAccount를 갖도록 보장
+                PlatformAccount account = platformAccountRepository
+                        .findByExternalAccountIdAndProviderAndOrganization(metaAccount.id(), Provider.META, org)
                         .orElseGet(() -> platformAccountRepository.save(
                                 PlatformAccount.builder()
                                         .externalAccountId(metaAccount.id())
