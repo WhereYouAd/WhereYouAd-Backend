@@ -1,5 +1,7 @@
 package com.whereyouad.WhereYouAd.infrastructure.client.meta.dto;
 
+import java.util.List;
+
 public class MetaResponse {
 
     public record AuthUrlResponse(
@@ -10,6 +12,7 @@ public class MetaResponse {
             int adCampaignCount,
             int adGroupCount,
             int adContentCount,
-            int metricCount
+            int metricCount,
+            List<String> failedAccountIds
     ) {}
 }

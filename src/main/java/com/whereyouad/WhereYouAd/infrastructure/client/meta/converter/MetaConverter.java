@@ -235,6 +235,11 @@ public class MetaConverter {
     }
 
     public static MetaResponse.MetaSyncSummary toSyncSummary(int campaignCount, int adGroupCount, int adContentCount, int metricCount) {
-        return new MetaResponse.MetaSyncSummary(campaignCount, adGroupCount, adContentCount, metricCount);
+        return new MetaResponse.MetaSyncSummary(campaignCount, adGroupCount, adContentCount, metricCount, java.util.List.of());
+    }
+
+    public static MetaResponse.MetaSyncSummary toSyncSummary(int campaignCount, int adGroupCount, int adContentCount, int metricCount,
+                                                             java.util.List<String> failedAccountIds) {
+        return new MetaResponse.MetaSyncSummary(campaignCount, adGroupCount, adContentCount, metricCount, failedAccountIds);
     }
 }

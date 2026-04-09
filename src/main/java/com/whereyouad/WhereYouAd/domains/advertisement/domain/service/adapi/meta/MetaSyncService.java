@@ -88,6 +88,7 @@ public class MetaSyncService {
         }
 
         int totalCampaigns = 0, totalAdSets = 0, totalAds = 0, totalMetrics = 0;
+        List<String> failedAccountIds = new ArrayList<>();
 
         for (PlatformSessionContext context : contexts) {
 
@@ -100,12 +101,19 @@ public class MetaSyncService {
 
             } catch (Exception e) {
                 log.error("[META] 광고계정 동기화 실패 (adAccountId: {}) - {}", context.adAccountId(), e.getMessage(), e);
+                failedAccountIds.add(context.adAccountId());
             }
         }
 
-        log.info("[META] 전체 동기화 완료 — 계정수:{}, 캠페인:{}, 광고세트:{}, 광고:{}, 지표:{}",
-                contexts.size(), totalCampaigns, totalAdSets, totalAds, totalMetrics);
-        return MetaConverter.toSyncSummary(totalCampaigns, totalAdSets, totalAds, totalMetrics);
+        // 모든 계정이 실패한 경우 → 호출자(수동 동기화 API 등)가 성공으로 오인하지 않도록 예외 전파
+        if (failedAccountIds.size() == contexts.size()) {
+            log.error("[META] 전체 동기화 실패 — 모든 계정({}) 동기화 실패", contexts.size());
+            throw new AdApiHandler(AdApiErrorCode.SYNC_DATA_PROCESSING_ERROR);
+        }
+
+        log.info("[META] 전체 동기화 완료 — 계정수:{}, 실패:{}, 캠페인:{}, 광고세트:{}, 광고:{}, 지표:{}",
+                contexts.size(), failedAccountIds.size(), totalCampaigns, totalAdSets, totalAds, totalMetrics);
+        return MetaConverter.toSyncSummary(totalCampaigns, totalAdSets, totalAds, totalMetrics, failedAccountIds);
     }
 
     // ============================
