@@ -135,19 +135,16 @@ public class MetaSyncService {
             String campaignCursor = null;
 
             do {
-                //Feign Client 로 Meta API Campaign 조회
                 MetaDTO.CampaignListResponse campaignsResp =
                         metaClient.getCampaigns(accessToken, context.adAccountId(), CAMPAIGN_FIELDS, campaignCursor);
 
                 if (campaignsResp == null || campaignsResp.data() == null || campaignsResp.data().isEmpty()) break;
 
-                //각 Meta API Campaign 에 대해 AdCampaign 으로 UPSERT
-                for (MetaDTO.Campaign metaCampaign : campaignsResp.data()) {
-                    //AdCampaign UPSERT 진행
-                    AdCampaign campaign = metaUpsertService.upsertCampaign(metaCampaign, orgEntity, pAccountEntity);
-                    campaignMap.put(metaCampaign.id(), campaign);
-                    campaignCount++;
-                }
+                // 페이지 단위 배치 UPSERT — 한 페이지 전체를 하나의 트랜잭션으로 처리
+                Map<String, AdCampaign> pageResult =
+                        metaUpsertService.upsertCampaigns(campaignsResp.data(), orgEntity, pAccountEntity);
+                campaignMap.putAll(pageResult);
+                campaignCount += pageResult.size();
 
                 campaignCursor = getNextCursor(campaignsResp.paging());
 
@@ -160,21 +157,16 @@ public class MetaSyncService {
             String adSetCursor = null;
 
             do {
-                //Feign Client 로 Meta API AdSet 조회
                 MetaDTO.AdSetListResponse adSetsResp =
                         metaClient.getAdSets(accessToken, context.adAccountId(), ADSET_FIELDS, adSetCursor);
 
                 if (adSetsResp == null || adSetsResp.data() == null || adSetsResp.data().isEmpty()) break;
 
-                //각 Meta API AdSet 에 대해 AdGroup 으로 UPSERT
-                for (MetaDTO.AdSet metaAdSet : adSetsResp.data()) {
-                    AdCampaign parentCampaign = campaignMap.get(metaAdSet.campaignId());
-                    if (parentCampaign == null) continue;
-                    //AdGroup UPSERT 진행
-                    AdGroup adGroup = metaUpsertService.upsertAdGroup(metaAdSet, parentCampaign);
-                    adSetMap.put(metaAdSet.id(), adGroup);
-                    adSetCount++;
-                }
+                // 페이지 단위 배치 UPSERT — campaignMap을 넘겨 부모 스코프 적용
+                Map<String, AdGroup> pageResult =
+                        metaUpsertService.upsertAdGroups(adSetsResp.data(), campaignMap);
+                adSetMap.putAll(pageResult);
+                adSetCount += pageResult.size();
 
                 adSetCursor = getNextCursor(adSetsResp.paging());
 
@@ -186,21 +178,16 @@ public class MetaSyncService {
             if (!adSetMap.isEmpty()) {
                 String adCursor = null;
                 do {
-                    //Feign Client 로 Meta API Ad 조회
                     MetaDTO.AdListResponse adsResp =
                             metaClient.getAds(accessToken, context.adAccountId(), AD_FIELDS, adCursor);
 
                     if (adsResp == null || adsResp.data() == null || adsResp.data().isEmpty()) break;
 
-                    //각 Meta API Ad 에 대해 AdContent 으로 UPSERT
-                    for (MetaDTO.Ad metaAd : adsResp.data()) {
-                        AdGroup parentAdGroup = adSetMap.get(metaAd.adSetId());
-                        if (parentAdGroup == null) continue;
-                        //AdContent UPSERT 진행
-                        AdContent content = metaUpsertService.upsertAdContent(metaAd, parentAdGroup);
-                        adMap.put(metaAd.id(), content);
-                        adCount++;
-                    }
+                    // 페이지 단위 배치 UPSERT — adSetMap을 넘겨 부모 스코프 적용
+                    Map<String, AdContent> pageResult =
+                            metaUpsertService.upsertAdContents(adsResp.data(), adSetMap);
+                    adMap.putAll(pageResult);
+                    adCount += pageResult.size();
 
                     adCursor = getNextCursor(adsResp.paging());
 
@@ -213,23 +200,15 @@ public class MetaSyncService {
                 String timeRange = "{\"since\":\"" + startDate + "\",\"until\":\"" + endDate + "\"}";
                 String insightCursor = null;
                 do {
-
-                    //Feign Client 로 Meta API Insight 조회
                     MetaDTO.InsightListResponse insightsResp =
                             metaClient.getInsights(accessToken, context.adAccountId(), INSIGHT_FIELDS,
                                     "ad", timeRange, "1", insightCursor);
 
                     if (insightsResp == null || insightsResp.data() == null || insightsResp.data().isEmpty()) break;
 
-                    //각 Meta API Insight 에 대해 MetricFact 으로 UPSERT
-                    for (MetaDTO.Insight insight : insightsResp.data()) {
-                        AdContent content = adMap.get(insight.adId());
-                        AdCampaign campaign = campaignMap.get(insight.campaignId());
-                        if (content == null || campaign == null) continue;
-                        //MetricFact UPSERT 진행
-                        metaUpsertService.upsertMetricFact(insight, content, campaign, pAccountEntity);
-                        metricCount++;
-                    }
+                    // 페이지 단위 배치 UPSERT — adMap, campaignMap 전달로 조회 스코프 유지
+                    metricCount += metaUpsertService.upsertMetricFacts(
+                            insightsResp.data(), adMap, campaignMap, pAccountEntity);
 
                     insightCursor = getNextCursor(insightsResp.paging());
 
