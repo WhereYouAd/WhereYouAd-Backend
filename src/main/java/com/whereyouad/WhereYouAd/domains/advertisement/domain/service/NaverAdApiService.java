@@ -28,9 +28,7 @@ public class NaverAdApiService {
 
     // 캠페인 목록 조회
     @Transactional(readOnly = true)
-    public List<NaverDTO.Campaign> getCampaigns(Long orgId) {
-        //
-        PlatformConnection conn = resolveNaverConnection(orgId);
+    public List<NaverDTO.CampaignResponse> getCampaigns(Long connectionId) {
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     conn.getId(), AdAuthRequest.forMethodAndPath("GET", "/ncc/campaigns")

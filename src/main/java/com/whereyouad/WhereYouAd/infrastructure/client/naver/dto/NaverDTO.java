@@ -2,7 +2,7 @@ package com.whereyouad.WhereYouAd.infrastructure.client.naver.dto;
 
 public class NaverDTO {
     // 캠페인 응답 원문
-    public record Campaign(
+    public record CampaignResponse(
             String nccCampaignId,
             Long customerId,
             String campaignTp,
