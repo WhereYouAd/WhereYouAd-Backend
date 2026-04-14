@@ -75,4 +75,13 @@ public class AdCampaign extends BaseEntity {
     public void relateProject(Project project) {
         this.project = project;
     }
+
+    public void updateNaverMetadata(String name, Status status, Long budget, LocalDate startDate, LocalDate endDate, Goal goal) {
+        if (name != null) this.name = name;
+        if (status != null) this.status = status;
+        if (budget != null) this.budget = budget;
+        if (startDate != null) this.startDate = startDate;
+        if (endDate != null) this.endDate = endDate;
+        if (goal != null) this.goal = goal;
+    }
 }

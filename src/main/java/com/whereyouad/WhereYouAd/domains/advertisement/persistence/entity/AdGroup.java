@@ -40,4 +40,10 @@ public class AdGroup extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_campaign_id")
     private AdCampaign adCampaign;
+
+    public void updateNaverMetadata(String name, Status status, String targetingInfo) {
+        if (name != null) this.name = name;
+        if (status != null) this.status = status;
+        if (targetingInfo != null) this.targetingInfo = targetingInfo;
+    }
 }

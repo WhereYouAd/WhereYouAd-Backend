@@ -54,4 +54,12 @@ public class AdContent extends BaseEntity {
     public void updateLandingUrl(String landingUrl) {
         this.landingUrl = landingUrl;
     }
+
+    public void updateName(String name) {
+        if (name != null) this.name = name;
+    }
+
+    public void updateDescription(String description) {
+        if (description != null) this.description = description;
+    }
 }
