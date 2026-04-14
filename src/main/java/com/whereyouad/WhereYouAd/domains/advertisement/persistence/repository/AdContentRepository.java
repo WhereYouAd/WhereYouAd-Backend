@@ -7,10 +7,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
+
 import java.util.List;
 import java.util.Optional;
 
 public interface AdContentRepository extends JpaRepository<AdContent, Long> {
+
+        // 플랫폼 계정에 속하고 외부 광고 ID가 일치하는 광고 단건 조회
+        @Query("SELECT c FROM AdContent c WHERE c.externalAdId = :externalAdId AND c.adGroup.adCampaign.platformAccount = :platformAccount")
+        Optional<AdContent> findByExternalAdIdAndPlatformAccount(@Param("externalAdId") String externalAdId, @Param("platformAccount") PlatformAccount platformAccount);
+
+        // 플랫폼 계정에 속한 모든 광고 목록을 조회
+        @Query("SELECT ac FROM AdContent ac JOIN FETCH ac.adGroup ag JOIN FETCH ag.adCampaign c WHERE c.platformAccount = :platformAccount")
+        List<AdContent> findAllByPlatformAccount(@Param("platformAccount") PlatformAccount platformAccount);
 
         @Query("SELECT ac FROM AdContent ac " +
                         "JOIN FETCH ac.adGroup ag " +
@@ -64,4 +74,10 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
                 "JOIN FETCH ag.adCampaign " +
                 "WHERE ac.id = :id")
         Optional<AdContent> findByIdWithGroupAndCampaign(@Param("id") Long id);
+
+        @Query("SELECT ac FROM AdContent ac " +
+                "JOIN FETCH ac.adGroup ag " +
+                "JOIN FETCH ag.adCampaign c " +
+                "WHERE c.organization.id = :orgId")
+        List<AdContent> findAllByOrganizationId(@Param("orgId") Long orgId);
 }

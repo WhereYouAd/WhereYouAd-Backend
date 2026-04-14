@@ -13,7 +13,14 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 
+import java.util.Optional;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
+
 public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
+
+    // 외부 캠페인 ID + 플랫폼 계정으로 AdCampaign 조회
+    Optional<AdCampaign> findByExternalCampaignIdAndPlatformAccount(String externalCampaignId, PlatformAccount platformAccount);
+
     void findAllByProvider(String provider);
 
     @Query("SELECT SUM(c.budget) FROM AdCampaign c JOIN c.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId AND o.id = :orgId AND c.status = 'ON_GOING'")
