@@ -31,13 +31,56 @@ public class NaverAdApiService {
     public List<NaverDTO.CampaignResponse> getCampaigns(Long connectionId) {
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
-                    conn.getId(), AdAuthRequest.forMethodAndPath("GET", "/ncc/campaigns")
-            );
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/ncc/campaigns"));
             return naverClient.getCampaigns(headers);
         } catch (Exception e) {
             log.error("[NAVER] 캠페인 조회 실패 - orgId={}", orgId, e);
             throw new RuntimeException("네이버 캠페인 조회 실패", e);
         }
+            log.error("[NAVER] 캠페인 조회 실패 - connectionId={}", connectionId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_CAMPAIGN_FETCH_FAILED);
+        }
+    }
+
+    // 광고 그룹 목록 조회
+    @Transactional(readOnly = true)
+    public List<NaverDTO.AdGroupResponse> getAdGroups(Long connectionId, String nccCampaignId) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/ncc/adgroups"));
+            return naverClient.getAdGroups(headers, nccCampaignId);
+        } catch (Exception e) {
+            log.error("[NAVER] 광고 그룹 조회 실패 - connectionId={}, campaignId={}", connectionId, nccCampaignId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_GROUP_FETCH_FAILED);
+        }
+    }
+
+    // 광고(소재) 목록 조회
+    @Transactional(readOnly = true)
+    public List<NaverDTO.AdResponse> getAds(Long connectionId, String nccAdgroupId) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/ncc/ads"));
+            return naverClient.getAds(headers, nccAdgroupId);
+        } catch (Exception e) {
+            log.error("[NAVER] 광고 소재 조회 실패 - connectionId={}, adGroupId={}", connectionId, nccAdgroupId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_CONTENT_FETCH_FAILED);
+        }
+    }
+
+    // 키워드 목록 조회
+    @Transactional(readOnly = true)
+    public List<NaverDTO.KeywordResponse> getKeywords(Long connectionId, String nccAdgroupId) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/ncc/keywords"));
+            return naverClient.getKeywords(headers, nccAdgroupId);
+        } catch (Exception e) {
+            log.error("[NAVER] 키워드 조회 실패 - connectionId={}, adGroupId={}", connectionId, nccAdgroupId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_KEYWORD_FETCH_FAILED);
+        }
+    }
+
     }
 
     // private 내부 메서드
