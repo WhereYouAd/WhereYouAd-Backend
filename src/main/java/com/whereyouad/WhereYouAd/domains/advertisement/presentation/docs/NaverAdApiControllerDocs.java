@@ -127,5 +127,41 @@ public interface NaverAdApiControllerDocs {
             @Parameter(description = "종료 날짜 (예: 2026-04-08)", required = true)
             @RequestParam("until") String until
     );
+
+    @Operation(summary = "네이버 메타데이터 동기화", description = "연동된 네이버 계정의 캠페인/광고그룹/광고소재를 가져와 DB에 upsert합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 캠페인/그룹/소재 수 반환"),
+            @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
+            @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
+    })
+    ResponseEntity<DataResponse<AdvertisementResponse.NaverMetadataSyncResponse>> syncMetadata(
+            @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
+            @PathVariable Long connectionId
+    );
+
+    @Operation(summary = "네이버 기본 + 전환 통계 동기화", description = "기본 지표(HOURLY/DAILY MetricFact)와 전환 리포트를 함께 동기화합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 광고소재 수 반환"),
+            @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
+            @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
+    })
+    ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
+            @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
+            @PathVariable Long connectionId,
+            @Parameter(description = "통계 대상 날짜 (yyyy-MM-dd, 예: 2026-04-08)", required = true)
+            @RequestParam("statDate") String statDate
+    );
+
+    @Operation(summary = "네이버 전환 리포트만 동기화", description = "전환 데이터만 돨독으로 동기화합니다. (기본 Stats 동기화 없이)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 전환 행 수 반환"),
+            @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
+            @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
+    })
+    ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncConversions(
+            @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
+            @PathVariable Long connectionId,
+            @Parameter(description = "통계 대상 날짜 (yyyy-MM-dd, 예: 2026-04-08)", required = true)
+            @RequestParam("statDate") String statDate
     );
 }

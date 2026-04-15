@@ -88,8 +88,46 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
             @PathVariable Long connectionId,
             @RequestParam("url") String downloadUrl
     ) {
-        return ResponseEntity.ok(DataResponse.from(naverAdApiService.getCampaigns(orgId)));
         return ResponseEntity.ok(DataResponse.from(naverAdApiService.downloadReport(connectionId, downloadUrl)));
     }
+
+    // 시간대별(HOURLY) 통계 조회 호출
+    @GetMapping("/stats/hourly")
+    public ResponseEntity<DataResponse<List<NaverDTO.StatResponse>>> getHourlyStats(
+            @PathVariable Long connectionId,
+            @RequestParam("id") String id,
+            @RequestParam("since") String since,
+            @RequestParam("until") String until
+    ) {
+        return ResponseEntity.ok(DataResponse.from(naverAdApiService.getHourlyStats(connectionId, id, since, until)));
+    }
+
+    // 메타데이터 동기화 (캠페인/그룹/소재)
+    @PostMapping("/sync/metadata")
+    public ResponseEntity<DataResponse<AdvertisementResponse.NaverMetadataSyncResponse>> syncMetadata(
+            @PathVariable Long connectionId
+    ) {
+        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncAllMetadata(connectionId)));
+    }
+
+    // 기본 통계 동기화 (HOURLY + DAILY MetricFact)
+    @PostMapping("/sync/stats")
+    public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
+            @PathVariable Long connectionId,
+            @RequestParam("statDate") String statDate
+    ) {
+        AdvertisementResponse.NaverStatSyncResponse basicResult =
+                naverAdSyncService.syncBasicStats(connectionId, statDate);
+        naverAdSyncService.syncConversionReports(connectionId, statDate);
+        return ResponseEntity.ok(DataResponse.from(basicResult));
+    }
+
+    // 전환 리포트 동기화만 단독 실행
+    @PostMapping("/sync/conversions")
+    public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncConversions(
+            @PathVariable Long connectionId,
+            @RequestParam("statDate") String statDate
+    ) {
+        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncConversionReports(connectionId, statDate)));
     }
 }
