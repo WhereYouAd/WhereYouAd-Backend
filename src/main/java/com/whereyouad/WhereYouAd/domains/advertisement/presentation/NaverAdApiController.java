@@ -22,8 +22,6 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
 
     // 캠페인 목록 조회
     @GetMapping("/campaigns")
-    public ResponseEntity<DataResponse<List<NaverDTO.Campaign>>> getCampaigns(
-            @PathVariable Long orgId
     public ResponseEntity<DataResponse<List<NaverDTO.CampaignResponse>>> getCampaigns(
             @PathVariable Long connectionId
     ) {
@@ -56,7 +54,42 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     ) {
         return ResponseEntity.ok(DataResponse.from(naverAdApiService.getKeywords(connectionId, nccAdgroupId)));
     }
+
+    // AD 리포트 생성 요청
+    @PostMapping("/reports/ad")
+    public ResponseEntity<DataResponse<NaverDTO.StatReportResponse>> requestAdReport(
+            @PathVariable Long connectionId,
+            @RequestParam("statDt") String statDt
+    ) {
+        return ResponseEntity.ok(DataResponse.from(naverAdApiService.requestAdReport(connectionId, statDt)));
+    }
+
+    // AD_CONVERSION 리포트 생성 요청
+    @PostMapping("/reports/ad-conversion")
+    public ResponseEntity<DataResponse<NaverDTO.StatReportResponse>> requestAdConversionReport(
+            @PathVariable Long connectionId,
+            @RequestParam("statDt") String statDt
+    ) {
+        return ResponseEntity.ok(DataResponse.from(naverAdApiService.requestAdConversionReport(connectionId, statDt)));
+    }
+
+    // 보고서 상태 조회
+    @GetMapping("/reports/{reportJobId}")
+    public ResponseEntity<DataResponse<NaverDTO.StatReportResponse>> getReportStatus(
+            @PathVariable Long connectionId,
+            @PathVariable String reportJobId
+    ) {
+        return ResponseEntity.ok(DataResponse.from(naverAdApiService.getReportStatus(connectionId, reportJobId)));
+    }
+
+    // 보고서 다운로드
+    @GetMapping("/reports/download")
+    public ResponseEntity<DataResponse<NaverDTO.RawReportResponse>> downloadReport(
+            @PathVariable Long connectionId,
+            @RequestParam("url") String downloadUrl
     ) {
         return ResponseEntity.ok(DataResponse.from(naverAdApiService.getCampaigns(orgId)));
+        return ResponseEntity.ok(DataResponse.from(naverAdApiService.downloadReport(connectionId, downloadUrl)));
+    }
     }
 }
