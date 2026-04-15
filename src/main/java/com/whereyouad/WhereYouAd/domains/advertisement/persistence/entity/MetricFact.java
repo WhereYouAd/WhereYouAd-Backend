@@ -72,4 +72,15 @@ public class MetricFact extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_campaign_id")
     private AdCampaign adCampaign;
+
+    public void updateBasicMetrics(Long impressions, Long clicks, BigDecimal spend) {
+        this.impressions = impressions;
+        this.clicks = clicks;
+        this.spend = spend;
+    }
+
+    public void updateConversionMetrics(Long conversions, BigDecimal revenue) {
+        this.conversions = conversions;
+        this.revenue = revenue;
+    }
 }
