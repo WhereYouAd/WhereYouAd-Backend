@@ -64,11 +64,15 @@ public class NaverAdSyncService {
     public AdvertisementResponse.NaverMetadataSyncResponse syncAllMetadata(Long connectionId) {
         log.info("NAVER 광고 동기화 시작 - connectionId: {}", connectionId);
 
-        // 1. connectionId로 연동 계정 조회
-        PlatformConnection connection = platformConnectionRepository.findById(connectionId)
+        // 1. connectionId로 연동 계정 조회 (JOIN FETCH로 Account/Org까지 한 번에 로드)
+        PlatformConnection connection = platformConnectionRepository.findWithAccountAndOrgById(connectionId)
                 .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
 
-        // 2. 연결 계정 기준으로 네이버 캠페인 목록 조회
+        // 2. 연결 계정 및 플랫폼 계정 정보 추출 (Lazy Loading 방지를 위해 미리 조회)
+        PlatformAccount platformAccount = connection.getPlatformAccount();
+        log.info("NAVER 광고 플랫폼 계정 확인: {}", platformAccount.getProvider()); // 강제 초기화 유도
+
+        // 3. 연결 계정 기준으로 네이버 캠페인 목록 조회
         List<NaverDTO.CampaignResponse> campaigns = naverAdApiService.getCampaigns(connectionId);
 
         int campaignCount = 0;
@@ -81,7 +85,7 @@ public class NaverAdSyncService {
                     // 3. 같은 platformAccount 범위(NAVER) 안에서만 캠페인 조회
                     AdCampaign entity = adCampaignRepository
                             .findByExternalCampaignIdAndPlatformAccount(campaignDto.nccCampaignId(),
-                                    connection.getPlatformAccount())
+                                    platformAccount)
                             .map(existing -> {
                                 // 있으면 업데이트
                                 NaverConverter.updateAdCampaign(existing, campaignDto);
@@ -90,15 +94,15 @@ public class NaverAdSyncService {
                             .orElseGet(() -> adCampaignRepository.save(
                                     // 없으면 신규 생성
                                     NaverConverter.toAdCampaignEntity(campaignDto,
-                                            connection.getPlatformAccount().getOrganization(),
-                                            connection.getPlatformAccount())));
+                                            platformAccount.getOrganization(),
+                                            platformAccount)));
                     return entity;
                 });
 
                 // 4. 캠페인 저장 후 하위 광고 그룹 동기화 호출
                 if (adCampaign != null) {
                     campaignCount++;
-                    int[] subCounts = syncAdGroups(connectionId, connection.getPlatformAccount(), adCampaign);
+                    int[] subCounts = syncAdGroups(connectionId, platformAccount, adCampaign);
                     groupCount += subCounts[0];
                     contentCount += subCounts[1];
                 }
@@ -196,12 +200,14 @@ public class NaverAdSyncService {
     public AdvertisementResponse.NaverStatSyncResponse syncBasicStats(Long connectionId, String statDate) {
         log.info("NAVER Basic Stats 동기화 시작 - connectionId: {}, date: {}", connectionId, statDate);
 
-        // 1. connectionId로 실제 연동 계정 조회
-        PlatformConnection connection = platformConnectionRepository.findById(connectionId)
+        // 1. connectionId로 실제 연동 계정 조회 (JOIN FETCH 사용)
+        PlatformConnection connection = platformConnectionRepository.findWithAccountAndOrgById(connectionId)
                 .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
 
         // 2. 이 계정(platformAccount)에 속한 광고소재만 조회
-        List<AdContent> adContents = adContentRepository.findAllByPlatformAccount(connection.getPlatformAccount());
+        PlatformAccount platformAccount = connection.getPlatformAccount();
+        log.info("NAVER 광고 플랫폼 계정 확인: {}", platformAccount.getProvider());
+        List<AdContent> adContents = adContentRepository.findAllByPlatformAccount(platformAccount);
 
         int processedCount = 0;
         for (AdContent adContent : adContents) {
@@ -279,8 +285,11 @@ public class NaverAdSyncService {
     // 전환 리포트 요청/다운로드
     public AdvertisementResponse.NaverStatSyncResponse syncConversionReports(Long connectionId, String statDate) {
         log.info("NAVER Conversion Report 동기화 시작 - connectionId: {}, date: {}", connectionId, statDate);
-        PlatformConnection connection = platformConnectionRepository.findById(connectionId)
+        PlatformConnection connection = platformConnectionRepository.findWithAccountAndOrgById(connectionId)
                 .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
+
+        PlatformAccount platformAccount = connection.getPlatformAccount();
+        log.info("NAVER 광고 플랫폼 계정 확인: {}", platformAccount.getProvider());
 
         try {
             // 1. 전환 리포트 생성 요청
@@ -319,7 +328,7 @@ public class NaverAdSyncService {
 
             // 3. 리포트 다운로드 후 파싱/반영
             NaverDTO.RawReportResponse rawReport = naverAdApiService.downloadReport(connectionId, downloadUrl);
-            int processedCount = parseAndUpsertConversions(rawReport.rawContent(), statDate, connection.getPlatformAccount());
+            int processedCount = parseAndUpsertConversions(rawReport.rawContent(), statDate, platformAccount);
 
             return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDate, processedCount);
 
@@ -331,7 +340,7 @@ public class NaverAdSyncService {
 
     // 다운받은 리포트(TSV 파일)를 파싱해서 전환값 반영
     private int parseAndUpsertConversions(String rawContent, String statDate,
-                                          PlatformAccount platformAccount) {
+            PlatformAccount platformAccount) {
         if (rawContent == null || rawContent.isEmpty())
             return 0;
 
