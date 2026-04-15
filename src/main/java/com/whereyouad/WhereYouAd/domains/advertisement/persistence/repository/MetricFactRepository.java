@@ -1,6 +1,8 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
@@ -164,5 +166,12 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("end") LocalDateTime end,
             @Param("orgId") Long orgId,
             @Param("provider") Provider provider
+    );
+
+    // Upsert 선행 조회용
+    Optional<MetricFact> findByAdContentAndTimeBucketAndGrain(
+            AdContent adContent,
+            LocalDateTime timeBucket, 
+            Grain grain
     );
 }
