@@ -1,5 +1,10 @@
 package com.whereyouad.WhereYouAd.infrastructure.client.naver.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.util.List;
+
 public class NaverDTO {
 
     // 캠페인 응답 원문
@@ -85,5 +90,48 @@ public class NaverDTO {
             Boolean useGroupBidAmt,
             String regTm,
             String editTm
+    ) {}
+
+    // /stats API 반환 래퍼
+    // {“data”: [...]} 형식을 받아옴
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record StatListResponse(
+            List<StatResponse> data
+    ) {}
+
+    // /stats 응답의 개별 통계 행
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record StatResponse(
+            @JsonAlias({"statDt", "dateStart"}) String statDt,
+            @JsonAlias({"hour", "hh24"}) String hour,
+            Long impCnt,
+            Long clkCnt,
+            Long salesAmt,
+            Double ctr,
+            Double cpc
+    ) {}
+
+    // 상세 보고서 응답 (Metric_fact)
+    public record StatReportResponse(
+            String reportJobId,
+            String reportJobType,
+            String status,
+            String downloadUrl,
+            String regTm,
+            String updateTm
+    ) {}
+
+    // 다운로드한 원본 리포트 본문
+    public record RawReportResponse(
+            String rawContent
+    ) {}
+
+
+    // Request
+
+    // 대용량 보고서 생성 요청값
+    public record StatReportRequest(
+            String reportTp,
+            String statDt
     ) {}
 }
