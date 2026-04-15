@@ -22,7 +22,6 @@ public interface NaverClient {
 
     // 캠페인 목록 조회
     @GetMapping("/ncc/campaigns")
-    List<NaverDTO.Campaign> getCampaigns(@RequestHeader Map<String, String> headers);
     List<NaverDTO.CampaignResponse> getCampaigns(
             @RequestHeader Map<String, String> headers
     );
@@ -46,5 +45,36 @@ public interface NaverClient {
     List<NaverDTO.KeywordResponse> getKeywords(
             @RequestHeader Map<String, String> headers,
             @RequestParam(value = "nccAdgroupId") String nccAdgroupId
+    );
+
+    // 통계 데이터 조회
+    @GetMapping("/stats")
+    NaverDTO.StatListResponse getStats(
+            @RequestHeader Map<String, String> headers,
+            @RequestParam("id") String id,
+            @RequestParam("fields") String fields,
+            @RequestParam(value = "timeRange", required = false) String timeRange,
+            @RequestParam(value = "datePreset", required = false) String datePreset,
+            @RequestParam(value = "breakdown", required = false) String breakdown
+    );
+
+    // 대용량 보고서 생성 요청
+    @PostMapping("/stat-reports")
+    NaverDTO.StatReportResponse createStatReport(
+            @RequestHeader Map<String, String> headers,
+            @RequestBody NaverDTO.StatReportRequest request
+    );
+
+    // 대용량 보고서 상태 조회
+    @GetMapping("/stat-reports/{reportJobId}")
+    NaverDTO.StatReportResponse getStatReportStatus(
+            @RequestHeader Map<String, String> headers,
+            @PathVariable("reportJobId") String reportJobId
+    );
+
+    // 대용량 보고서 다운로드 (동적 URL)
+    @GetMapping
+    Response downloadStatReport(
+            @RequestHeader Map<String, String> headers, URI baseUri
     );
 }
