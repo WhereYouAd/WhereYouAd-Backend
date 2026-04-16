@@ -21,7 +21,7 @@ import java.time.format.DateTimeParseException;
 @Component
 public class GoogleConverter {
 
-    public AdCampaign toAdCampaign(GoogleDTO.AdCampaignResult result, Project project, PlatformAccount platformAccount) {
+    public AdCampaign toAdCampaign(GoogleDTO.AdCampaignResult result, PlatformAccount platformAccount) {
         GoogleDTO.AdCampaignNode campaign = result.getCampaign();
         GoogleDTO.AdCampaignBudgetNode budget = result.getCampaignBudget();
 
@@ -38,7 +38,6 @@ public class GoogleConverter {
                 .budget(budgetAmount)
                 .startDate(campaign != null ? parseDate(campaign.getStartDate()) : null)
                 .endDate(campaign != null ? parseDate(campaign.getEndDate()) : null)
-                .project(project)
                 .platformAccount(platformAccount)
                 .build();
     }
