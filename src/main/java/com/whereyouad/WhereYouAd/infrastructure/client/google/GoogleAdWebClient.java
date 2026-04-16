@@ -78,7 +78,7 @@ public class GoogleAdWebClient {
         return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
     }
 
-    // 4. 전체 개별 광고 조회
+    // 전체 개별 광고 조회
     public Mono<String> searchAllAdContents(String customerId, PlatformConnection connection, AdAuthRequest request) {
         String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
 
