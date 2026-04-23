@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.AuthErrorCode;
 import com.whereyouad.WhereYouAd.global.response.ErrorResponse;
+import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -23,9 +24,12 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final String BLACKLIST_PREFIX = "blacklist:";
+
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailService; //DB 에서 User 정보 가져오는 Service 클래스
     private final ObjectMapper objectMapper;
+    private final RedisUtil redisUtil;
 
     //들어오는 로직에 대한 JWT 토큰 기반 실제 필터링 메서드
     @Override
@@ -41,6 +45,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 //AccessToken 유효성 확인
                 jwtTokenProvider.validateToken(token); //예외 발생 가능 구간 -> ExpiredJwtException 등
+
+                //블랙리스트(로그아웃 처리된 토큰) 확인 — 만료 전이라도 차단
+                if (redisUtil.getData(BLACKLIST_PREFIX + token) != null) {
+                    setErrorResponse(response, AuthErrorCode.INVALID_TOKEN_FORMAT, request);
+                    return;
+                }
 
                 //토큰에서 email 값 추출
                 String email = jwtTokenProvider.getSubject(token);
