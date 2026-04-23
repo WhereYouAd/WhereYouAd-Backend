@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -251,7 +252,11 @@ public class MetaSyncService {
             throw new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND);
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
         return connections.stream()
+                .filter(conn -> conn.getRevokedAt() == null)
+                .filter(conn -> conn.getTokenExpireAt() != null && conn.getTokenExpireAt().isAfter(now))
                 .collect(Collectors.groupingBy(
                         conn -> conn.getPlatformAccount().getId(),
                         Collectors.maxBy(Comparator.comparing(PlatformConnection::getId))
