@@ -58,4 +58,22 @@ public interface MetaAdApiControllerDocs {
             @PathVariable Long orgId,
             @RequestBody @Valid MetaRequest.MetaManualSyncRequest request
     );
+
+    @Operation(
+            summary = "Meta 광고 데이터 갱신(사용자 새로고침 요청 처리용)",
+            description = "사용자가 Meta 마케팅 정보에 대해 '갱신(refresh)' 버튼 클릭 시 처리하는 API 입니다. "
+                    + "관리자용 동기화(/sync)와 달리, 사용자에 대한 조직 멤버 검증과, 같은 조직에 대한 반복 요청을 60초 간격으로 제한하고, 동기화 기간은 최근 7일로 고정되어있습니다.\n\n"
+                    + "반드시 최초 Meta 계정 연동이 되어있어야 정상 동작합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공 (동기화된 개수 반환)"),
+            @ApiResponse(responseCode = "404", description = "ORG_404_1 : 존재하지 않는 조직 ID, ORG_404_2 : 해당 조직에 속하지 않은 회원의 요청"),
+            @ApiResponse(responseCode = "409", description = "ADAPI_409_1 : 해당 조직의 광고 데이터 동기화가 이미 진행 중"),
+            @ApiResponse(responseCode = "429", description = "ADAPI_429_1 : 너무 잦은 동기화 요청(쿨다운)"),
+            @ApiResponse(responseCode = "500", description = "외부 광고 플랫폼(메타 API) 통신 오류")
+    })
+    ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> refreshForUser(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    );
 }

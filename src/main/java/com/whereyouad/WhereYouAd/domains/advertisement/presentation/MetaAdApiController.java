@@ -58,4 +58,17 @@ public class MetaAdApiController implements MetaAdApiControllerDocs {
                 DataResponse.from(response)
         );
     }
+
+    // 4. 사용자 '갱신(refresh)' 요청 처리 API
+    @PostMapping("/{orgId}/refresh")
+    public ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> refreshForUser(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    )
+    {
+        MetaResponse.MetaSyncSummary response = metaAdApiService.refreshForUser(userId, orgId);
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
 }
