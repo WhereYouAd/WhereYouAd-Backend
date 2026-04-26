@@ -11,6 +11,7 @@ import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -118,6 +120,7 @@ public class AuthService {
             }
         } catch (JwtException | IllegalArgumentException e) {
             //SecurityConfig 에서 손상 아님이 보장되지만 안전을 위해 catch 처리
+            log.error("로그아웃 실행 중 JWT 토큰 손상 감지: {}", e);
         }
     }
 }
