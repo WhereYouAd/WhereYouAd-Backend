@@ -12,10 +12,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 @ConfigurationProperties(prefix = "meta.ad")
 public class MetaAdConfig {
 
-    private String appId;            // Meta App ID
-    private String appSecret;        // Meta App Secret
-    private String redirectUri;      // OAuth Redirect URI
-    private String graphApiVersion;  // v25.0
+    private String appId;               // Meta App ID
+    private String appSecret;           // Meta App Secret
+    private String redirectUri;         // OAuth Redirect URI (Meta가 호출하는 백엔드 콜백 URL)
+    private String frontendCallbackUrl; // 백엔드 콜백 처리 후 사용자 리다이렉트할 프론트엔드 결과 페이지 URL
+    private String graphApiVersion;     // v25.0
 
     /**
      * Facebook OAuth 로그인 URL 생성
