@@ -31,17 +31,24 @@ public interface MetaAdApiControllerDocs {
 
     @Operation(
             summary = "메타 OAuth 콜백 처리 및 데이터 최초 동기화",
-            description = "페이스북 로그인 완료 후 호출되는 callback 엔드포인트입니다. 전달받은 인가 코드(Code)로 액세스 토큰을 발급받아 저장하고, 즉시 연동된 메타 광고 데이터를 최초 1회 동기화합니다."
+            description = "페이스북 로그인 완료 후 사용자 브라우저가 호출하는 callback 엔드포인트입니다. "
+                    + "전달받은 인가 코드(Code)로 액세스 토큰을 발급받아 저장하고, 즉시 연동된 메타 광고 데이터를 최초 1회 동기화합니다.\n\n"
+                    + "처리 결과는 JSON 응답이 아닌 프론트엔드 결과 페이지로의 302 리다이렉트로 반환됩니다.(추후 프론트 처리 경로 받아서 수정 필요. 현재는 http://localhost:5173/oauth2/meta/result 로 되어있음.)\n\n"
+                    + "처리 결과에 따라 리다이렉트 URL의 쿼리 파라미터가 다릅니다.\n\n"
+                    + "- 성공 시: `status`(`success` / `partial`)와 함께 동기화된 개수가 전달됩니다. "
+                    + "(`adCampaigns`: 캠페인, `adGroups`: 광고세트, `adContents`: 광고, `metricFacts`: 성과 지표, "
+                    + "일부 계정 동기화 실패 시 `status=partial`과 함께 `failedCount`: 실패한 계정 수가 추가로 전달)\n\n"
+                    + "- 오류 시: `status`(`denied` / `invalid_request` / `error`)와 "
+                    + "필요 시 `detail`(에러 코드 또는 거부 사유)이 함께 전달됩니다."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "토큰 교환 및 데이터 동기화 성공 (동기화된 개수 반환)"),
-            @ApiResponse(responseCode = "400", description = "인가 코드 만료/오류 또는 연동할 수 있는 메타 광고 계정이 없음"),
-            @ApiResponse(responseCode = "500", description = "토큰 정보 암호화 저장 실패 또는 데이터 맵핑 파싱 오류")
+            @ApiResponse(responseCode = "302", description = "처리 결과를 프론트엔드 결과 페이지로 리다이렉트")
     })
-    ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> callback(
-            @RequestParam String code,
-            @Parameter(description = "OAuth state 파라미터 값", required = true)
-            @RequestParam(name = "state") String state
+    ResponseEntity<Void> callback(
+            @RequestParam(required = false) String code,
+            @RequestParam(name = "state", required = false) String state,
+            @RequestParam(required = false) String error,
+            @RequestParam(name = "error_description", required = false) String errorDescription
     );
 
     @Operation(
