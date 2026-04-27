@@ -162,4 +162,5 @@ meta:
     app-id: ${META_APP_ID}
     app-secret: ${META_APP_SECRET}
     redirect-uri: ${META_REDIRECT_URI}
+    frontend-callback-url: ${META_FRONTEND_CALLBACK_URL}
     graph-api-version: v25.0
