@@ -152,7 +152,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("statDate") String statDate
     );
 
-    @Operation(summary = "네이버 전환 리포트만 동기화", description = "전환 데이터만 돨독으로 동기화합니다. (기본 Stats 동기화 없이)")
+    @Operation(summary = "네이버 전환 리포트만 동기화", description = "전환 데이터만 단독으로 동기화합니다. (기본 Stats 동기화 없이)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 전환 행 수 반환"),
             @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
