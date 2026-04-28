@@ -271,6 +271,8 @@ public class NaverAdSyncService {
 
                     return null;
                 });
+                
+                processedCount++;
 
             } catch (Exception e) {
                 log.error("NAVER 광고 소재(ID:{}) 통계(Basic) 동기화 오류: {}", adContent.getExternalAdId(), e.getMessage());
