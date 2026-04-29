@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.advertisement.presentation;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.MetaAdApiService;
 import com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs.MetaAdApiControllerDocs;
+import com.whereyouad.WhereYouAd.global.adapi.exception.code.AdApiErrorCode;
 import com.whereyouad.WhereYouAd.global.exception.AppException;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.config.MetaAdConfig;
@@ -66,14 +67,47 @@ public class MetaAdApiController implements MetaAdApiControllerDocs {
             MetaResponse.MetaSyncSummary summary = metaAdApiService.handleCallback(state, code);
             return redirectToFrontendWithSummary(summary);
         } catch (AppException e) {
+            // 프론트에는 사용자가 직접 해결 가능한 케이스(Meta 광고 계정 없음)만 노출
             log.warn("[META] OAuth callback 처리 실패 - errorCode={}", e.getErrorCode().getCode());
-            return redirectToFrontend("error", e.getErrorCode().getCode());
+            String detail = (e.getErrorCode() == AdApiErrorCode.NO_LINKABLE_AD_ACCOUNT)
+                    ? "no_ad_account"
+                    : "meta_oauth_failed"; //나머지는 전부 oauth 연동 실패 처리
+
+            return redirectToFrontend("error", detail);
         } catch (Exception e) {
             log.error("[META] OAuth callback 처리 중 예외", e);
-            return redirectToFrontend("error", "UNKNOWN");
+            return redirectToFrontend("error", "meta_oauth_failed");
         }
     }
 
+    // 3. 수동 동기화 트리거 (관리자용)
+    @PostMapping("/{orgId}/sync")
+    public ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> syncManually(
+            @PathVariable Long orgId,
+            @RequestBody @Valid MetaRequest.MetaManualSyncRequest request
+    )
+    {
+
+        MetaResponse.MetaSyncSummary response = metaAdApiService.syncAll(orgId, request.startDate().toString(), request.endDate().toString());
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
+    // 4. 사용자 '갱신(refresh)' 요청 처리 API
+    @PostMapping("/{orgId}/refresh")
+    public ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> refreshForUser(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    )
+    {
+        MetaResponse.MetaSyncSummary response = metaAdApiService.refreshForUser(userId, orgId);
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
+    //===내부 편의 메서드===
     //콜백 실패시 프론트 리다이렉트 메서드
     private ResponseEntity<Void> redirectToFrontend(String status, String detail) {
         UriComponentsBuilder builder = UriComponentsBuilder
@@ -106,32 +140,5 @@ public class MetaAdApiController implements MetaAdApiControllerDocs {
         URI location = builder.encode().build().toUri();
 
         return ResponseEntity.status(HttpStatus.FOUND).location(location).build();
-    }
-
-    // 3. 수동 동기화 트리거 (관리자용)
-    @PostMapping("/{orgId}/sync")
-    public ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> syncManually(
-            @PathVariable Long orgId,
-            @RequestBody @Valid MetaRequest.MetaManualSyncRequest request
-    )
-    {
-
-        MetaResponse.MetaSyncSummary response = metaAdApiService.syncAll(orgId, request.startDate().toString(), request.endDate().toString());
-        return ResponseEntity.ok(
-                DataResponse.from(response)
-        );
-    }
-
-    // 4. 사용자 '갱신(refresh)' 요청 처리 API
-    @PostMapping("/{orgId}/refresh")
-    public ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> refreshForUser(
-            @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId
-    )
-    {
-        MetaResponse.MetaSyncSummary response = metaAdApiService.refreshForUser(userId, orgId);
-        return ResponseEntity.ok(
-                DataResponse.from(response)
-        );
     }
 }
