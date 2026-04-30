@@ -112,12 +112,12 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("url") String downloadUrl
     );
 
-    @Operation(summary = "api 통신 test용: HOURLY (시간대별) 통계 리포트 직접 조회", description = "/stats API를 이용하여 특정 대상의 시간대별 데이터를 가져옵니다.")
+    @Operation(summary = "api 통신 test용: 일별 통계 직접 조회", description = "/stats API를 이용하여 특정 대상의 일별 기본 지표를 가져옵니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "시간대별 통계 반환"),
+            @ApiResponse(responseCode = "200", description = "일별 통계 반환"),
             @ApiResponse(responseCode = "500", description = "네이버 API 호출 실패")
     })
-    ResponseEntity<DataResponse<List<NaverDTO.StatResponse>>> getHourlyStats(
+    ResponseEntity<DataResponse<List<NaverDTO.StatResponse>>> getDailyStats(
             @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
             @PathVariable Long connectionId,
             @Parameter(description = "캠페인 ID 또는 광고 그룹 ID", required = true)
@@ -139,7 +139,7 @@ public interface NaverAdApiControllerDocs {
             @PathVariable Long connectionId
     );
 
-    @Operation(summary = "네이버 기본 + 전환 통계 동기화", description = "기본 지표(HOURLY/DAILY MetricFact)와 전환 리포트를 함께 동기화합니다.")
+    @Operation(summary = "네이버 전체 통계 동기화", description = "일별(DAILY) 기본 지표와 전환 리포트를 동기화합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 광고소재 수 반환"),
             @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),

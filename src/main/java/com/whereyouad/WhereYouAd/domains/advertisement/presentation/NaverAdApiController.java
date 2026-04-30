@@ -91,15 +91,15 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
         return ResponseEntity.ok(DataResponse.from(naverAdApiService.downloadReport(connectionId, downloadUrl)));
     }
 
-    // 시간대별(HOURLY) 통계 조회 호출
-    @GetMapping("/stats/hourly")
-    public ResponseEntity<DataResponse<List<NaverDTO.StatResponse>>> getHourlyStats(
+    // 일별 통계 직접 조회 (테스트용)
+    @GetMapping("/stats/daily")
+    public ResponseEntity<DataResponse<List<NaverDTO.StatResponse>>> getDailyStats(
             @PathVariable Long connectionId,
             @RequestParam("id") String id,
             @RequestParam("since") String since,
             @RequestParam("until") String until
     ) {
-        return ResponseEntity.ok(DataResponse.from(naverAdApiService.getHourlyStats(connectionId, id, since, until)));
+        return ResponseEntity.ok(DataResponse.from(naverAdApiService.getDailyStats(connectionId, id, since, until)));
     }
 
     // 메타데이터 동기화 (캠페인/그룹/소재)
@@ -110,7 +110,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
         return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncAllMetadata(connectionId)));
     }
 
-    // 기본 통계 동기화 (HOURLY + DAILY MetricFact)
+    // 전체 통계 동기화 (DAILY MetricFact + 전환 리포트)
     @PostMapping("/sync/stats")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
             @PathVariable Long connectionId,

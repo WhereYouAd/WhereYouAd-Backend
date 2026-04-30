@@ -103,7 +103,6 @@ public class NaverDTO {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record StatResponse(
             @JsonAlias({"statDt", "dateStart"}) String statDt,
-            @JsonAlias({"hour", "hh24"}) String hour,
             Long impCnt,
             Long clkCnt,
             Long salesAmt,

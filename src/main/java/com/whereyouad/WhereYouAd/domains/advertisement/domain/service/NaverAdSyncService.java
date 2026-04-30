@@ -33,7 +33,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -196,84 +195,49 @@ public class NaverAdSyncService {
         return count;
     }
 
-    // 시간별/일별 기본 지표 MetricFact upsert
+    // 일별 기본 지표 MetricFact upsert (/stats 사용)
     public AdvertisementResponse.NaverStatSyncResponse syncBasicStats(Long connectionId, String statDate) {
         log.info("NAVER Basic Stats 동기화 시작 - connectionId: {}, date: {}", connectionId, statDate);
 
-        // 1. connectionId로 실제 연동 계정 조회 (JOIN FETCH 사용)
         PlatformConnection connection = platformConnectionRepository.findWithAccountAndOrgById(connectionId)
                 .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
 
-        // 2. 이 계정(platformAccount)에 속한 광고소재만 조회
         PlatformAccount platformAccount = connection.getPlatformAccount();
         log.info("NAVER 광고 플랫폼 계정 확인: {}", platformAccount.getProvider());
         List<AdContent> adContents = adContentRepository.findAllByPlatformAccount(platformAccount);
 
         int processedCount = 0;
         for (AdContent adContent : adContents) {
-            if (adContent.getExternalAdId() == null)
-                continue;
+            if (adContent.getExternalAdId() == null) continue;
 
             try {
-                // 3. 광고소재 1개에 대해 하루(hourly) 통계 조회
-                List<NaverDTO.StatResponse> stats = naverAdApiService.getHourlyStats(connectionId,
+                List<NaverDTO.StatResponse> stats = naverAdApiService.getDailyStats(connectionId,
                         adContent.getExternalAdId(), statDate, statDate);
 
-                // 4. "00" ~ "23" 키로 빠르게 찾기 위한 Map 구성
-                Map<String, NaverDTO.StatResponse> hourMap = stats.stream()
-                        .filter(s -> s.hour() != null)
-                        .collect(Collectors.toMap(NaverDTO.StatResponse::hour, s -> s, (s1, s2) -> s1));
+                if (stats.isEmpty()) {
+                    processedCount++;
+                    continue;
+                }
+
+                NaverDTO.StatResponse stat = stats.get(0);
+                long impCnt = stat.impCnt() != null ? stat.impCnt() : 0L;
+                long clkCnt = stat.clkCnt() != null ? stat.clkCnt() : 0L;
+                BigDecimal salesAmt = stat.salesAmt() != null
+                        ? BigDecimal.valueOf(stat.salesAmt()) : BigDecimal.ZERO;
+
+                LocalDateTime dailyTimeBucket = LocalDate.parse(statDate).atStartOfDay();
 
                 txTemplate.execute(status -> {
-                    long dailyImp = 0L;
-                    long dailyClk = 0L;
-                    BigDecimal dailySales = BigDecimal.ZERO;
-
-                    // 5. 24시간을 돌면서 hourly MetricFact upsert
-                    for (int i = 0; i < 24; i++) {
-                        String hh24 = String.format("%02d", i);
-                        LocalDateTime timeBucket = LocalDate.parse(statDate).atTime(i, 0);
-
-                        NaverDTO.StatResponse stat = hourMap.get(hh24);
-
-                        // 응답이 없으면 0으로 채움
-                        Long impCnt = stat != null && stat.impCnt() != null ? stat.impCnt() : 0L;
-                        Long clkCnt = stat != null && stat.clkCnt() != null ? stat.clkCnt() : 0L;
-                        BigDecimal salesAmt = stat != null && stat.salesAmt() != null
-                                ? BigDecimal.valueOf(stat.salesAmt())
-                                : BigDecimal.ZERO;
-
-                        // daily 합계도 같이 누적
-                        dailyImp += impCnt;
-                        dailyClk += clkCnt;
-                        dailySales = dailySales.add(salesAmt);
-
-                        // 해당 시간대의 hourly MetricFact 조회 or 생성
-                        MetricFact metricFact = metricFactRepository
-                                .findByAdContentAndTimeBucketAndGrain(adContent, timeBucket, Grain.HOURLY)
-                                .orElseGet(() -> AdvertisementConverter.createMetricFact(
-                                        adContent, timeBucket, Grain.HOURLY, Provider.NAVER));
-
-                        // 기본 지표(impressions, clicks, spend) 반영
-                        metricFact.updateBasicMetrics(impCnt, clkCnt, salesAmt);
-                        metricFactRepository.save(metricFact);
-                    }
-
-                    // 6. 하루 단위 DAILY MetricFact도 별도로 upsert
-                    LocalDateTime dailyTimeBucket = LocalDate.parse(statDate).atStartOfDay();
                     MetricFact dailyFact = metricFactRepository
                             .findByAdContentAndTimeBucketAndGrain(adContent, dailyTimeBucket, Grain.DAILY)
                             .orElseGet(() -> AdvertisementConverter.createMetricFact(
                                     adContent, dailyTimeBucket, Grain.DAILY, Provider.NAVER));
-
-                    dailyFact.updateBasicMetrics(dailyImp, dailyClk, dailySales);
+                    dailyFact.updateBasicMetrics(impCnt, clkCnt, salesAmt);
                     metricFactRepository.save(dailyFact);
-
                     return null;
                 });
-                
-                processedCount++;
 
+                processedCount++;
             } catch (Exception e) {
                 log.error("NAVER 광고 소재(ID:{}) 통계(Basic) 동기화 오류: {}", adContent.getExternalAdId(), e.getMessage());
             }
@@ -353,14 +317,12 @@ public class NaverAdSyncService {
 
         // 2. 헤더 위치 파악
         String[] headers = lines[0].split("\t");
-        int adIdIdx = -1, hourIdx = -1, convIdx = -1, revIdx = -1;
+        int adIdIdx = -1, convIdx = -1, revIdx = -1;
 
         for (int i = 0; i < headers.length; i++) {
             String header = headers[i].trim().replaceAll("\"", "");
             if (header.contains("광고 ID") || header.equalsIgnoreCase("Ad ID"))
                 adIdIdx = i;
-            if (header.contains("시간") || header.equalsIgnoreCase("Hour"))
-                hourIdx = i;
             if (header.contains("전환수") || header.equalsIgnoreCase("Conversions") || header.equalsIgnoreCase("ccnt")
                     || header.equalsIgnoreCase("convCnt"))
                 convIdx = i;
@@ -380,7 +342,7 @@ public class NaverAdSyncService {
         Map<String, BigDecimal> dailyRevenueMap = new HashMap<>();
 
         int processedCount = 0;
-        // 4. 각 라인을 읽어서 hourly 전환값 반영
+        // 4. 각 라인을 읽어서 일별 합계 누적
         for (int i = 1; i < lines.length; i++) {
             String line = lines[i];
             if (line == null || line.trim().isEmpty())
@@ -392,13 +354,6 @@ public class NaverAdSyncService {
                     continue;
                 String externalAdId = cols[adIdIdx].trim().replaceAll("\"", "");
 
-                String hourStr = hourIdx != -1 && cols.length > hourIdx ? cols[hourIdx].trim().replaceAll("\"", "")
-                        : "00";
-                if (hourStr.length() == 1)
-                    hourStr = "0" + hourStr;
-                if (hourStr.isEmpty() || hourStr.equals("-"))
-                    hourStr = "00";
-
                 String convStr = cols.length > convIdx ? cols[convIdx].trim().replaceAll("\"", "").replaceAll(",", "")
                         : "0";
                 String revStr = revIdx != -1 && cols.length > revIdx
@@ -408,7 +363,6 @@ public class NaverAdSyncService {
                 Long conversions = Long.parseLong(convStr.isEmpty() ? "0" : convStr);
                 BigDecimal revenue = new BigDecimal(revStr.isEmpty() ? "0" : revStr);
 
-                // 하루 합계 누적
                 dailyConversionsMap.put(
                         externalAdId,
                         dailyConversionsMap.getOrDefault(externalAdId, 0L) + conversions);
@@ -416,21 +370,6 @@ public class NaverAdSyncService {
                         externalAdId,
                         dailyRevenueMap.getOrDefault(externalAdId, BigDecimal.ZERO).add(revenue));
 
-                LocalDateTime timeBucket = LocalDate.parse(statDate).atTime(Integer.parseInt(hourStr), 0);
-
-                txTemplate.execute(status -> {
-                    // 같은 platformAccount 범위에서 광고소재 찾기
-                    adContentRepository.findByExternalAdIdAndPlatformAccount(externalAdId, platformAccount)
-                            .ifPresent(adContent -> {
-                                metricFactRepository
-                                        .findByAdContentAndTimeBucketAndGrain(adContent, timeBucket, Grain.HOURLY)
-                                        .ifPresent(metricFact -> {
-                                            // 기존 hourly MetricFact가 있을 때만 전환값 반영
-                                            metricFact.updateConversionMetrics(conversions, revenue);
-                                        });
-                            });
-                    return null;
-                });
                 processedCount++;
             } catch (Exception e) {
                 log.warn("NAVER 리포트 라인 파싱 오류: {}", e.getMessage());
@@ -463,4 +402,5 @@ public class NaverAdSyncService {
         }
         return processedCount;
     }
+
 }

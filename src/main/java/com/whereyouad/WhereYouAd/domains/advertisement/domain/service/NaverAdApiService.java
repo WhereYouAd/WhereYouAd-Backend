@@ -145,20 +145,19 @@ public class NaverAdApiService {
         }
     }
 
-    // 시간대별 보고서 (HOURLY) 직접 조회
+    // 일별 기본 지표 조회 (/stats, 기본 일 단위)
     @Transactional(readOnly = true)
-    public List<NaverDTO.StatResponse> getHourlyStats(Long connectionId, String id, String since, String until) {
+    public List<NaverDTO.StatResponse> getDailyStats(Long connectionId, String id, String since, String until) {
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("GET", "/stats"));
 
             String fields = "[\"impCnt\",\"clkCnt\",\"salesAmt\",\"ctr\",\"cpc\"]";
             String timeRange = String.format("{\"since\":\"%s\",\"until\":\"%s\"}", since, until);
-            // breakdown=hh24: 시간대별(0~23시) 데이터 조회 (네이버 공식 파라미터값)
-            NaverDTO.StatListResponse result = naverClient.getStats(headers, id, fields, timeRange, null, "hh24");
+            NaverDTO.StatListResponse result = naverClient.getStats(headers, id, fields, timeRange, null, null);
             return result != null && result.data() != null ? result.data() : List.of();
         } catch (Exception e) {
-            log.error("[NAVER] HOURLY 통계 조회 실패 - connectionId={}, id={}", connectionId, id, e);
+            log.error("[NAVER] 일별 통계 조회 실패 - connectionId={}, id={}", connectionId, id, e);
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_HOURLY_STAT_FETCH_FAILED);
         }
     }
