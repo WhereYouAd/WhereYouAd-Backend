@@ -111,15 +111,13 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 전체 통계 동기화 (DAILY MetricFact + 전환 리포트)
+    // DAILY MetricFact 동기화 (전환 리포트는 /sync/conversions 엔드포인트에서 별도 실행)
     @PostMapping("/sync/stats")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
             @PathVariable Long connectionId,
             @RequestParam("statDate") String statDate
     ) {
-        AdvertisementResponse.NaverStatSyncResponse basicResult =
-                naverAdSyncService.syncBasicStats(connectionId, statDate);
-        naverAdSyncService.syncConversionReports(connectionId, statDate);
-        return ResponseEntity.ok(DataResponse.from(basicResult));
+        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncBasicStats(connectionId, statDate)));
     }
 
     // 전환 리포트 동기화만 단독 실행
