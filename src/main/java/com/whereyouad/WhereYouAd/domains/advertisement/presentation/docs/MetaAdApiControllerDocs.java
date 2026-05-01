@@ -73,7 +73,7 @@ public interface MetaAdApiControllerDocs {
 
     @Operation(
             summary = "Meta 광고 데이터 갱신(사용자 새로고침 요청 처리용)",
-            description = "사용자가 Meta 마케팅 정보에 대해 '갱신(refresh)' 버튼 클릭 시 처리하는 API 입니다. "
+            description = "사용자가 Meta 마케팅 정보에 대해 '갱신(refresh)' 버튼 클릭 시 처리하는 API 입니다. 마케팅 정보 갱신은 관리자(role:ADMIN) 만 가능합니다."
                     + "관리자용 동기화(/sync)와 달리, 사용자에 대한 조직 멤버 검증과, 같은 조직에 대한 반복 요청을 60초 간격으로 제한하고, 동기화 기간은 최근 7일로 고정되어있습니다.\n\n"
                     + "반드시 최초 Meta 계정 연동이 되어있어야 정상 동작합니다."
     )

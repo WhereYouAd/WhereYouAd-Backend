@@ -2,8 +2,10 @@ package com.whereyouad.WhereYouAd.domains.advertisement.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.meta.MetaAuthService;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.meta.MetaSyncService;
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 
@@ -69,7 +71,7 @@ public class MetaAdApiService {
         return metaSyncService.syncAll(orgId, startDate, endDate);
     }
 
-    // 사용자가 Meta 마케팅 정보에 대해 갱신(refresh) 버튼 클릭시 정보 갱신 메서드
+    // 사용자가 Meta 마케팅 정보에 대해 갱신(refresh) 버튼 클릭시 정보 갱신 메서드 -> 조직 관리자(ADMIN) 만 요청 가능
     public MetaResponse.MetaSyncSummary refreshForUser(Long userId, Long orgId) {
 
         // 조직 존재 + 요청 사용자가 해당 조직 멤버인지 검증 
@@ -78,6 +80,14 @@ public class MetaAdApiService {
         }
         if (!orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
+        }
+
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        //조직 내 ADMIN 만 갱신 가능하도록 제약
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
         }
 
         // 쿨다운 체크 - 동일 조직에 대해 과도한 연타 요청 차단
