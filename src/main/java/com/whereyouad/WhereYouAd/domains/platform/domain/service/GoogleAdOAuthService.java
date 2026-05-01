@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -121,26 +122,37 @@ public class GoogleAdOAuthService {
             for (String resourceName : response.getResourceNamesList()) {
                 String customerId = resourceName.replace("customers/", "");
 
-                // PlatformAccount 생성 및 저장
-                PlatformAccount platformAccount = PlatformAccount.builder()
-                        .externalAccountId(customerId) // 구글 광고 계정 ID
-                        .accountName("Google Ads - " + customerId)
-                        .status(PlatformStatus.ACTIVE)
-                        .provider(Provider.GOOGLE)
-                        .organization(organization)
-                        .build();
-                platformAccountRepository.save(platformAccount);
+                // PlatformAccount 조회 및 없으면 생성
+                PlatformAccount platformAccount = platformAccountRepository.findByExternalAccountIdAndProvider(customerId, Provider.GOOGLE)
+                        .orElseGet(() -> {
+                            PlatformAccount newAccount = PlatformAccount.builder()
+                                    .externalAccountId(customerId) // 구글 광고 계정 ID
+                                    .accountName("Google Ads - " + customerId)
+                                    .status(PlatformStatus.ACTIVE)
+                                    .provider(Provider.GOOGLE)
+                                    .organization(organization)
+                                    .build();
+                            return platformAccountRepository.save(newAccount);
+                        });
 
-                // PlatformConnection 생성 및 저장
-                PlatformConnection platformConnection = PlatformConnection.builder()
-                        .authType(AuthType.OAUTH)
-                        .authIdentifier(clientId) // authIdentifier: 식별자 (클라이언트 ID 등)
-                        .authCredential(encryptedRefreshToken) // authCredential: refreshToken
-                        .tokenExpireAt(expiresInSeconds != null ? LocalDateTime.now().plusSeconds(expiresInSeconds) : null)
-                        .user(user)
-                        .platformAccount(platformAccount)
-                        .build();
-                platformConnectionRepository.save(platformConnection);
+                // PlatformConnection 조회 및 Upsert
+                Optional<PlatformConnection> existingConnection = platformConnectionRepository.findByUser_IdAndPlatformAccount_Id(user.getId(), platformAccount.getId());
+
+                if (existingConnection.isPresent()) {
+                    PlatformConnection conn = existingConnection.get();
+                    conn.updateAuth(clientId, encryptedRefreshToken, expiresInSeconds != null ? LocalDateTime.now().plusSeconds(expiresInSeconds) : null);
+                    platformConnectionRepository.save(conn);
+                } else {
+                    PlatformConnection platformConnection = PlatformConnection.builder()
+                            .authType(AuthType.OAUTH)
+                            .authIdentifier(clientId) // authIdentifier: 식별자 (클라이언트 ID 등)
+                            .authCredential(encryptedRefreshToken) // authCredential: refreshToken
+                            .tokenExpireAt(expiresInSeconds != null ? LocalDateTime.now().plusSeconds(expiresInSeconds) : null)
+                            .user(user)
+                            .platformAccount(platformAccount)
+                            .build();
+                    platformConnectionRepository.save(platformConnection);
+                }
             }
         }
 

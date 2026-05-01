@@ -46,4 +46,10 @@ public class PlatformConnection extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "platform_account_id")
     private PlatformAccount platformAccount;
+
+    public void updateAuth(String authIdentifier, String authCredential, LocalDateTime tokenExpireAt) {
+        this.authIdentifier = authIdentifier;
+        this.authCredential = authCredential;
+        this.tokenExpireAt = tokenExpireAt;
+    }
 }
