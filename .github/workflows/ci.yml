@@ -58,3 +58,7 @@ jobs:
           OPENAI_API_KEY: test_openai_key
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
           AES_SECRET: test_aes_key
+          GOOGLE_ADS_CLIENT_ID: test_google_client_id
+          GOOGLE_ADS_CLIENT_SECRET: test_google_client_secret
+          GOOGLE_ADS_OAUTH2_REDIRECT_URL: http://localhost:8080/api/google/callback
+          GOOGLE_ADS_DEVELOPER_TOKEN: test_google_developer_token
