@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -125,9 +126,29 @@ public class NaverAdApiService {
         }
     }
 
+    private void validateDownloadUrl(String downloadUrl) {
+        URI uri;
+        try {
+            uri = new URI(downloadUrl);
+        } catch (URISyntaxException e) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_DOWNLOAD_URL);
+        }
+        if (!"https".equals(uri.getScheme())) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_DOWNLOAD_URL);
+        }
+        if (uri.getUserInfo() != null) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_DOWNLOAD_URL);
+        }
+        String host = uri.getHost();
+        if (host == null || !host.endsWith(".naver.com")) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_DOWNLOAD_URL);
+        }
+    }
+
     // 보고서 다운로드 (원문 받아오기)
     @Transactional(readOnly = true)
     public NaverDTO.RawReportResponse downloadReport(Long connectionId, String downloadUrl) {
+        validateDownloadUrl(downloadUrl);
         try {
             URI uri = URI.create(downloadUrl);
             // 다운로드 Path를 바탕으로 서명 생성

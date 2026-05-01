@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum NaverAdErrorCode implements BaseErrorCode {
 
+    // 400
+    NAVER_INVALID_DOWNLOAD_URL(HttpStatus.BAD_REQUEST, "NAVER_400_1", "유효하지 않은 다운로드 URL입니다."),
 
     // 500
     NAVER_CAMPAIGN_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "NAVER_500_1", "네이버 캠페인 목록 조회에 실패했습니다."),
