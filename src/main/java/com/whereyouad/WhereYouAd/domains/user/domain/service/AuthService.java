@@ -108,8 +108,8 @@ public class AuthService {
         // AccessToken 남은 TTL 동안 Redis 에 블랙리스트로 등록 (만료/손상 토큰은 0 반환 -> 등록 생략)
         long remainingMillis = jwtTokenProvider.getRemainingExpirationMillis(accessToken);
         if (remainingMillis > 0) { //SecurityConfig 에서 만료 아님이 보장되지만 안전을 위해 확인
-            long remainingSeconds = Math.max(remainingMillis / 1000, 1);
-            redisUtil.setDataExpire(BLACKLIST_PREFIX + accessToken, "logout", remainingSeconds);
+            long remainingSeconds = Math.max((remainingMillis + 999) / 1000, 1);
+            redisUtil.setDataExpire(BLACKLIST_PREFIX + sha256(accessToken), "logout", remainingSeconds);
         }
 
         // RefreshToken 삭제 — 토큰에서 email(subject) 추출 실패 시에도 로그아웃 응답은 계속 진행
