@@ -3,6 +3,8 @@ package com.whereyouad.WhereYouAd.global.adapi.strategy;
 import com.google.auth.oauth2.UserCredentials;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
+import com.whereyouad.WhereYouAd.global.adapi.exception.AdApiHandler;
+import com.whereyouad.WhereYouAd.global.adapi.exception.code.AdApiErrorCode;
 import com.whereyouad.WhereYouAd.global.utils.AESUtil;
 import com.whereyouad.WhereYouAd.global.adapi.AdAuthStrategy;
 import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;
@@ -60,7 +62,8 @@ public class GoogleAdAuthStrategy implements AdAuthStrategy {
             credentials.refreshIfExpired();
         } catch (IOException e) {
             log.error("Google Access Token 갱신 중 네트워크 오류 발생", e);
-            throw new RuntimeException("구글 광고 API 토큰 갱신 실패", e);
+            throw new AdApiHandler(
+                    AdApiErrorCode.GOOGLE_TOKEN_REFRESH_FAILED);
         }
 
         String freshAccessToken = credentials.getAccessToken().getTokenValue();

@@ -13,6 +13,8 @@ import com.whereyouad.WhereYouAd.domains.platform.application.dto.response.Googl
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;
+import com.whereyouad.WhereYouAd.global.adapi.exception.AdApiHandler;
+import com.whereyouad.WhereYouAd.global.adapi.exception.code.AdApiErrorCode;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.GoogleAdWebClient;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.converter.GoogleConverter;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO;
@@ -115,6 +117,7 @@ public class GoogleAdService {
             }
         } catch (Exception e) {
             log.error("캠페인 JSON 파싱 및 저장 실패", e);
+            throw new AdApiHandler(AdApiErrorCode.GOOGLE_DATA_SYNC_FAILED);
         }
     }
 
@@ -146,6 +149,7 @@ public class GoogleAdService {
             }
         } catch (Exception e) {
             log.error("광고 그룹 JSON 파싱 및 저장 실패", e);
+            throw new AdApiHandler(AdApiErrorCode.GOOGLE_DATA_SYNC_FAILED);
         }
     }
 
@@ -183,6 +187,7 @@ public class GoogleAdService {
             }
         } catch (Exception e) {
             log.error("광고 소재 JSON 파싱 및 저장 실패", e);
+            throw new AdApiHandler(AdApiErrorCode.GOOGLE_DATA_SYNC_FAILED);
         }
     }
 
@@ -225,6 +230,7 @@ public class GoogleAdService {
             }
         } catch (Exception e) {
             log.error("통계 데이터(MetricFact) JSON 파싱 및 저장 실패", e);
+            throw new AdApiHandler(AdApiErrorCode.GOOGLE_DATA_SYNC_FAILED);
         }
     }
 }

@@ -25,6 +25,8 @@ import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
+import com.whereyouad.WhereYouAd.global.adapi.exception.AdApiHandler;
+import com.whereyouad.WhereYouAd.global.adapi.exception.code.AdApiErrorCode;
 import com.whereyouad.WhereYouAd.global.utils.AESUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -112,8 +114,9 @@ public class GoogleAdOAuthService {
             try {
                 encryptedBytes = aesUtil.encryptAES(refreshToken);
             } catch (GeneralSecurityException e) {
-                // 암호화 실패 시 런타임 에러 발생 (GlobalExceptionHandler에서 처리됨)
-                throw new RuntimeException("구글 토큰 암호화 중 오류가 발생했습니다.", e);
+                // 암호화 실패 시 AdApiHandler 발생
+                throw new AdApiHandler(
+                        AdApiErrorCode.GOOGLE_TOKEN_ENCRYPTION_ERROR);
             }
 
             String encryptedRefreshToken = new String(encryptedBytes);

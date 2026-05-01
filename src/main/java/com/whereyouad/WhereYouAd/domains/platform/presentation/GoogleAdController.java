@@ -10,14 +10,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.whereyouad.WhereYouAd.domains.platform.presentation.docs.GoogleAdDocs;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/google")
-public class GoogleAdController {
+public class GoogleAdController implements GoogleAdDocs {
 
     private final GoogleAdService googleAdService;
 
     // API 호출하여 전체 캠페인, 광고 그룹, 개별 광고 및 MetricFact 조회 및 저장
+    @Override
     @PostMapping("/ad-infos")
     public ResponseEntity<DataResponse<GoogleAdResponse.GoogleAdCreateReponse>> createAllAdInfos(@AuthenticationPrincipal(expression = "userId") Long userId) {
         GoogleAdResponse.GoogleAdCreateReponse googleAdCreateReponse = googleAdService.createAllAdInfos(userId);

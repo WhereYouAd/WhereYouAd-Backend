@@ -114,8 +114,8 @@ public class GoogleAdWebClient {
                         .bodyToMono(String.class)
                         .doOnError(org.springframework.web.reactive.function.client.WebClientResponseException.class, e -> {
                             log.error("[Google Ads API Error] Customer ID: {}", customerId);
-                            log.error("❌ 상태 코드: {}", e.getStatusCode());
-                            log.error("❌ 에러 상세 내용: {}", e.getResponseBodyAsString()); // <--- 이것이 핵심입니다!
+                            log.error("상태 코드: {}", e.getStatusCode());
+                            log.error("에러 상세 내용: {}", e.getResponseBodyAsString());
                         })
                         .doOnError(error -> {
                             // WebClientResponseException이 아닌 다른 에러(네트워크 단절 등)일 경우
