@@ -30,6 +30,7 @@ import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -271,8 +272,10 @@ public class NaverAdSyncService {
 
         try {
             // 1. 전환 리포트 생성 요청
+            String statDtForApi = LocalDate.parse(statDate, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
             NaverDTO.StatReportResponse reportInit = naverAdApiService.requestAdConversionReport(connectionId,
-                    statDate);
+                    statDtForApi);
 
             // 리포트 자체가 없으면 종료 (광고 승인이 아직 안된 경우)
             if (reportInit == null || reportInit.reportJobId() == null) {
