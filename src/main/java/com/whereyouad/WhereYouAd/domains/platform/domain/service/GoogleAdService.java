@@ -55,10 +55,14 @@ public class GoogleAdService {
 
         for (PlatformConnection connection : connections) {
             String customerId = connection.getPlatformAccount().getExternalAccountId();
-            syncAdCampaigns(customerId, connection, emptyRequest);
-            syncAdGroups(customerId, connection, emptyRequest);
-            syncAdContents(customerId, connection, emptyRequest);
-            syncMetricFacts(customerId, connection, emptyRequest);
+            try {
+                syncAdCampaigns(customerId, connection, emptyRequest);
+                syncAdGroups(customerId, connection, emptyRequest);
+                syncAdContents(customerId, connection, emptyRequest);
+                syncMetricFacts(customerId, connection, emptyRequest);
+            } catch (Exception e) {
+                log.warn("계정 [{}]의 구글 광고 데이터 연동 중 오류가 발생했습니다. (광고가 없는 계정이거나 권한 문제일 수 있습니다.) 사유: {}", customerId, e.getMessage());
+            }
         }
 
         return new GoogleAdResponse.GoogleAdCreateReponse("구글 광고 데이터 연동 완료");
@@ -71,10 +75,14 @@ public class GoogleAdService {
 
         for (PlatformConnection connection : connections) {
             String customerId = connection.getPlatformAccount().getExternalAccountId();
-            syncAdCampaigns(customerId, connection, emptyRequest);
-            syncAdGroups(customerId, connection, emptyRequest);
-            syncAdContents(customerId, connection, emptyRequest);
-            syncMetricFacts(customerId, connection, emptyRequest);
+            try {
+                syncAdCampaigns(customerId, connection, emptyRequest);
+                syncAdGroups(customerId, connection, emptyRequest);
+                syncAdContents(customerId, connection, emptyRequest);
+                syncMetricFacts(customerId, connection, emptyRequest);
+            } catch (Exception e) {
+                log.warn("계정 [{}]의 구글 광고 데이터 동기화 중 오류가 발생했습니다. 사유: {}", customerId, e.getMessage());
+            }
         }
     }
 
@@ -134,9 +142,6 @@ public class GoogleAdService {
                     } else {
                         adGroupRepository.save(newGroup);
                     }
-
-                    AdGroup adGroup = googleConverter.toAdGroup(result, adCampaign);
-                    adGroupRepository.save(adGroup);
                 }
             }
         } catch (Exception e) {
