@@ -159,3 +159,8 @@ google:
     client-secret: ${GOOGLE_ADS_CLIENT_SECRET}
     redirect-uri: ${GOOGLE_ADS_OAUTH2_REDIRECT_URL}
     developer-token: ${GOOGLE_ADS_DEVELOPER_TOKEN}
+
+# 12. 로깅 설정
+logging:
+  level:
+    org.apache.kafka: ERROR
