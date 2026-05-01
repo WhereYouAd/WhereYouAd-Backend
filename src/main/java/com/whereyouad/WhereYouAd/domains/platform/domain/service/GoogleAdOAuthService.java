@@ -25,11 +25,13 @@ import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
+import com.whereyouad.WhereYouAd.global.utils.AESUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 
 @Service
@@ -59,6 +61,8 @@ public class GoogleAdOAuthService {
     private final UserRepository userRepository;
 
     private final OrgMemberRepository orgMemberRepository;
+
+    private final AESUtil aesUtil;
 
     public String exchangeCodeAndSavePlatformConnection(Long userId, Long orgId, String code) throws IOException {
         Organization organization = orgRepository.findById(orgId).orElseThrow(() -> {
@@ -103,6 +107,16 @@ public class GoogleAdOAuthService {
                     ListAccessibleCustomersRequest.newBuilder().build()
             );
 
+            byte[] encryptedBytes;
+            try {
+                encryptedBytes = aesUtil.encryptAES(refreshToken);
+            } catch (GeneralSecurityException e) {
+                // 암호화 실패 시 런타임 에러 발생 (GlobalExceptionHandler에서 처리됨)
+                throw new RuntimeException("구글 토큰 암호화 중 오류가 발생했습니다.", e);
+            }
+
+            String encryptedRefreshToken = new String(encryptedBytes);
+
             // 찾아온 광고 계정 목록을 DB에 저장 (계정이 여러 개)
             for (String resourceName : response.getResourceNamesList()) {
                 String customerId = resourceName.replace("customers/", "");
@@ -121,7 +135,7 @@ public class GoogleAdOAuthService {
                 PlatformConnection platformConnection = PlatformConnection.builder()
                         .authType(AuthType.OAUTH)
                         .authIdentifier(clientId) // authIdentifier: 식별자 (클라이언트 ID 등)
-                        .authCredential(refreshToken) // authCredential: refreshToken
+                        .authCredential(encryptedRefreshToken) // authCredential: refreshToken
                         .tokenExpireAt(expiresInSeconds != null ? LocalDateTime.now().plusSeconds(expiresInSeconds) : null)
                         .user(user)
                         .platformAccount(platformAccount)
