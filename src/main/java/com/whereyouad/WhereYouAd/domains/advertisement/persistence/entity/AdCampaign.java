@@ -75,4 +75,12 @@ public class AdCampaign extends BaseEntity {
     public void relateProject(Project project) {
         this.project = project;
     }
+
+    public void update(String name, Status status, Long budget, LocalDate startDate, LocalDate endDate) {
+        this.name = name;
+        this.status = status;
+        this.budget = budget;
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
 }

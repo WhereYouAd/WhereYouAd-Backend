@@ -40,4 +40,9 @@ public class AdGroup extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_campaign_id")
     private AdCampaign adCampaign;
+
+    public void update(String name, Status status) {
+        this.name = name;
+        this.status = status;
+    }
 }
