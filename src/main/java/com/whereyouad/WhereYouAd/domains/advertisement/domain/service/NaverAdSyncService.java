@@ -195,6 +195,18 @@ public class NaverAdSyncService {
         return count;
     }
 
+    // 메타데이터 + 기본 통계 + 전환 리포트 한 번에 동기화
+    public AdvertisementResponse.NaverFullSyncResponse syncAll(Long connectionId, String statDate) {
+        log.info("NAVER 전체 동기화 시작 - connectionId: {}, statDate: {}", connectionId, statDate);
+
+        AdvertisementResponse.NaverMetadataSyncResponse metadata = syncAllMetadata(connectionId);
+        AdvertisementResponse.NaverStatSyncResponse basicStats = syncBasicStats(connectionId, statDate);
+        AdvertisementResponse.NaverStatSyncResponse conversions = syncConversionReports(connectionId, statDate);
+
+        log.info("NAVER 전체 동기화 완료 - connectionId: {}, statDate: {}", connectionId, statDate);
+        return new AdvertisementResponse.NaverFullSyncResponse(connectionId, statDate, metadata, basicStats, conversions);
+    }
+
     // 일별 기본 지표 MetricFact upsert (/stats 사용)
     public AdvertisementResponse.NaverStatSyncResponse syncBasicStats(Long connectionId, String statDate) {
         log.info("NAVER Basic Stats 동기화 시작 - connectionId: {}, date: {}", connectionId, statDate);

@@ -53,4 +53,13 @@ public class AdvertisementResponse {
             String statDate,
             int processedAdContentCount
     ) {}
+
+    // 네이버 전체 동기화 결과 (메타데이터 + 기본 통계 + 전환 리포트)
+    public record NaverFullSyncResponse(
+            Long connectionId,
+            String statDate,
+            NaverMetadataSyncResponse metadata,
+            NaverStatSyncResponse basicStats,
+            NaverStatSyncResponse conversions
+    ) {}
 }
