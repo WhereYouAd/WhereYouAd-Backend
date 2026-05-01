@@ -16,9 +16,13 @@ import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.GoogleAdWebClient;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.converter.GoogleConverter;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -39,11 +43,20 @@ public class GoogleAdService {
 
     private final ObjectMapper objectMapper;
 
-    public GoogleAdResponse.GoogleAdCreateReponse createAllAdInfos(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
-        syncAdCampaigns(customerId, platformConnection, request);
-        syncAdGroups(customerId, platformConnection, request);
-        syncAdContents(customerId, platformConnection, request);
-        syncMetricFacts(customerId, platformConnection, request);
+    private final PlatformConnectionRepository platformConnectionRepository;
+
+    public GoogleAdResponse.GoogleAdCreateReponse createAllAdInfos(Long userId) {
+        List<PlatformConnection> connections = platformConnectionRepository.findByUser_IdAndPlatformAccount_Provider(userId, Provider.GOOGLE);
+        
+        AdAuthRequest emptyRequest = AdAuthRequest.empty();
+
+        for (PlatformConnection connection : connections) {
+            String customerId = connection.getPlatformAccount().getExternalAccountId();
+            syncAdCampaigns(customerId, connection, emptyRequest);
+            syncAdGroups(customerId, connection, emptyRequest);
+            syncAdContents(customerId, connection, emptyRequest);
+            syncMetricFacts(customerId, connection, emptyRequest);
+        }
 
         return new GoogleAdResponse.GoogleAdCreateReponse("구글 광고 데이터 연동 완료");
     }
