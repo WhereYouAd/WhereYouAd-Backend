@@ -64,4 +64,6 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
                 "JOIN FETCH ag.adCampaign " +
                 "WHERE ac.id = :id")
         Optional<AdContent> findByIdWithGroupAndCampaign(@Param("id") Long id);
+
+        Optional<AdContent> findByExternalAdId(String externalAdId);
 }

@@ -64,6 +64,7 @@ public class GoogleConverter {
 
         return AdContent.builder()
                 .name(ad != null ? ad.getName() : null)
+                .externalAdId(ad != null ? ad.getId() : null)
                 .type(ad != null ? ad.getType() : null)
                 .trackingUrl(ad != null ? ad.getTrackingUrlTemplate() : null)
                 .landingUrl(landingUrl)

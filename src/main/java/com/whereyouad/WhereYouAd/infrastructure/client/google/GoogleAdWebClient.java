@@ -28,13 +28,15 @@ public class GoogleAdWebClient {
 
         String requestBody = "{\n" +
                 "  \"query\": \"SELECT " +
+                "campaign.id, " +           // 캠페인 ID 추가
+                "ad_group_ad.ad.id, " +     // 광고 소재 ID 추가
                 "segments.date, " +
                 "metrics.impressions, " +
                 "metrics.clicks, " +
                 "metrics.conversions, " +
                 "metrics.cost_micros, " +
                 "metrics.conversions_value " +
-                "FROM customer " +
+                "FROM ad_group_ad " +       // customer 대신 ad_group_ad 에서 조회
                 "WHERE segments.date = '" + targetDate + "'\"\n" +
                 "}";
 

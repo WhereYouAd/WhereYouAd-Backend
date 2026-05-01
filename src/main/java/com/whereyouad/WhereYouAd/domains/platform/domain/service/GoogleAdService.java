@@ -19,7 +19,6 @@ import com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -78,8 +77,13 @@ public class GoogleAdService {
 
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.AdGroupResult result : response.getResults()) {
-                    // TODO: 연관된 AdCampaign을 DB에서 조회하여 매핑 필요 (현재는 null 전달)
-                    AdCampaign adCampaign = null;
+                    String externalCampaignId = result.getCampaign().getId();
+                    AdCampaign adCampaign = adCampaignRepository.findByExternalCampaignId(result.getCampaign().getId()).orElse(null);
+
+                    if (adCampaign == null) {
+                        log.warn("연관된 AdCampaign을 찾을 수 없어 AdGroup 저장을 건너뜁니다. (ExternalCampaignId: {})", externalCampaignId);
+                        continue;
+                    }
 
                     AdGroup adGroup = googleConverter.toAdGroup(result, adCampaign);
                     adGroupRepository.save(adGroup);
@@ -100,8 +104,13 @@ public class GoogleAdService {
 
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.AdContentResult result : response.getResults()) {
-                    // TODO: 연관된 AdGroup을 DB에서 조회하여 매핑 필요 (현재는 null 전달)
-                    AdGroup adGroup = null;
+                    String externalGroupId = result.getAdGroup().getId();
+                    AdGroup adGroup = adGroupRepository.findByExternalGroupId(result.getAdGroup().getId()).orElse(null);
+
+                    if (adGroup == null) {
+                        log.warn("연관된 AdGroup을 찾을 수 없어 AdContent 저장을 건너뜁니다. (ExternalGroupId: {})", externalGroupId);
+                        continue;
+                    }
 
                     AdContent adContent = googleConverter.toAdContent(result, adGroup);
                     adContentRepository.save(adContent);
@@ -122,10 +131,21 @@ public class GoogleAdService {
 
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.MetricFactResult result : response.getResults()) {
+                    String googleCampaignId = result.getCampaign() != null ? result.getCampaign().getId() : null;
+                    String googleAdId = result.getAdGroupAd() != null && result.getAdGroupAd().getAd() != null
+                            ? result.getAdGroupAd().getAd().getId() : null;
+
                     // TODO: 연관 엔티티들을 DB에서 조회하여 매핑 필요 (현재는 null 전달)
-                    AdCampaign adCampaign = null;
-                    AdContent adContent = null;
-                    Project project = null;
+                    AdCampaign adCampaign = googleCampaignId != null
+                            ? adCampaignRepository.findByExternalCampaignId(googleCampaignId).orElse(null)
+                            : null;
+
+                    AdContent adContent = googleAdId != null
+                            ? adContentRepository.findByExternalAdId(googleAdId).orElse(null)
+                            : null;
+
+                    // Project는 AdCampaign 연관관계를 통해 획득
+                    Project project = adCampaign != null ? adCampaign.getProject() : null;
 
                     MetricFact metricFact = googleConverter.toMetricFact(result, adCampaign, adContent, project, platformConnection.getPlatformAccount());
                     metricFactRepository.save(metricFact);

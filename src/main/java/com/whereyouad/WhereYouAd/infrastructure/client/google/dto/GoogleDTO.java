@@ -113,6 +113,8 @@ public class GoogleDTO {
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MetricFactResult {
+        private AdCampaignNode campaign;
+        private AdGroupAdNode adGroupAd;
         private MetricsNode metrics;
         private SegmentsNode segments;
     }

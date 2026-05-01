@@ -22,6 +22,6 @@ public class GoogleAdController {
     @PostMapping("/ad-infos")
     public ResponseEntity<DataResponse<GoogleAdResponse.GoogleAdCreateReponse>> createAllAdInfos(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
         GoogleAdResponse.GoogleAdCreateReponse googleAdCreateReponse = googleAdService.createAllAdInfos(customerId, platformConnection, request);
-        return DataResponse.ok(DataResponse.from(googleAdCreateReponse));
+        return ResponseEntity.ok(DataResponse.from(googleAdCreateReponse));
     }
 }
