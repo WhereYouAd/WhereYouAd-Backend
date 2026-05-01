@@ -33,6 +33,9 @@ public class GoogleAdAuthStrategy implements AdAuthStrategy {
     @Value("${google.ads.developer-token}")
     private String developerToken;
 
+    @Value("${google.ads.login-customer-id:}")
+    private String loginCustomerId;
+
     @Override
     public Provider getProvider() {
         return Provider.GOOGLE;
@@ -66,6 +69,10 @@ public class GoogleAdAuthStrategy implements AdAuthStrategy {
         headers.put("developer-token", developerToken);
         headers.put("Authorization", "Bearer " + freshAccessToken);
         headers.put("Content-Type", "application/json");
+
+        if (loginCustomerId != null && !loginCustomerId.isBlank()) {
+            headers.put("login-customer-id", loginCustomerId);
+        }
 
         return headers;
     }
