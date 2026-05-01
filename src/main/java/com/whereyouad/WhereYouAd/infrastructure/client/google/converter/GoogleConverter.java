@@ -36,8 +36,8 @@ public class GoogleConverter {
                 .provider(Provider.GOOGLE)
                 .status(campaign != null ? mapStatus(campaign.getStatus()) : Status.OVER)
                 .budget(budgetAmount)
-                .startDate(campaign != null ? parseDate(campaign.getStartDate()) : null)
-                .endDate(campaign != null ? parseDate(campaign.getEndDate()) : null)
+                .startDate(campaign != null ? parseDate(campaign.getStartDateTime()) : null)
+                .endDate(campaign != null ? parseDate(campaign.getEndDateTime()) : null)
                 .platformAccount(platformAccount)
                 .build();
     }
@@ -126,6 +126,9 @@ public class GoogleConverter {
             return null;
         }
         try {
+            if (dateStr.length() >= 10) {
+                return LocalDate.parse(dateStr.substring(0, 10));
+            }
             return LocalDate.parse(dateStr);
         } catch (DateTimeParseException e) {
             return null;

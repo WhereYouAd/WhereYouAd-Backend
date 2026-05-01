@@ -27,8 +27,8 @@ public class GoogleDTO {
         private String id;
         private String name;
         private String status;
-        private String startDate;
-        private String endDate;
+        private String startDateTime;
+        private String endDateTime;
     }
 
     @Getter

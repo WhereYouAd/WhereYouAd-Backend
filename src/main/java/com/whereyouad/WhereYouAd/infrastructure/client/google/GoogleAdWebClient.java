@@ -19,7 +19,7 @@ public class GoogleAdWebClient {
 
     private final WebClient webClient;
     private final GoogleAdAuthStrategy googleAdAuthStrategy;
-    private final String apiBaseUrl = "https://googleads.googleapis.com/v15/customers/";
+    private final String apiBaseUrl = "https://googleads.googleapis.com/v23/customers/";
 
     // 1일간의 MetricFact(통계) 조회
     public Mono<String> searchGoogleAdsData(String customerId, PlatformConnection connection, AdAuthRequest request) {
@@ -52,8 +52,8 @@ public class GoogleAdWebClient {
                 "campaign.id, " +
                 "campaign.name, " +
                 "campaign.status, " +
-                "campaign.start_date, " +
-                "campaign.end_date, " +
+                "campaign.start_date_time, " +
+                "campaign.end_date_time, " +
                 "campaign_budget.amount_micros, " +
                 "campaign.advertising_channel_type " +
                 "FROM campaign " +
@@ -112,7 +112,17 @@ public class GoogleAdWebClient {
                         .bodyValue(requestBody)
                         .retrieve()
                         .bodyToMono(String.class)
-                        .doOnError(error -> log.error("[Google Ads API Error] Customer ID: {}", customerId, error));
+                        .doOnError(org.springframework.web.reactive.function.client.WebClientResponseException.class, e -> {
+                            log.error("[Google Ads API Error] Customer ID: {}", customerId);
+                            log.error("❌ 상태 코드: {}", e.getStatusCode());
+                            log.error("❌ 에러 상세 내용: {}", e.getResponseBodyAsString()); // <--- 이것이 핵심입니다!
+                        })
+                        .doOnError(error -> {
+                            // WebClientResponseException이 아닌 다른 에러(네트워크 단절 등)일 경우
+                            if (!(error instanceof org.springframework.web.reactive.function.client.WebClientResponseException)) {
+                                log.error("[Google Ads API Network Error] Customer ID: {}", customerId, error);
+                            }
+                        });
 
             } catch (Exception e) {
                 return Mono.error(new RuntimeException("구글 헤더 생성 및 토큰 갱신 실패", e));
