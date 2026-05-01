@@ -165,4 +165,6 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("orgId") Long orgId,
             @Param("provider") Provider provider
     );
+
+    Optional<MetricFact> findByPlatformAccount_IdAndAdContent_IdAndTimeBucket(Long platformAccountId, Long adContentId, LocalDateTime timeBucket);
 }

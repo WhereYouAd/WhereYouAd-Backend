@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -63,6 +64,20 @@ public class GoogleAdService {
         return new GoogleAdResponse.GoogleAdCreateReponse("구글 광고 데이터 연동 완료");
     }
 
+    @Transactional
+    public void syncAllGoogleAdsData() {
+        List<PlatformConnection> connections = platformConnectionRepository.findByPlatformAccount_Provider(Provider.GOOGLE);
+        AdAuthRequest emptyRequest = AdAuthRequest.empty();
+
+        for (PlatformConnection connection : connections) {
+            String customerId = connection.getPlatformAccount().getExternalAccountId();
+            syncAdCampaigns(customerId, connection, emptyRequest);
+            syncAdGroups(customerId, connection, emptyRequest);
+            syncAdContents(customerId, connection, emptyRequest);
+            syncMetricFacts(customerId, connection, emptyRequest);
+        }
+    }
+
     private void syncAdCampaigns(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
         String jsonResponse = googleAdWebClient.searchAllCampaigns(customerId, platformConnection, request).block();
 
@@ -73,8 +88,21 @@ public class GoogleAdService {
 
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.AdCampaignResult result : response.getResults()) {
-                    AdCampaign adCampaign = googleConverter.toAdCampaign(result, platformConnection.getPlatformAccount());
-                    adCampaignRepository.save(adCampaign);
+                    String externalId = result.getCampaign().getId();
+                    Optional<AdCampaign> existing = adCampaignRepository.findByExternalCampaignId(externalId);
+                    AdCampaign newCampaign = googleConverter.toAdCampaign(result, platformConnection.getPlatformAccount());
+                    
+                    if (existing.isPresent()) {
+                        existing.get().update(
+                                newCampaign.getName(),
+                                newCampaign.getStatus(),
+                                newCampaign.getBudget(),
+                                newCampaign.getStartDate(),
+                                newCampaign.getEndDate()
+                        );
+                    } else {
+                        adCampaignRepository.save(newCampaign);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -93,11 +121,18 @@ public class GoogleAdService {
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.AdGroupResult result : response.getResults()) {
                     String externalCampaignId = result.getCampaign().getId();
-                    AdCampaign adCampaign = adCampaignRepository.findByExternalCampaignId(result.getCampaign().getId()).orElse(null);
+                    AdCampaign adCampaign = adCampaignRepository.findByExternalCampaignId(externalCampaignId).orElse(null);
 
-                    if (adCampaign == null) {
-                        log.warn("연관된 AdCampaign을 찾을 수 없어 AdGroup 저장을 건너뜁니다. (ExternalCampaignId: {})", externalCampaignId);
-                        continue;
+                    if (adCampaign == null) continue;
+
+                    String externalGroupId = result.getAdGroup().getId();
+                    Optional<AdGroup> existing = adGroupRepository.findByExternalGroupId(externalGroupId);
+                    AdGroup newGroup = googleConverter.toAdGroup(result, adCampaign);
+
+                    if (existing.isPresent()) {
+                        existing.get().update(newGroup.getName(), newGroup.getStatus());
+                    } else {
+                        adGroupRepository.save(newGroup);
                     }
 
                     AdGroup adGroup = googleConverter.toAdGroup(result, adCampaign);
@@ -120,15 +155,25 @@ public class GoogleAdService {
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.AdContentResult result : response.getResults()) {
                     String externalGroupId = result.getAdGroup().getId();
-                    AdGroup adGroup = adGroupRepository.findByExternalGroupId(result.getAdGroup().getId()).orElse(null);
+                    AdGroup adGroup = adGroupRepository.findByExternalGroupId(externalGroupId).orElse(null);
 
-                    if (adGroup == null) {
-                        log.warn("연관된 AdGroup을 찾을 수 없어 AdContent 저장을 건너뜁니다. (ExternalGroupId: {})", externalGroupId);
-                        continue;
+                    if (adGroup == null) continue;
+
+                    String externalAdId = result.getAdGroupAd().getAd().getId();
+                    Optional<AdContent> existing = adContentRepository.findByExternalAdId(externalAdId);
+                    AdContent newContent = googleConverter.toAdContent(result, adGroup);
+
+                    if (existing.isPresent()) {
+                        existing.get().update(
+                                newContent.getName(),
+                                newContent.getType(),
+                                newContent.getTrackingUrl(),
+                                newContent.getLandingUrl(),
+                                newContent.getStatus()
+                        );
+                    } else {
+                        adContentRepository.save(newContent);
                     }
-
-                    AdContent adContent = googleConverter.toAdContent(result, adGroup);
-                    adContentRepository.save(adContent);
                 }
             }
         } catch (Exception e) {
@@ -147,23 +192,30 @@ public class GoogleAdService {
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.MetricFactResult result : response.getResults()) {
                     String googleCampaignId = result.getCampaign() != null ? result.getCampaign().getId() : null;
-                    String googleAdId = result.getAdGroupAd() != null && result.getAdGroupAd().getAd() != null
-                            ? result.getAdGroupAd().getAd().getId() : null;
+                    String googleAdId = result.getAdGroupAd() != null && result.getAdGroupAd().getAd() != null ? result.getAdGroupAd().getAd().getId() : null;
 
-                    // TODO: 연관 엔티티들을 DB에서 조회하여 매핑 필요 (현재는 null 전달)
-                    AdCampaign adCampaign = googleCampaignId != null
-                            ? adCampaignRepository.findByExternalCampaignId(googleCampaignId).orElse(null)
-                            : null;
-
-                    AdContent adContent = googleAdId != null
-                            ? adContentRepository.findByExternalAdId(googleAdId).orElse(null)
-                            : null;
-
-                    // Project는 AdCampaign 연관관계를 통해 획득
+                    AdCampaign adCampaign = googleCampaignId != null ? adCampaignRepository.findByExternalCampaignId(googleCampaignId).orElse(null) : null;
+                    AdContent adContent = googleAdId != null ? adContentRepository.findByExternalAdId(googleAdId).orElse(null) : null;
                     Project project = adCampaign != null ? adCampaign.getProject() : null;
 
-                    MetricFact metricFact = googleConverter.toMetricFact(result, adCampaign, adContent, project, platformConnection.getPlatformAccount());
-                    metricFactRepository.save(metricFact);
+                    MetricFact newFact = googleConverter.toMetricFact(result, adCampaign, adContent, project, platformConnection.getPlatformAccount());
+
+                    if (adContent != null && newFact.getTimeBucket() != null) {
+                        Optional<MetricFact> existing = metricFactRepository.findByPlatformAccount_IdAndAdContent_IdAndTimeBucket(
+                                platformConnection.getPlatformAccount().getId(), adContent.getId(), newFact.getTimeBucket());
+
+                        if (existing.isPresent()) {
+                            existing.get().update(
+                                    newFact.getImpressions(),
+                                    newFact.getClicks(),
+                                    newFact.getConversions(),
+                                    newFact.getSpend(),
+                                    newFact.getRevenue()
+                            );
+                        } else {
+                            metricFactRepository.save(newFact);
+                        }
+                    }
                 }
             }
         } catch (Exception e) {

@@ -13,4 +13,7 @@ public interface PlatformConnectionRepository extends JpaRepository<PlatformConn
 
     // 사용자 ID와 플랫폼으로 등록된 연동 정보 목록 조회
     List<PlatformConnection> findByUser_IdAndPlatformAccount_Provider(Long userId, Provider provider);
+
+    // 플랫폼으로 등록된 모든 연동 정보 목록 조회 (스케줄러용)
+    List<PlatformConnection> findByPlatformAccount_Provider(Provider provider);
 }
