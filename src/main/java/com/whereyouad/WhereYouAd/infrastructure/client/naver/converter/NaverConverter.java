@@ -21,6 +21,7 @@ public class NaverConverter {
 
     // 캠페인 생성용
     public static AdCampaign toAdCampaignEntity(NaverDTO.CampaignResponse dto, Organization organization, PlatformAccount platformAccount) {
+        Goal goal = mapToDomainGoal(dto.campaignTp());
         return AdCampaign.builder()
                 .externalCampaignId(dto.nccCampaignId())
                 .name(dto.name())
@@ -31,20 +32,23 @@ public class NaverConverter {
                 .budget(dto.useDailyBudget() != null && dto.useDailyBudget() ? dto.dailyBudget() : null)
                 .startDate(parseLocalDate(dto.periodStartDt()))
                 .endDate(parseLocalDate(dto.periodEndDt()))
-                .goal(mapToDomainGoal(dto.campaignTp()))
+                .goal(goal)
+                .description(buildCampaignDescription(dto.name(), goal))
                 .build();
     }
 
     // 캠페인 갱신용
     public static void updateAdCampaign(AdCampaign entity, NaverDTO.CampaignResponse dto) {
         Long budget = dto.useDailyBudget() != null && dto.useDailyBudget() ? dto.dailyBudget() : null;
+        Goal goal = mapToDomainGoal(dto.campaignTp());
         entity.updateNaverMetadata(
                 dto.name(),
                 mapToDomainStatus(dto.status()),
                 budget,
                 parseLocalDate(dto.periodStartDt()),
                 parseLocalDate(dto.periodEndDt()),
-                mapToDomainGoal(dto.campaignTp())
+                goal,
+                buildCampaignDescription(dto.name(), goal)
         );
     }
 
@@ -130,6 +134,19 @@ public class NaverConverter {
             case "SHOPPING", "POWER_CONTENTS", "BRAND_SEARCH", "PLACE" -> Goal.POPULAR;
             case "APP" -> Goal.DOWNLOAD;
             default -> Goal.TRAFFIC;
+        };
+    }
+
+    private static String buildCampaignDescription(String name, Goal goal) {
+        return String.format("네이버 API 자동 연동 캠페인 (이름: %s, 목표: %s)", name, goalToKorean(goal));
+    }
+
+    private static String goalToKorean(Goal goal) {
+        if (goal == null) return "알 수 없음";
+        return switch (goal) {
+            case TRAFFIC -> "트래픽";
+            case POPULAR -> "인기도";
+            case DOWNLOAD -> "다운로드";
         };
     }
 
