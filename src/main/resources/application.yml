@@ -164,4 +164,4 @@ google:
 # 12. 로깅 설정
 logging:
   level:
-    org.apache.kafka: ERROR
+    org.apache.kafka: WARN
