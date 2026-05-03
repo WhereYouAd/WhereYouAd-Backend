@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.infrastructure.client.google.converter;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
@@ -30,14 +31,20 @@ public class GoogleConverter {
             budgetAmount = budget.getAmountMicros() / 1_000_000L;
         }
 
+        Goal goal = campaign != null ? mapGoal(campaign.getAdvertisingChannelType()) : null;
+        String description = "구글 API 자동 연동 캠페인 (이름 : " + (campaign != null ? campaign.getName() : "알 수 없음") + " 목표: " + (goal != null ? goal.name() : "기타") + ")";
+
         return AdCampaign.builder()
                 .externalCampaignId(campaign != null ? campaign.getId() : null)
                 .name(campaign != null ? campaign.getName() : null)
                 .provider(Provider.GOOGLE)
+                .description(campaign != null ? description : null)
                 .status(campaign != null ? mapStatus(campaign.getStatus()) : Status.OVER)
                 .budget(budgetAmount)
+                .goal(goal)
                 .startDate(campaign != null ? parseDate(campaign.getStartDateTime()) : null)
                 .endDate(campaign != null ? parseDate(campaign.getEndDateTime()) : null)
+                .organization(platformAccount.getOrganization())
                 .platformAccount(platformAccount)
                 .build();
     }
@@ -138,5 +145,26 @@ public class GoogleConverter {
     private LocalDateTime parseDateTime(String dateStr) {
         LocalDate date = parseDate(dateStr);
         return date != null ? date.atStartOfDay() : null;
+    }
+
+    private Goal mapGoal(String advertisingChannelType) {
+        if (advertisingChannelType == null) {
+            return null;
+        }
+        switch (advertisingChannelType.toUpperCase()) {
+            case "SEARCH":
+            case "DISPLAY":
+                return Goal.TRAFFIC;
+            case "MULTI_CHANNEL":
+            case "SHOPPING":
+            case "PERFORMANCE_MAX":
+                return Goal.POPULAR;
+            case "HOTEL":
+            case "LOCAL":
+            case "APP":
+                return Goal.DOWNLOAD;
+            default:
+                return Goal.POPULAR;
+        }
     }
 }

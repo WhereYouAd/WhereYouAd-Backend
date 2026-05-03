@@ -107,8 +107,10 @@ public class GoogleAdService {
                                 newCampaign.getName(),
                                 newCampaign.getStatus(),
                                 newCampaign.getBudget(),
+                                newCampaign.getDescription(),
                                 newCampaign.getStartDate(),
-                                newCampaign.getEndDate()
+                                newCampaign.getEndDate(),
+                                newCampaign.getGoal()
                         );
                     } else {
                         adCampaignRepository.save(newCampaign);
