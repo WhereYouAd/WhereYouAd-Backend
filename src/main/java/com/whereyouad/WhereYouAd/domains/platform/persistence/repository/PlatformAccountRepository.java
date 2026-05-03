@@ -7,5 +7,5 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import java.util.Optional;
 
 public interface PlatformAccountRepository extends JpaRepository<PlatformAccount, Long> {
-    Optional<PlatformAccount> findByExternalAccountIdAndProvider(String externalAccountId, Provider provider);
+    Optional<PlatformAccount> findByExternalAccountIdAndProviderAndOrganization_Id(String externalAccountId, Provider provider, Long orgId);
 }

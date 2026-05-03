@@ -126,7 +126,7 @@ public class GoogleAdOAuthService {
                 String customerId = resourceName.replace("customers/", "");
 
                 // PlatformAccount 조회 및 없으면 생성
-                PlatformAccount platformAccount = platformAccountRepository.findByExternalAccountIdAndProvider(customerId, Provider.GOOGLE)
+                PlatformAccount platformAccount = platformAccountRepository.findByExternalAccountIdAndProviderAndOrganization_Id(customerId, Provider.GOOGLE, organization.getId())
                         .orElseGet(() -> {
                             PlatformAccount newAccount = PlatformAccount.builder()
                                     .externalAccountId(customerId) // 구글 광고 계정 ID
