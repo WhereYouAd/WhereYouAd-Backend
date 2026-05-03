@@ -29,6 +29,7 @@ public class GoogleDTO {
         private String status;
         private String startDateTime;
         private String endDateTime;
+        private String advertisingChannelType;
     }
 
     @Getter
