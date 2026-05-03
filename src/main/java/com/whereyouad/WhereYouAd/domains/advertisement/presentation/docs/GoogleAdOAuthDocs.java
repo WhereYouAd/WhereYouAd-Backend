@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.platform.presentation.docs;
+package com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs;
 
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;

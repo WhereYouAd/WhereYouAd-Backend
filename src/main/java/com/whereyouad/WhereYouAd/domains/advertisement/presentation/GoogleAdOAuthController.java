@@ -1,7 +1,7 @@
-package com.whereyouad.WhereYouAd.domains.platform.presentation;
+package com.whereyouad.WhereYouAd.domains.advertisement.presentation;
 
-import com.whereyouad.WhereYouAd.domains.platform.domain.service.GoogleAdOAuthService;
-import com.whereyouad.WhereYouAd.domains.platform.presentation.docs.GoogleAdOAuthDocs;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.google.GoogleAdOAuthService;
+import com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs.GoogleAdOAuthDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,6 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.platform.presentation.scheduler;
 
-import com.whereyouad.WhereYouAd.domains.platform.domain.service.GoogleAdService;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.google.GoogleAdService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

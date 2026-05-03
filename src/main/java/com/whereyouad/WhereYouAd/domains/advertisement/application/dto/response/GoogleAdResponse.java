@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.platform.application.dto.response;
+package com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response;
 
 public class GoogleAdResponse {
     public record GoogleAdCreateReponse (

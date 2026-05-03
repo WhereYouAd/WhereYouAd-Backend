@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.platform.domain.service;
+package com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.google;
 
 import com.google.ads.googleads.lib.GoogleAdsClient;
 import com.google.ads.googleads.v23.services.CustomerServiceClient;

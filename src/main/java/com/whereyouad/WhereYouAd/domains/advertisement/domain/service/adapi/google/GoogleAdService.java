@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.platform.domain.service;
+package com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.google;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
@@ -9,7 +9,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Ad
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
-import com.whereyouad.WhereYouAd.domains.platform.application.dto.response.GoogleAdResponse;
+import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.GoogleAdResponse;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;

@@ -1,7 +1,7 @@
-package com.whereyouad.WhereYouAd.domains.platform.presentation;
+package com.whereyouad.WhereYouAd.domains.advertisement.presentation;
 
-import com.whereyouad.WhereYouAd.domains.platform.application.dto.response.GoogleAdResponse;
-import com.whereyouad.WhereYouAd.domains.platform.domain.service.GoogleAdService;
+import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.GoogleAdResponse;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.google.GoogleAdService;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.whereyouad.WhereYouAd.domains.platform.presentation.docs.GoogleAdDocs;
+import com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs.GoogleAdDocs;
 
 @RestController
 @RequiredArgsConstructor
