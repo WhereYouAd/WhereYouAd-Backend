@@ -67,7 +67,7 @@ public class GoogleAdOAuthService {
 
     private final AESUtil aesUtil;
 
-    public String exchangeCodeAndSavePlatformConnection(Long userId, Long orgId, String code) throws IOException {
+    public void exchangeCodeAndSavePlatformConnection(Long userId, Long orgId, String code) throws IOException {
         Organization organization = orgRepository.findById(orgId).orElseThrow(() -> {
                     throw new OrgHandler(OrgErrorCode.ORG_NOT_FOUND);
         });
@@ -158,7 +158,5 @@ public class GoogleAdOAuthService {
                 }
             }
         }
-
-        return refreshToken;
     }
 }

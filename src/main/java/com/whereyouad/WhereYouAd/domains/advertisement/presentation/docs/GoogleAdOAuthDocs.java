@@ -29,7 +29,7 @@ public interface GoogleAdOAuthDocs {
                     "이후 연동된 구글 광고 계정 목록을 조회하여 DB에 플랫폼 계정과 연동 정보를 저장합니다."
     )
     @GetMapping("/callback")
-    ResponseEntity<DataResponse<String>> exchangeCodeForToken(
+    void exchangeCodeForToken(
             @Parameter(description = "구글 인증 서버로부터 반환된 일회성 인증 코드") @RequestParam("code") String code,
             @Parameter(description = "요청 시 전달했던 조직 정보가 인코딩된 상태 값") @RequestParam("state") String state) throws IOException;
 }

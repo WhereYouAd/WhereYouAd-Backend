@@ -50,14 +50,13 @@ public class GoogleAdOAuthController implements GoogleAdOAuthDocs {
     }
 
     @GetMapping("/callback")
-    public ResponseEntity<DataResponse<String>> exchangeCodeForToken(@RequestParam("code") String code, @RequestParam("state") String state) throws IOException {
+    public void exchangeCodeForToken(@RequestParam("code") String code, @RequestParam("state") String state) throws IOException {
         // state 디코딩해서 userId, orgId 추출
         String decodedState = new String(Base64.getUrlDecoder().decode(state));
         String[] parts = decodedState.split("_");
         Long userId = Long.parseLong(parts[0]);
         Long orgId = Long.parseLong(parts[1]);
 
-        String refreshToken = googleAdOAuthService.exchangeCodeAndSavePlatformConnection(userId, orgId, code);
-        return ResponseEntity.ok(DataResponse.from(refreshToken));
+        googleAdOAuthService.exchangeCodeAndSavePlatformConnection(userId, orgId, code);
     }
 }
