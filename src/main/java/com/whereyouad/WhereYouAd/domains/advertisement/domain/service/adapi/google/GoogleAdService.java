@@ -50,7 +50,7 @@ public class GoogleAdService {
     private final PlatformConnectionRepository platformConnectionRepository;
 
     @Transactional
-    public GoogleAdResponse.GoogleAdCreateReponse createAllAdInfos(Long userId) {
+    public GoogleAdResponse.GoogleAdCreateResponse createAllAdInfos(Long userId) {
         List<PlatformConnection> connections = platformConnectionRepository.findByUser_IdAndPlatformAccount_Provider(userId, Provider.GOOGLE);
         
         AdAuthRequest emptyRequest = AdAuthRequest.empty();
@@ -67,7 +67,7 @@ public class GoogleAdService {
             }
         }
 
-        return new GoogleAdResponse.GoogleAdCreateReponse("구글 광고 데이터 연동 완료");
+        return new GoogleAdResponse.GoogleAdCreateResponse("구글 광고 데이터 연동 완료");
     }
 
     @Transactional
