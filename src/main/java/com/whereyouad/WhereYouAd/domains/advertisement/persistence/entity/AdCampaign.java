@@ -17,7 +17,12 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "adCampaign")
+@Table(name = "ad_campaign", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_platform_account_external_campaign",
+                columnNames = {"platform_account_id", "external_campaign_id"} // 플랫폼 계정 ID + 외부 캠페인 ID
+        )
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
