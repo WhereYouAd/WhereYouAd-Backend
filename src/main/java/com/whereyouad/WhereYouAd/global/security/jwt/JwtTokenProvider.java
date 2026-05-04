@@ -141,4 +141,15 @@ public class JwtTokenProvider {
 
         return provider;
     }
+
+    //로그아웃 블랙리스트 TTL 계산용 — 토큰 남은 만료 시간(ms). 만료/손상 토큰은 0 반환
+    public long getRemainingExpirationMillis(String token) {
+        try {
+            Date expiration = parseClaims(token).getExpiration();
+            long remaining = expiration.getTime() - System.currentTimeMillis();
+            return Math.max(remaining, 0L);
+        } catch (JwtException | IllegalArgumentException e) {
+            return 0L;
+        }
+    }
 }
