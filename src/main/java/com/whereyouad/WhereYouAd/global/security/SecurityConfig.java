@@ -75,7 +75,14 @@ public class SecurityConfig {
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",           // 프론트 로컬 주소
                 "http://localhost:3000",           // 프론트 로컬 주소 (대안)
-                "http://52.79.171.160:8080"        // 배포 서버 주소 (Swagger UI 등)
+                "http://52.79.171.160:8080",        // 배포 서버 주소 (Swagger UI 등)
+
+                // --- 운영(Production) 프론트엔드 도메인 ---
+                "https://whereyouad.com",          // 기본 도메인
+                "https://www.whereyouad.com",      // www 도메인
+
+                // --- 운영(Production) 백엔드 도메인 (Swagger UI 테스트 등) ---
+                "https://api.whereyouad.com"
         ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
