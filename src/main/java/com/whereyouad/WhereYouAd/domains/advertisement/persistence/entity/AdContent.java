@@ -8,7 +8,12 @@ import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter
-@Table(name = "adContent")
+@Table(name = "ad_content", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_ad_group_external_ad",
+                columnNames = {"ad_group_id", "external_ad_id"} // 광고 그룹 ID + 외부 소재 ID
+        )
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
