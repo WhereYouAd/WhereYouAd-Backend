@@ -31,6 +31,7 @@ import com.whereyouad.WhereYouAd.global.utils.AESUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -67,6 +68,7 @@ public class GoogleAdOAuthService {
 
     private final AESUtil aesUtil;
 
+    @Transactional
     public void exchangeCodeAndSavePlatformConnection(Long userId, Long orgId, String code) throws IOException {
         Organization organization = orgRepository.findById(orgId).orElseThrow(() -> {
                     throw new OrgHandler(OrgErrorCode.ORG_NOT_FOUND);
