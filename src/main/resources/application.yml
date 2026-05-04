@@ -15,11 +15,15 @@ spring:
     password: ${DB_PASSWORD}
 
   # 2. JPA 설정 (Hibernate)
+  jackson:
+    time-zone: Asia/Seoul
   jpa:
     database: mysql
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update       # 테이블 자동 업데이트 (데이터 유지)
+      jdbc:
+        time_zone: Asia/Seoul
     show-sql: true           # 실행 SQL 콘솔 출력
     properties:
       hibernate:
