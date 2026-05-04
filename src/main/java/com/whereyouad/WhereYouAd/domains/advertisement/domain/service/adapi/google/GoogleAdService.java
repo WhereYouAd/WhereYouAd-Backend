@@ -10,6 +10,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Ad
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.GoogleAdResponse;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
 import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;
@@ -93,15 +94,18 @@ public class GoogleAdService {
 
         if (jsonResponse == null || jsonResponse.isBlank()) return;
 
+        PlatformAccount currentAccount = platformConnection.getPlatformAccount(); // 현재 연동된 계정
+
         try {
             GoogleDTO.AdCampaignResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AdCampaignResponse.class);
 
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.AdCampaignResult result : response.getResults()) {
                     String externalId = result.getCampaign().getId();
-                    Optional<AdCampaign> existing = adCampaignRepository.findByExternalCampaignId(externalId);
-                    AdCampaign newCampaign = googleConverter.toAdCampaign(result, platformConnection.getPlatformAccount());
-                    
+                    Optional<AdCampaign> existing = adCampaignRepository.findByPlatformAccountAndExternalCampaignId(currentAccount, externalId);
+
+                    AdCampaign newCampaign = googleConverter.toAdCampaign(result, currentAccount);
+
                     if (existing.isPresent()) {
                         existing.get().update(
                                 newCampaign.getName(),
@@ -128,18 +132,20 @@ public class GoogleAdService {
 
         if (jsonResponse == null || jsonResponse.isBlank()) return;
 
+        PlatformAccount currentAccount = platformConnection.getPlatformAccount(); // 현재 연동된 계정
+
         try {
             GoogleDTO.AdGroupResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AdGroupResponse.class);
 
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.AdGroupResult result : response.getResults()) {
                     String externalCampaignId = result.getCampaign().getId();
-                    AdCampaign adCampaign = adCampaignRepository.findByExternalCampaignId(externalCampaignId).orElse(null);
+                    AdCampaign adCampaign = adCampaignRepository.findByPlatformAccountAndExternalCampaignId(currentAccount, externalCampaignId).orElse(null);
 
                     if (adCampaign == null) continue;
 
                     String externalGroupId = result.getAdGroup().getId();
-                    Optional<AdGroup> existing = adGroupRepository.findByExternalGroupId(externalGroupId);
+                    Optional<AdGroup> existing = adGroupRepository.findByAdCampaignAndExternalGroupId(adCampaign, externalGroupId);
                     AdGroup newGroup = googleConverter.toAdGroup(result, adCampaign);
 
                     if (existing.isPresent()) {
@@ -160,19 +166,19 @@ public class GoogleAdService {
 
         if (jsonResponse == null || jsonResponse.isBlank()) return;
 
+        PlatformAccount currentAccount = platformConnection.getPlatformAccount();
+
         try {
             GoogleDTO.AdContentResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AdContentResponse.class);
 
             if (response != null && response.getResults() != null) {
                 for (GoogleDTO.AdContentResult result : response.getResults()) {
                     String externalGroupId = result.getAdGroup().getId();
-                    AdGroup adGroup = adGroupRepository.findByExternalGroupId(externalGroupId).orElse(null);
-
+                    AdGroup adGroup = adGroupRepository.findByAdCampaign_PlatformAccountAndExternalGroupId(currentAccount, externalGroupId).orElse(null);
                     if (adGroup == null) continue;
 
                     String externalAdId = result.getAdGroupAd().getAd().getId();
-                    Optional<AdContent> existing = adContentRepository.findByExternalAdId(externalAdId);
-                    AdContent newContent = googleConverter.toAdContent(result, adGroup);
+                    Optional<AdContent> existing = adContentRepository.findByAdGroupAndExternalAdId(adGroup, externalAdId);                    AdContent newContent = googleConverter.toAdContent(result, adGroup);
 
                     if (existing.isPresent()) {
                         existing.get().update(
@@ -198,6 +204,8 @@ public class GoogleAdService {
 
         if (jsonResponse == null || jsonResponse.isBlank()) return;
 
+        PlatformAccount currentAccount = platformConnection.getPlatformAccount();
+
         try {
             GoogleDTO.MetricFactResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.MetricFactResponse.class);
 
@@ -206,8 +214,12 @@ public class GoogleAdService {
                     String googleCampaignId = result.getCampaign() != null ? result.getCampaign().getId() : null;
                     String googleAdId = result.getAdGroupAd() != null && result.getAdGroupAd().getAd() != null ? result.getAdGroupAd().getAd().getId() : null;
 
-                    AdCampaign adCampaign = googleCampaignId != null ? adCampaignRepository.findByExternalCampaignId(googleCampaignId).orElse(null) : null;
-                    AdContent adContent = googleAdId != null ? adContentRepository.findByExternalAdId(googleAdId).orElse(null) : null;
+                    AdCampaign adCampaign = googleCampaignId != null ?
+                            adCampaignRepository.findByPlatformAccountAndExternalCampaignId(currentAccount, googleCampaignId).orElse(null) : null;
+
+                    AdContent adContent = googleAdId != null ?
+                            adContentRepository.findByAdGroup_AdCampaign_PlatformAccountAndExternalAdId(currentAccount, googleAdId).orElse(null) : null;
+
                     Project project = adCampaign != null ? adCampaign.getProject() : null;
 
                     MetricFact newFact = googleConverter.toMetricFact(result, adCampaign, adContent, project, platformConnection.getPlatformAccount());

@@ -1,6 +1,8 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -65,5 +67,7 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
                 "WHERE ac.id = :id")
         Optional<AdContent> findByIdWithGroupAndCampaign(@Param("id") Long id);
 
-        Optional<AdContent> findByExternalAdId(String externalAdId);
+        Optional<AdContent> findByAdGroupAndExternalAdId(AdGroup adGroup, String externalAdId);
+
+        Optional<AdContent> findByAdGroup_AdCampaign_PlatformAccountAndExternalAdId(PlatformAccount platformAccount, String externalAdId);
 }

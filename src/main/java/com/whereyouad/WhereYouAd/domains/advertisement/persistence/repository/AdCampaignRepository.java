@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -63,5 +64,4 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     @Query("SELECT adc FROM AdCampaign adc WHERE adc.provider = :provider AND adc.project IS null AND adc.organization.id = :orgId")
     List<AdCampaign> findByOrgIdAndProviderWithNullProject(@Param("orgId") Long orgId, @Param("provider") Provider provider);
 
-    Optional<AdCampaign> findByExternalCampaignId(String externalCampaignId);
-}
+    Optional<AdCampaign> findByPlatformAccountAndExternalCampaignId(PlatformAccount platformAccount, String externalCampaignId);}
