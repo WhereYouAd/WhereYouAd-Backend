@@ -22,12 +22,12 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update       # 테이블 자동 업데이트 (데이터 유지)
-      jdbc:
-        time_zone: Asia/Seoul
     show-sql: true           # 실행 SQL 콘솔 출력
     properties:
       hibernate:
         format_sql: true     # SQL 예쁘게 출력
+        jdbc:
+          time_zone: Asia/Seoul
     open-in-view: false     #OSIV 비활성화 -> SSE Db 커넥션 풀 고갈 방지
 
   # 3. Redis 설정
