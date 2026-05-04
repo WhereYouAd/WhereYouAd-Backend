@@ -46,6 +46,29 @@ public class OrgController implements OrgControllerDocs {
         );
     }
 
+    @PostMapping("/{orgId}/workspace")
+    public ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> setCurrentWorkspace(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId)
+    {
+        OrgResponse.CurrentWorkspace response = orgService.setCurrentWorkspace(userId, orgId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
+    @GetMapping("/my/workspace")
+    public ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> getCurrentWorkspace(
+            @AuthenticationPrincipal(expression = "userId") Long userId)
+    {
+        OrgResponse.CurrentWorkspace response = orgService.getCurrentWorkspace(userId);
+
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
     @GetMapping("/{orgId}")
     public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId)
     {
@@ -140,6 +163,15 @@ public class OrgController implements OrgControllerDocs {
     ) {
         orgService.removeMemberFromOrg(userId, orgId, memberId);
         return ResponseEntity.ok(DataResponse.from("해당 맴버가 조직에서 제외되었습니다."));
+    }
+
+    @GetMapping("/members/{orgId}/pending")
+    public ResponseEntity<DataResponse<OrgResponse.OrgPendingMembersResponse>> getPendingMembers(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    ) {
+        OrgResponse.OrgPendingMembersResponse response = orgQueryService.getPendingMembers(userId, orgId);
+        return ResponseEntity.ok(DataResponse.from(response));
     }
 
     @PatchMapping("/members/{orgId}/{memberId}")

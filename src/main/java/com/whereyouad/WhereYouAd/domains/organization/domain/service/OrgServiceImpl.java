@@ -8,8 +8,10 @@ import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgInvitation;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgInvitationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
@@ -25,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -35,6 +39,7 @@ public class OrgServiceImpl implements OrgService {
 
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
+    private final OrgInvitationRepository orgInvitationRepository;
     private final UserRepository userRepository;
 
     private final RedisUtil redisUtil;
@@ -91,16 +96,44 @@ public class OrgServiceImpl implements OrgService {
 
     //로그인한 회원이 속한 조직 모두 조회 메서드
     public OrgResponse.MyOrganizations getMyOrganizations(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new UserHandler(UserErrorCode.USER_NOT_FOUND));
+        Long currentOrgId = user.getCurrentOrgId();
+
         //회원 id 로 OrgMember 모두 조회 -> DB 조회에서 OrgStatus.ACTIVE 인 Organization 만 포함하는 OrgMember 만 조회해 온다.
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
 
         //각각의 OrgMember 에서 SimpleInfo DTO 로 매핑
         List<OrgResponse.SimpleInfo> infos = orgMembers.stream()
-                .map(OrgConverter::toOrgSimpleInfo)
+                .map( m -> OrgConverter.toOrgSimpleInfo(m, currentOrgId))
                 .toList();
 
         //마지막 반환 DTO 로 변환
         return OrgConverter.toMyOrganizations(infos);
+    }
+
+    @Override
+    public OrgResponse.CurrentWorkspace setCurrentWorkspace(Long userId, Long orgId) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId).orElseThrow(() ->
+                new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+
+        user.setCurrentOrgId(orgId);
+
+        return new OrgResponse.CurrentWorkspace(orgId);
+    }
+
+    @Override
+    public OrgResponse.CurrentWorkspace getCurrentWorkspace(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        Long currentOrgId = user.getCurrentOrgId();
+
+        // 현재 설정한 워크스페이스가 없다면 null 반환
+        return new OrgResponse.CurrentWorkspace(currentOrgId);
     }
 
     //하나의 조직에 대한 세부 사항(ID, 이름, 설명, logoUrl, createdAt)
@@ -224,6 +257,13 @@ public class OrgServiceImpl implements OrgService {
         // 해당 조직에 가입된 모든 회원들의 가입 정보 삭제
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
 
+        // 현재 워크스페이스가 삭제되는 조직인 멤버들의 currentOrgId를 null로 초기화
+        for (OrgMember member : orgMembers) {
+            if (Objects.equals(member.getUser().getCurrentOrgId(), orgId)) {
+                member.getUser().setCurrentOrgId(null);
+            }
+        }
+
         orgMemberRepository.deleteAll(orgMembers);
 
         // 조직 실제 삭제
@@ -249,6 +289,14 @@ public class OrgServiceImpl implements OrgService {
         // 만약 조직 삭제 요청한 회원이 해당 조직을 생성한 회원이 아니라면,
         if (!organization.getOwnerUserId().equals(userId)) {
             throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN);
+        }
+
+        // 현재 워크스페이스가 삭제되는 조직인 멤버들의 currentOrgId를 null로 초기화
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
+        for (OrgMember member : orgMembers) {
+            if (Objects.equals(member.getUser().getCurrentOrgId(), orgId)) {
+                member.getUser().setCurrentOrgId(null);
+            }
         }
 
         // 조직 status 만 DELETED 로 변경 후 종료
@@ -281,6 +329,11 @@ public class OrgServiceImpl implements OrgService {
         // 4. 대상 맴버가 ADMIN이라면 추방 불가
         if (targetMember.getRole() == OrgRole.ADMIN) {
             throw new OrgHandler(OrgErrorCode.ORG_CANNOT_KICK_ADMIN);
+        }
+
+        // 추방되는 멤버의 현재 워크스페이스가 해당 조직이라면 null로 초기화
+        if (Objects.equals(targetMember.getUser().getCurrentOrgId(), orgId)) {
+            targetMember.getUser().setCurrentOrgId(null);
         }
 
         // 5. 중간 테이블에서 해당 멤버 삭제
@@ -350,6 +403,25 @@ public class OrgServiceImpl implements OrgService {
             }
         });
 
+        // 이미 동일한 이메일로 대기 중인 초대가 있는지 확인
+        Optional<OrgInvitation> existingInvitation = orgInvitationRepository.findByEmailAndOrganization(email, organization);
+        if (existingInvitation.isPresent()) {
+
+            LocalDateTime inviteAt = existingInvitation.get().getInvitedAt();
+            LocalDateTime now = LocalDateTime.now();
+
+            // 초대 간격 5분 설정
+            if(Duration.between(inviteAt, now).toMinutes() < 5){
+                throw new OrgHandler(OrgErrorCode.ORG_ALREADY_INVITE);
+            }
+            // 5분 이상의 중복 초대의 경우 갱신만 진행(만료 시간도 같이 갱신)
+            existingInvitation.get().updateInvitedAt();
+        } else {
+            // 신규 초대 테이블 저장
+            OrgInvitation newInvitation = OrgConverter.toOrgInvitation(email, organization);
+            orgInvitationRepository.save(newInvitation);
+        }
+
         // Redis key = 임의의 UUID 토큰(조직 초대 이메일 내 링크를 구별)
         String token = UUID.randomUUID().toString();
         // Redis value = 조직 아이디와 이메일의 조합
@@ -393,6 +465,11 @@ public class OrgServiceImpl implements OrgService {
         if (orgMemberRepository.existsByUserAndOrganization(user, organization))
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_ALREADY_ACTIVE);
 
+        // OrgInvitation 에서 해당 초대 내역이 있는지 확인 후 삭제 (대기열 제거)
+        orgInvitationRepository.findByEmailAndOrganization(email, organization)
+                .ifPresent(orgInvitationRepository::delete);
+
+        // 멤버 편입
         orgMemberRepository.save(OrgMemberConverter.toOrgMemberMEMBER(user, organization));
 
         // Redis 사용 토큰 삭제

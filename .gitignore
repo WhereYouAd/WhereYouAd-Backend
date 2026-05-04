@@ -39,3 +39,6 @@ out/
 #src/main/resources/application.yml
 .env
 .env.prod
+
+#CLAUDE.md
+CLAUDE.md

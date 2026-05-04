@@ -43,6 +43,9 @@ public class User extends BaseEntity {
     @ColumnDefault("'ACTIVE'")  //기본값 ACTIVE
     private UserStatus status;  //ACTIVE, SUSPENDED, DELETED
 
+    @Column(name = "current_org_id")
+    private Long currentOrgId;
+
     // 소셜 로그인 시 유저 프로필 최신화
     public void updateProfile(String name){
         this.name = name;
@@ -56,5 +59,9 @@ public class User extends BaseEntity {
         this.name = name;
         this.profileImageUrl = profileImageUrl;
         this.password = encodedNewPwd;
+    }
+
+    public void setCurrentOrgId(Long currentOrgId) {
+        this.currentOrgId = currentOrgId;
     }
 }
