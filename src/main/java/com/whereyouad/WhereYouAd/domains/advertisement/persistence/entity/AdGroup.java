@@ -11,11 +11,11 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "adGroup", uniqueConstraints = {
+@Table(name = "ad_group", uniqueConstraints = {
         // 플랫폼 내 같은 adGroup 중복 저장 방지
         @UniqueConstraint(
                 name = "uk_ad_campaign_external_group", // 인덱스 이름
-                columnNames = {"ad_campaign_id", "exter정nal_group_id"} // 복합 키 지정
+                columnNames = {"ad_campaign_id", "external_group_id"} // 복합 키 지정
         )
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
