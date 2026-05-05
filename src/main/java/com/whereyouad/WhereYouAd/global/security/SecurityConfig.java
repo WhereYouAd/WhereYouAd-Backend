@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.global.security;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtAccessDeniedHandler;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtAuthenticationEntryPoint;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtAuthenticationFilter;
+import com.whereyouad.WhereYouAd.global.security.oauth2.handler.OAuth2AuthenticationFailureHandler;
 import com.whereyouad.WhereYouAd.global.security.oauth2.handler.OAuth2AuthenticationSuccessHandler;
 import com.whereyouad.WhereYouAd.global.security.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.whereyouad.WhereYouAd.global.security.oauth2.service.CustomOAuth2UserService;
@@ -35,6 +36,8 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -62,7 +65,8 @@ public class SecurityConfig {
                                 .authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository))
                         .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
                                 .userService(customOAuth2UserService))
-                        .successHandler(oAuth2AuthenticationSuccessHandler));
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureHandler(oAuth2AuthenticationFailureHandler));
 
         return http.build();
     }
