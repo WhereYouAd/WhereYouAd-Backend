@@ -151,3 +151,9 @@ feign:
     config:
       openAiClient:
         loggerLevel: BASIC   # NONE / BASIC / HEADERS / FULL
+
+# 11. 인증 쿠키 설정 (로컬/운영 환경 분리)
+cookie:
+  secure: ${COOKIE_SECURE:false}
+  domain: ${COOKIE_DOMAIN:}
+  same-site: ${COOKIE_SAME_SITE:Lax}

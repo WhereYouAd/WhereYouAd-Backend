@@ -14,6 +14,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 
@@ -27,6 +28,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     // TODO: 연동 시 프론트 주소로 변경(일단 스웨거로 redirect)
     @Value("${oauth2.redirect-url:http://localhost:8080/swagger-ui/index.html}")
     private String redirectUrl;
+
+    @Value("${cookie.secure}")
+    private boolean cookieSecure;
+
+    @Value("${cookie.domain:}")
+    private String cookieDomain;
+
+    @Value("${cookie.same-site}")
+    private String cookieSameSite;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -51,21 +61,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         refreshTokenRepository.save(refreshToken);
 
         // Access Token 쿠키 설정(httpOnly: false)
-        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", tokenResponse.accessToken())
+        ResponseCookie accessTokenCookie = baseCookie("access_token", tokenResponse.accessToken())
                 .httpOnly(false)
-                .secure(false) // 개발 환경용, 프로덕션에서는 true로 변경
-                .path("/")
                 .maxAge(60 * 60) // 1시간
-                .sameSite("Lax") // OAuth2 리다이렉트를 위해 Lax 사용
                 .build();
 
         // Refresh Token을 HttpOnly 쿠키로 설정
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", tokenResponse.refreshToken())
+        ResponseCookie refreshTokenCookie = baseCookie("refresh_token", tokenResponse.refreshToken())
                 .httpOnly(true)
-                .secure(false) // 개발 환경용, 프로덕션에서는 true로 변경
-                .path("/")
                 .maxAge(60 * 60 * 24 * 7) // 7일
-                .sameSite("Lax") // OAuth2 리다이렉트를 위해 Lax 사용
                 .build();
 
         response.addHeader("Set-Cookie", accessTokenCookie.toString());
@@ -73,5 +77,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // 리다이렉트 (토큰은 쿠키로 전달)
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+    }
+
+    // 환경 설정(cookie.secure / cookie.domain / cookie.same-site)을 반영한 쿠키 빌더
+    private ResponseCookie.ResponseCookieBuilder baseCookie(String name, String value) {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(cookieSameSite);
+        if (StringUtils.hasText(cookieDomain)) {
+            builder.domain(cookieDomain);
+        }
+        return builder;
     }
 }
