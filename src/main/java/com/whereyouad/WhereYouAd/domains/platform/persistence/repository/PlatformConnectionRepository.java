@@ -1,9 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.platform.persistence.repository;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
-import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
-import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
