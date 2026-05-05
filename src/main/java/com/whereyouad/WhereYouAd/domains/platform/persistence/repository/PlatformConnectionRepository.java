@@ -1,12 +1,15 @@
 package com.whereyouad.WhereYouAd.domains.platform.persistence.repository;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
+import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PlatformConnectionRepository extends JpaRepository<PlatformConnection, Long> {
     
@@ -18,4 +21,7 @@ public interface PlatformConnectionRepository extends JpaRepository<PlatformConn
 
     @Query("SELECT c.platformAccount.organization.id FROM PlatformConnection c WHERE c.platformAccount.provider = :provider")
     List<Long> findOrganizationIdsByProvider(@Param("provider") Provider provider);
+
+    @Query("SELECT c FROM PlatformConnection c WHERE c.user.id = :userId " + "AND c.platformAccount.id = :platformAccountId")
+    Optional<PlatformConnection> findByUserIdAndPlatformAccountId(@Param("userId") Long userId, @Param("platformAccountId") Long platformAccountId);
 }

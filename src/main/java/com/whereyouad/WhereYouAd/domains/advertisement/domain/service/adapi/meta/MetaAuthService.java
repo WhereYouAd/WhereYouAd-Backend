@@ -215,13 +215,25 @@ public class MetaAuthService {
                                         .organization(org)
                                         .build()));
 
-                PlatformConnection connection = PlatformConnection.builder()
-                        .authType(AuthType.OAUTH)
-                        .authIdentifier(encAccessToken)
-                        .tokenExpireAt(LocalDateTime.now().plusSeconds(token.expiresIn() != null ? token.expiresIn() : 5184000L))
-                        .user(user)
-                        .platformAccount(account)
-                        .build();
+                // Meta API 에서 만료시간이 null 값으로 내려오거나 Long 타입 직렬화 실패로 인해 null 인 경우,
+                // 60일(5184000L) 디폴트로 만료시각 주입
+                LocalDateTime expireAt = LocalDateTime.now().plusSeconds(token.expiresIn() != null ? token.expiresIn() : 5184000L);
+
+                // PlatformConnection 생성(UPSERT)
+                // -> Meta 계정 재연동 or 토큰 만료로 인한 재로그인 시 PlatformConnection 이 계속해서 누적되는 문제 방지
+                PlatformConnection connection = platformConnectionRepository
+                        .findByUserIdAndPlatformAccountId(user.getId(), account.getId())
+                        .map(existing -> {
+                            existing.renewOAuth(encAccessToken, expireAt);
+                            return existing;
+                        })
+                        .orElseGet(() -> PlatformConnection.builder()
+                                .authType(AuthType.OAUTH)
+                                .authIdentifier(encAccessToken)
+                                .tokenExpireAt(expireAt)
+                                .user(user)
+                                .platformAccount(account)
+                                .build());
 
                 platformConnectionRepository.save(connection);
             }
