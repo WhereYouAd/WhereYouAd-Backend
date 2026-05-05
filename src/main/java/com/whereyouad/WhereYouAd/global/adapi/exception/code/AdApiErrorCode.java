@@ -11,6 +11,9 @@ public enum AdApiErrorCode implements BaseErrorCode {
 
     // 400
     INVALID_PROVIDER_VALUE(HttpStatus.BAD_REQUEST, "ADAPI_400_2", "지원하지 않는 Provider 타입입니다."),
+    // OAuth 연동 관련
+    INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "ADAPI_400_1", "유효하지 않거나 만료된 구글 연동 요청입니다."),
+    OAUTH_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ADAPI_403_1", "사용자가 구글 연동 권한을 거부했습니다."),
     
     // 500
     GOOGLE_TOKEN_REFRESH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "ADAPI_500_1", "구글 광고 API 토큰 갱신에 실패했습니다."),
