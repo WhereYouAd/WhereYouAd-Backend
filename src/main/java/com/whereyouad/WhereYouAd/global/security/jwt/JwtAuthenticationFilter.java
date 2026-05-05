@@ -85,6 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         } catch (UserHandler e) { // 로그아웃 블랙리스트 조회시 sha256 암호화 관련 오류 발생시 예외 처리 -> 사실상 발생 확률 적음
             setErrorResponse(response, AuthErrorCode.TOKEN_HASH_FAILED, request);
+            return;
         }
 
         filterChain.doFilter(request, response);
