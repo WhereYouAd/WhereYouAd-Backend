@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() //swagger 접근 허용
                         .requestMatchers("/api/users/my", "/api/auth/logout").authenticated() //마이페이지, 로그아웃은 인증 필요
                         .requestMatchers("/api/users/**", "/api/auth/**", "/api/clicks/track/**", "/api/ai/reports/**").permitAll() //로그인, 회원가입, 이메일 인증, 트래킹, AI 리포트 접근 허용
-//                        .requestMatchers("/api/google/callback").permitAll()
+                        .requestMatchers("/api/google/callback").permitAll()
                         .anyRequest().authenticated() //이외 접근은 인증 필요
                 )
                 //Spring Security 의 기본 UsernamePasswordAuthenticationFilter 앞에 JwtAuthenticationFilter 등록

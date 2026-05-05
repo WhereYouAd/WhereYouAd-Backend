@@ -19,7 +19,7 @@ public interface GoogleAdOAuthDocs {
                     "인증이 완료되면 사전에 등록된 콜백(callback) URI로 인증 코드(code)와 상태 값(state)이 반환됩니다."
     )
     @GetMapping("/login")
-    void redirectToGoogleAuth(@Parameter @RequestParam("orgId") Long orgId,
+    ResponseEntity<Void> redirectToGoogleAuth(@Parameter @RequestParam("orgId") Long orgId,
                               @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") Long userId,
                               HttpServletResponse response) throws IOException;
 
@@ -29,7 +29,7 @@ public interface GoogleAdOAuthDocs {
                     "이후 연동된 구글 광고 계정 목록을 조회하여 DB에 플랫폼 계정과 연동 정보를 저장합니다."
     )
     @GetMapping("/callback")
-    void exchangeCodeForToken(
+    ResponseEntity<Void> exchangeCodeForToken(
             @Parameter(description = "구글 인증 서버로부터 반환된 일회성 인증 코드") @RequestParam("code") String code,
             @Parameter(description = "요청 시 전달했던 조직 정보가 인코딩된 상태 값") @RequestParam("state") String state) throws IOException;
 }
