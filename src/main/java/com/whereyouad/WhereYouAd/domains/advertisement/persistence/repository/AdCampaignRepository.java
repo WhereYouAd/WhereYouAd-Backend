@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -64,5 +65,5 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     List<AdCampaign> findByOrgIdAndProviderWithNullProject(@Param("orgId") Long orgId, @Param("provider") Provider provider);
 
     // externalCampaignId + provider로 기존 캠페인 조회 (Meta UPSERT 용)
-    Optional<AdCampaign> findByExternalCampaignIdAndProvider(String externalCampaignId, Provider provider);
+    Optional<AdCampaign> findByExternalCampaignIdAndPlatformAccount(String externalCampaignId, PlatformAccount platformAccount);
 }

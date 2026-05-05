@@ -49,7 +49,7 @@ public class MetaUpsertService {
         for (MetaDTO.Campaign src : campaigns) {
             AdCampaign newData = MetaConverter.toCampaign(src, org, platformAccount);
             AdCampaign saved = adCampaignRepository
-                    .findByExternalCampaignIdAndProvider(src.id(), Provider.META)
+                    .findByExternalCampaignIdAndPlatformAccount(src.id(), platformAccount)
                     .map(existing -> {
                         existing.updateFromApi(
                                 newData.getName(),
