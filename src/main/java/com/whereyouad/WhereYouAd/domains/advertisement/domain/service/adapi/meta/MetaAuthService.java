@@ -30,6 +30,7 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -56,6 +57,7 @@ public class MetaAuthService {
     private final MetaClient metaClient;
     private final MetaAdConfig metaAdConfig;
     private final AESUtil aesUtil;
+    private final TransactionTemplate transactionTemplate;
 
     // OAuth 인증 URL 생성
     public MetaResponse.AuthUrlResponse getAuthorizationUrl(Long userId, Long orgId) {
@@ -97,7 +99,9 @@ public class MetaAuthService {
         }
 
         //DB 저장(PlatformAccount, PlatformConnection)
-        savePlatformConnection(longLived, org, user, adAccounts);
+        transactionTemplate.executeWithoutResult(status -> {
+            savePlatformConnection(longLived, org, user, adAccounts);
+        });
     }
 
     // code -> short-lived 토큰으로 교환
