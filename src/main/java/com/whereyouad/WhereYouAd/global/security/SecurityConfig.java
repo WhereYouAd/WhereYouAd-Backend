@@ -82,7 +82,10 @@ public class SecurityConfig {
                 "https://www.whereyouad.com",      // www 도메인
 
                 // --- 운영(Production) 백엔드 도메인 (Swagger UI 테스트 등) ---
-                "https://api.whereyouad.com"
+                "https://api.whereyouad.com",
+
+                // 임시 프론트 배포 도메인
+                "https://where-you-ad.vercel.app"
         ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
