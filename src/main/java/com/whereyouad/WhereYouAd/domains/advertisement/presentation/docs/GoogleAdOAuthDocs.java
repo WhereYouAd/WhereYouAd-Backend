@@ -31,5 +31,6 @@ public interface GoogleAdOAuthDocs {
     @GetMapping("/callback")
     ResponseEntity<Void> exchangeCodeForToken(
             @Parameter(description = "구글 인증 서버로부터 반환된 일회성 인증 코드") @RequestParam("code") String code,
-            @Parameter(description = "요청 시 전달했던 조직 정보가 인코딩된 상태 값") @RequestParam("state") String state) throws IOException;
+            @Parameter(description = "요청 시 전달했던 조직 정보가 인코딩된 상태 값") @RequestParam("state") String state,
+            @Parameter(description = "에러 시 전달되는 값") @RequestParam("error") String error) throws IOException;
 }

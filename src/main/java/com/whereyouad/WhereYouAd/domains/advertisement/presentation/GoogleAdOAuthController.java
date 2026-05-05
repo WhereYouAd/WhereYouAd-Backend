@@ -68,18 +68,28 @@ public class GoogleAdOAuthController implements GoogleAdOAuthDocs {
     }
 
     @GetMapping("/callback")
-    public ResponseEntity<Void> exchangeCodeForToken(@RequestParam("code") String code, @RequestParam("state") String state) {
+    public ResponseEntity<Void> exchangeCodeForToken(@RequestParam(value = "code", required = false) String code,
+                                                     @RequestParam(value = "state", required = false) String state,
+                                                     @RequestParam(value = "error", required = false) String error) {
+        // state 값 검증
+        if (state == null)
+            throw new AdApiHandler(AdApiErrorCode.INVALID_OAUTH_STATE);
+
         // Redis에서 꺼낸 state와 같은지 비교
         String redisKey = "OAUTH_STATE:" + state;
-        String stateToken = redisUtil.getData(redisKey);
+        String stateValue = redisUtil.getData(redisKey);
 
         // 유효하지 않거나 만료된 접근 방어
-        if (stateToken == null)
+        if (stateValue == null)
             throw new AdApiHandler(AdApiErrorCode.INVALID_OAUTH_STATE);
 
         redisUtil.deleteData(redisKey);
 
-        String[] parts = stateToken.split("_");
+        // 동의 거부 또는 비정상 접근
+        if ("access_denied".equals(error) || code == null)
+            throw new AdApiHandler(AdApiErrorCode.OAUTH_ACCESS_DENIED);
+
+        String[] parts = stateValue.split("_");
         Long userId = Long.parseLong(parts[0]);
         Long orgId = Long.parseLong(parts[1]);
 
