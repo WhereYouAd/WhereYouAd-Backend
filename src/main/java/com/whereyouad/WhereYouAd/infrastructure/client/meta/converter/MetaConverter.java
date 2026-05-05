@@ -181,14 +181,16 @@ public class MetaConverter {
     private static String buildTargetingInfo(MetaDTO.Targeting targeting) {
         StringBuilder sb = new StringBuilder();
 
-        if (targeting.ageMin() != null) sb.append("age:").append(targeting.ageMin());
-        if (targeting.ageMax() != null) sb.append("-").append(targeting.ageMax());
+        if (targeting.ageMin() != null || targeting.ageMax() != null) {
+            sb.append("age:");
+            if (targeting.ageMin() != null) sb.append(targeting.ageMin());
+            if (targeting.ageMax() != null) sb.append("-").append(targeting.ageMax());
+        }
 
         if (targeting.geoLocations() != null && targeting.geoLocations().countries() != null) {
             sb.append(" / geo:");
-            targeting.geoLocations().countries()
-                    // [핵심 변경사항] c가 이미 그냥 문자열(String)이므로 바로 조립합니다
-                    .forEach(c -> sb.append(c).append(","));
+            String countries = String.join(",", targeting.geoLocations().countries());
+            sb.append(countries);
         }
 
         return sb.toString();
