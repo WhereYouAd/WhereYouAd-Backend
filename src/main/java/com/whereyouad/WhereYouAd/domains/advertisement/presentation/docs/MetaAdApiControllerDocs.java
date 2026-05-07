@@ -57,7 +57,7 @@ public interface MetaAdApiControllerDocs {
     );
 
     @Operation(
-            summary = "메타 광고 데이터 수동 동기화 트리거(관리자용)",
+            summary = "메타 광고 데이터 수동 동기화 트리거(디버깅, 테스팅 용도)",
             description = "특정 조직에 연동되어 있는 메타 광고 계정의 전체 데이터(캠페인, 광고세트, 광고, 성과 지표)를 지정한 날짜 범위 내에서 수동으로 갱신(동기화)합니다.\n\n"
                     + "반드시 최초 메타 계정 연동(GET /api/meta/auth-url 을 통해 받은 링크로 로그인 진행) 이후 해당 API 를 호출해야 정상 동작합니다."
     )

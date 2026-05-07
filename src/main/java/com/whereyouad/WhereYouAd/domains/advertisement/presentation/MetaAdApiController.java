@@ -80,7 +80,7 @@ public class MetaAdApiController implements MetaAdApiControllerDocs {
         }
     }
 
-    // 3. 수동 동기화 트리거 (관리자용)
+    // 3. 수동 동기화 트리거 (디버깅, 테스팅 용도)
     @PostMapping("/{orgId}/sync")
     public ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> syncManually(
             @PathVariable Long orgId,
