@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     void findAllByProvider(String provider);
@@ -61,4 +63,7 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     //provider 값과 orgId 값이 일치하고, project 가 null 인 AdCampaign 엔티티 리스트로 추출
     @Query("SELECT adc FROM AdCampaign adc WHERE adc.provider = :provider AND adc.project IS null AND adc.organization.id = :orgId")
     List<AdCampaign> findByOrgIdAndProviderWithNullProject(@Param("orgId") Long orgId, @Param("provider") Provider provider);
+
+    // externalCampaignId + provider로 기존 캠페인 조회 (Meta UPSERT 용)
+    Optional<AdCampaign> findByExternalCampaignIdAndPlatformAccount(String externalCampaignId, PlatformAccount platformAccount);
 }

@@ -21,6 +21,11 @@ public class RedisUtil {
         valueOperations.set(key, value, expireDuration);
     }
 
+    // 분산 락용: 키가 없을 때만 set. Meta 광고 데이터 갱신 요청시 과도한 갱신 버튼 연타로 인한 Meta API 차단 방지용
+    public Boolean setIfAbsent(String key, String value, long durationSeconds) {
+        return template.opsForValue().setIfAbsent(key, value, Duration.ofSeconds(durationSeconds));
+    }
+
     //Redis 에서 데이터 꺼내기(Value 꺼내기)
     public String getData(String key) {
         ValueOperations<String, String> valueOperations = template.opsForValue();

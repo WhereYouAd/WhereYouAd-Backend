@@ -11,7 +11,13 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "adGroup")
+@Table(name = "ad_group", uniqueConstraints = {
+        // 플랫폼 내 같은 adGroup 중복 저장 방지
+        @UniqueConstraint(
+                name = "uk_ad_campaign_external_group", // 인덱스 이름
+                columnNames = {"ad_campaign_id", "external_group_id"} // 복합 키 지정
+        )
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -40,4 +46,11 @@ public class AdGroup extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_campaign_id")
     private AdCampaign adCampaign;
+
+    // UPSERT 용 메서드
+    public void updateFromApi(String name, Status status, String targetingInfo) {
+        this.name = name;
+        this.status = status;
+        this.targetingInfo = targetingInfo;
+    }
 }

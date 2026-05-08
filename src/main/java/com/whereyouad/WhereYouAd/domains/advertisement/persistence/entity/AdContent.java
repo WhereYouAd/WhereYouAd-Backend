@@ -8,7 +8,12 @@ import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter
-@Table(name = "adContent")
+@Table(name = "ad_content", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_ad_group_external_ad",
+                columnNames = {"ad_group_id", "external_ad_id"} // 광고 그룹 ID + 외부 소재 ID
+        )
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -18,6 +23,10 @@ public class AdContent extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ad_content_id")
     private Long id;
+
+    //광고 개체 외부 Id
+    @Column(name = "external_ad_id")
+    private String externalAdId;
 
     private String name;
 
@@ -50,5 +59,13 @@ public class AdContent extends BaseEntity {
 
     public void updateLandingUrl(String landingUrl) {
         this.landingUrl = landingUrl;
+    }
+
+    // UPSERT 용 메서드
+    public void updateFromApi(String name, String type, Status status, String description) {
+        this.name = name;
+        this.type = type;
+        this.status = status;
+        this.description = description;
     }
 }

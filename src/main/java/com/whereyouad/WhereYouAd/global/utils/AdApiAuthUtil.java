@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.GeneralSecurityException;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class AdApiAuthUtil {
      * @param request 파라미터 (method, path 등)
      * @return HTTP Header에 삽입할 Key-Value Map
      */
+    @Transactional(readOnly = true)
     public Map<String, String> generateAuthHeaders(
             @NotNull Long connectionId,
             @NotNull AdAuthRequest request
