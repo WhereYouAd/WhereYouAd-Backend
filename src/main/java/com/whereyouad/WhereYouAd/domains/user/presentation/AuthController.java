@@ -6,6 +6,7 @@ import com.whereyouad.WhereYouAd.domains.user.presentation.docs.AuthControllerDo
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -19,19 +20,23 @@ public class AuthController implements AuthControllerDocs {
 
     private final AuthService authService;
 
+    @Value("${cookie.secure}")
+    private boolean cookieSecure;
+
+    @Value("${cookie.domain:}")
+    private String cookieDomain;
+
+    @Value("${cookie.same-site}")
+    private String cookieSameSite;
+
     @PostMapping("/login")
     public ResponseEntity<DataResponse<TokenResponse>> login(@RequestBody LoginRequest request) {
 
         TokenResponse tokenResponse = authService.login(request);
 
-        ResponseCookie httpOnlyCookie = ResponseCookie.from("refresh_token", tokenResponse.refreshToken())
+        ResponseCookie httpOnlyCookie = baseCookie("refresh_token", tokenResponse.refreshToken())
                 .httpOnly(true)
-//                .secure(true) //<-- HTTPS 에서만 쿠키 전송하도록 설정
-                .secure(false) //<-- Postman 테스트 용이를 위해 false
-                .path("/")
                 .maxAge(60 * 60 * 24 * 7) // 7일
-//                .sameSite("None") //<-- 크로스 사이트 전송 정책, 프론트와 연동시 해당 코드 활성화
-                .sameSite("Strict") //<-- 개발 or 테스트 or Postman 을 위해 임시 Strict
                 .build();
 
         return ResponseEntity.ok()
@@ -47,14 +52,9 @@ public class AuthController implements AuthControllerDocs {
     {
         TokenResponse tokenResponse = authService.reIssue(refreshToken);
 
-        ResponseCookie httpOnlyCookie = ResponseCookie.from("refresh_token", tokenResponse.refreshToken())
+        ResponseCookie httpOnlyCookie = baseCookie("refresh_token", tokenResponse.refreshToken())
                 .httpOnly(true)
-//                .secure(true)
-                .secure(false)
-                .path("/")
                 .maxAge(60 * 60 * 24 * 7) // 7일
-//                .sameSite("None")
-                .sameSite("Strict")
                 .build();
 
         return ResponseEntity.ok()
@@ -78,26 +78,32 @@ public class AuthController implements AuthControllerDocs {
         authService.logout(accessToken);
 
         //RefreshToken 쿠키 제거
-        ResponseCookie expiredRefresh = ResponseCookie.from("refresh_token", "")
+        ResponseCookie expiredRefresh = baseCookie("refresh_token", "")
                 .httpOnly(true)
-                .secure(false)
-                .path("/")
                 .maxAge(0)
-                .sameSite("Strict")
                 .build();
 
         //AccessToken 쿠키 제거 — 소셜 로그인에서 OAuth2 핸들러가 세팅한 쿠키 제거용(이메일 로그인 유저 브라우저엔 해당 쿠키가 없어 해당X)
-        ResponseCookie expiredAccess = ResponseCookie.from("access_token", "")
+        ResponseCookie expiredAccess = baseCookie("access_token", "")
                 .httpOnly(false)
-                .secure(false)
-                .path("/")
                 .maxAge(0)
-                .sameSite("Lax")
                 .build();
 
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, expiredRefresh.toString())
                 .header(HttpHeaders.SET_COOKIE, expiredAccess.toString())
                 .build();
+    }
+
+    // 환경 설정(cookie.secure / cookie.domain / cookie.same-site)을 반영한 쿠키 빌더
+    private ResponseCookie.ResponseCookieBuilder baseCookie(String name, String value) {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(cookieSameSite);
+        if (StringUtils.hasText(cookieDomain)) {
+            builder.domain(cookieDomain);
+        }
+        return builder;
     }
 }
