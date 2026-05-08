@@ -15,8 +15,8 @@ public interface PlatformControllerDocs {
 
     @Operation(
             summary = "네이버 광고 계정 등록 API",
-            description = "네이버 광고 계정의 고객 ID, API 키(평문), Secret 키(AES 암호화)를 받아 " +
-                    "실제 네이버 광고 API로 자격증명을 검증한 뒤 DB에 저장합니다. " +
+            description = "네이버 광고 계정의 고객 ID, API 키(AES 암호화), Secret 키(AES 암호화)를 받아 " +
+                    "실제 네이버 광고 API로 자격증명을 검증한 뒤 DB에 암호화 상태로 저장합니다. " +
                     "ADMIN 권한을 가진 조직 멤버만 호출할 수 있습니다."
     )
     @ApiResponses({

@@ -42,7 +42,7 @@ public class NaverAdAuthStrategy implements AdAuthStrategy {
         String timestamp = String.valueOf(System.currentTimeMillis());
 
         // DB에서 암호화된 키 복호화
-        String apiKey = connection.getAuthIdentifier();
+        String apiKey = new String(aesUtil.decryptAES(connection.getAuthIdentifier()), StandardCharsets.UTF_8);
         String secretKey = new String(aesUtil.decryptAES(connection.getAuthCredential()), StandardCharsets.UTF_8);
         String customerId = connection.getPlatformAccount().getExternalAccountId();
 

@@ -37,12 +37,12 @@ public class PlatformConverter {
                 .build();
     }
 
-    public static PlatformConnection toTempPlatformConnection(String customerId, String apiKey, String encryptedSecretKey) {
+    public static PlatformConnection toTempPlatformConnection(String customerId, String encryptedApiKey, String encryptedSecretKey) {
         PlatformAccount tempAccount = PlatformAccount.builder()
                 .externalAccountId(customerId)
                 .build();
         return PlatformConnection.builder()
-                .authIdentifier(apiKey)
+                .authIdentifier(encryptedApiKey)
                 .authCredential(encryptedSecretKey)
                 .platformAccount(tempAccount)
                 .build();

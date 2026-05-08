@@ -82,9 +82,9 @@ public class PlatformServiceImpl implements PlatformService {
         return PlatformConverter.toPlatformAccountResponse(platformAccount);
     }
 
-    private void validateNaverCredentials(String customerId, String apiKey, String encryptedSecretKey) {
+    private void validateNaverCredentials(String customerId, String encryptedApiKey, String encryptedSecretKey) {
         try {
-            PlatformConnection tempConnection = PlatformConverter.toTempPlatformConnection(customerId, apiKey, encryptedSecretKey);
+            PlatformConnection tempConnection = PlatformConverter.toTempPlatformConnection(customerId, encryptedApiKey, encryptedSecretKey);
 
             Map<String, String> headers = naverAdAuthStrategy.generateHeaders(
                     tempConnection,
