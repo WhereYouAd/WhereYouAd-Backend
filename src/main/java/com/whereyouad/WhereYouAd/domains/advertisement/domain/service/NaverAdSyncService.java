@@ -447,7 +447,7 @@ public class NaverAdSyncService {
                     totalContents  += metadata.syncedAdContentCount();
 
                     for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
-                        String statDate = d.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                        String statDate = d.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                         AdvertisementResponse.NaverStatSyncResponse stats = syncBasicStats(conn.getId(), statDate);
                         AdvertisementResponse.NaverStatSyncResponse conv  = syncConversionReports(conn.getId(), statDate);
                         totalMetrics += stats.processedAdContentCount() + conv.processedAdContentCount();
