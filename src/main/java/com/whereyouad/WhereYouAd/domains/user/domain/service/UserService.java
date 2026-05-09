@@ -110,7 +110,6 @@ public class UserService {
      * 응답 데이터(MyPageResponse의 provider 필드)가 다르므로 캐시를 구분해야 합니다.
      * 예) user:profile::1:GOOGLE / user:profile::1:EMAIL 로 따로 저장됨.
      */
-    @Cacheable(value = "user:profile", key = "#userId + ':' + #provider", unless = "#result == null")
     @Transactional(readOnly = true)
     public MyPageResponse getMyPage(Long userId, String provider) {
         User user = userRepository.findById(userId)
@@ -130,7 +129,6 @@ public class UserService {
     }
 
     //회원 정보(이름, 프로필 이미지, 비밀번호 변경)
-    @CacheEvict(value = "user:profile", key = "#userId + ':' + #provider") //정보 변경시 마이페이지 관련 Redis 캐시 삭제하여 이전 데이터 반환 방지
     public UserInfoModifiedResponse modifyUserInfo(Long userId, Provider provider, UserInfoModifyRequest request, MultipartFile image) {
         // 회원 조회
         User user = userRepository.findById(userId)
