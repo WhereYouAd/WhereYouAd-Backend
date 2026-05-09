@@ -12,6 +12,9 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Ad
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.platform.exception.PlatformHandler;
 import com.whereyouad.WhereYouAd.domains.platform.exception.code.PlatformErrorCode;
+import com.whereyouad.WhereYouAd.global.adapi.exception.AdApiHandler;
+import com.whereyouad.WhereYouAd.global.adapi.exception.code.AdApiErrorCode;
+import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
@@ -31,6 +34,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +50,14 @@ public class NaverAdSyncService {
     private final AdContentRepository adContentRepository;
     private final MetricFactRepository metricFactRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
+    private final RedisUtil redisUtil;
 
     // 작은 단위로 트랜잭션을 끊기 위한 템플릿
     private final PlatformTransactionManager transactionManager;
     private TransactionTemplate txTemplate;
+
+    private static final long SYNC_COOLDOWN_SECONDS = 60L;
+    private static final long SYNC_LOCK_TTL_SECONDS = 300L;
 
     @PostConstruct
     public void init() {
@@ -416,6 +424,59 @@ public class NaverAdSyncService {
             }
         }
         return processedCount;
+    }
+
+    // orgId + 날짜 범위 기반 수동 동기화 (분산락 적용)
+    public AdvertisementResponse.NaverManualSyncSummary syncAllForOrg(
+            Long orgId, LocalDate startDate, LocalDate endDate) {
+
+        String cooldownKey = "naver:sync:cooldown:" + orgId;
+        if (redisUtil.getData(cooldownKey) != null) {
+            throw new AdApiHandler(AdApiErrorCode.SYNC_COOLDOWN);
+        }
+
+        String lockKey = "naver:sync:lock:" + orgId;
+        Boolean acquired = redisUtil.setIfAbsent(lockKey, String.valueOf(System.currentTimeMillis()), SYNC_LOCK_TTL_SECONDS);
+        if (!Boolean.TRUE.equals(acquired)) {
+            throw new AdApiHandler(AdApiErrorCode.SYNC_IN_PROGRESS);
+        }
+
+        try {
+            log.info("NAVER 수동 동기화 시작 - orgId: {}, startDate: {}, endDate: {}", orgId, startDate, endDate);
+
+            List<PlatformConnection> connections = platformConnectionRepository
+                    .findByPlatformAccount_Organization_IdAndPlatformAccount_Provider(orgId, Provider.NAVER);
+
+            int totalCampaigns = 0, totalGroups = 0, totalContents = 0, totalMetrics = 0;
+            List<Long> failedConnectionIds = new ArrayList<>();
+
+            for (PlatformConnection conn : connections) {
+                try {
+                    AdvertisementResponse.NaverMetadataSyncResponse metadata = syncAllMetadata(conn.getId());
+                    totalCampaigns += metadata.syncedCampaignCount();
+                    totalGroups    += metadata.syncedAdGroupCount();
+                    totalContents  += metadata.syncedAdContentCount();
+
+                    for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
+                        String statDate = d.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                        AdvertisementResponse.NaverStatSyncResponse stats = syncBasicStats(conn.getId(), statDate);
+                        AdvertisementResponse.NaverStatSyncResponse conv  = syncConversionReports(conn.getId(), statDate);
+                        totalMetrics += stats.processedAdContentCount() + conv.processedAdContentCount();
+                    }
+                } catch (Exception e) {
+                    log.warn("[NAVER] 연결 ID {} 동기화 실패", conn.getId(), e);
+                    failedConnectionIds.add(conn.getId());
+                }
+            }
+
+            log.info("NAVER 수동 동기화 완료 - orgId: {}", orgId);
+            return new AdvertisementResponse.NaverManualSyncSummary(
+                    totalCampaigns, totalGroups, totalContents, totalMetrics, failedConnectionIds
+            );
+        } finally {
+            redisUtil.deleteData(lockKey);
+            redisUtil.setDataExpire(cooldownKey, "1", SYNC_COOLDOWN_SECONDS);
+        }
     }
 
 }
