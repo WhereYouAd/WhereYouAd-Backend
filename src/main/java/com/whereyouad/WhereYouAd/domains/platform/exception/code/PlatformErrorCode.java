@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 public enum PlatformErrorCode implements BaseErrorCode {
 
     // 400
-    NAVER_API_AUTH_FAILED(HttpStatus.BAD_REQUEST, "PLATFORM_400_1", "네이버 광고 API키 등록에 실패했습니다.."),
+    NAVER_API_AUTH_FAILED(HttpStatus.BAD_REQUEST, "PLATFORM_400_1", "네이버 광고 API키 등록에 실패했습니다."),
 
     // 403
     PLATFORM_FORBIDDEN(HttpStatus.FORBIDDEN, "PLATFORM_403_1", "API키 등록은 ADMIN 권한이 필요합니다."),
