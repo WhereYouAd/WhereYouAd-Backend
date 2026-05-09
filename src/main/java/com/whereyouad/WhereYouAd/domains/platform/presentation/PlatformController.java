@@ -5,6 +5,7 @@ import com.whereyouad.WhereYouAd.domains.platform.application.dto.response.Platf
 import com.whereyouad.WhereYouAd.domains.platform.domain.service.PlatformService;
 import com.whereyouad.WhereYouAd.domains.platform.presentation.docs.PlatformControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,7 +26,7 @@ public class PlatformController implements PlatformControllerDocs {
     public ResponseEntity<DataResponse<PlatformResponse.PlatformAccount>> addNaverAdAccount(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestBody PlatformRequest.PlatformAccount dto
+            @Valid @RequestBody PlatformRequest.PlatformAccount dto
     ) {
         PlatformResponse.PlatformAccount response =
                 platformService.addNaverAdAccount(userId, orgId, dto);
