@@ -1,5 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.user.application.dto.response;
 
+import java.util.List;
+
 public record MyPageResponse(
         Long userId,
         String email,
@@ -7,6 +9,7 @@ public record MyPageResponse(
         String profileImageUrl,
         String phoneNumber,
         boolean isEmailVerified,
-        String providerType
+        String providerType,
+        List<MyOrgResponse> organizations
 ) {
 }
