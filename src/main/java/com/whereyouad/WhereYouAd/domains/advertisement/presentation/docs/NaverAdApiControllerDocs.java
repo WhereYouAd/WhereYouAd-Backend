@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.AdvertisementRequest;
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.AdvertisementResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.infrastructure.client.naver.dto.NaverDTO;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -139,17 +141,16 @@ public interface NaverAdApiControllerDocs {
             @PathVariable Long connectionId
     );
 
-    @Operation(summary = "네이버 전체 동기화", description = "메타데이터(캠페인/그룹/소재) + 기본 통계 + 전환 리포트를 순서대로 한 번에 동기화합니다.")
+    @Operation(summary = "네이버 수동 동기화", description = "조직(orgId)에 연결된 모든 네이버 계정의 메타데이터 + 기간별 통계 + 전환을 동기화합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "전체 동기화 완료 - 메타데이터/기본 통계/전환 리포트 각 처리 결과 반환"),
-            @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
+            @ApiResponse(responseCode = "200", description = "동기화 완료 - 캠페인/그룹/소재/지표 수 및 실패한 연결 ID 반환"),
+            @ApiResponse(responseCode = "400", description = "날짜 범위 오류 (startDate > endDate)"),
             @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
     })
-    ResponseEntity<DataResponse<AdvertisementResponse.NaverFullSyncResponse>> syncAll(
-            @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
-            @PathVariable Long connectionId,
-            @Parameter(description = "통계 대상 날짜 (yyyy-MM-dd, 예: 2026-04-08)", required = true)
-            @RequestParam("statDate") String statDate
+    ResponseEntity<DataResponse<AdvertisementResponse.NaverManualSyncSummary>> syncManually(
+            @Parameter(description = "조직 ID", example = "1", required = true)
+            @PathVariable("connectionId") Long orgId,
+            @RequestBody AdvertisementRequest.ManualSyncRequest request
     );
 
     @Operation(summary = "api 통신 test용: 네이버 전체 통계 동기화", description = "일별(DAILY) 기본 지표와 전환 리포트를 동기화합니다.")

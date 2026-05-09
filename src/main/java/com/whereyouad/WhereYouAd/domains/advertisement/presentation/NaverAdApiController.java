@@ -1,11 +1,13 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.presentation;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.AdvertisementRequest;
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.AdvertisementResponse;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.NaverAdApiService;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.NaverAdSyncService;
 import com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs.NaverAdApiControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.infrastructure.client.naver.dto.NaverDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -110,13 +112,14 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
         return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncAllMetadata(connectionId)));
     }
 
-    // 메타데이터 + 기본 통계 + 전환 리포트 전체 동기화
-    @PostMapping("/sync/all")
-    public ResponseEntity<DataResponse<AdvertisementResponse.NaverFullSyncResponse>> syncAll(
-            @PathVariable Long connectionId,
-            @RequestParam("statDate") String statDate
+    // 수동 동기화 (orgId + 날짜 범위)
+    @PostMapping("/sync")
+    public ResponseEntity<DataResponse<AdvertisementResponse.NaverManualSyncSummary>> syncManually(
+            @PathVariable("connectionId") Long orgId,
+            @RequestBody @Valid AdvertisementRequest.ManualSyncRequest request
     ) {
-        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncAll(connectionId, statDate)));
+        return ResponseEntity.ok(DataResponse.from(
+                naverAdSyncService.syncAllForOrg(orgId, request.startDate(), request.endDate())));
     }
 
     // DAILY MetricFact 동기화 (전환 리포트는 /sync/conversions 엔드포인트에서 별도 실행)
