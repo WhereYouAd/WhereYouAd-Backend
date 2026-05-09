@@ -7,6 +7,7 @@ import com.whereyouad.WhereYouAd.domains.platform.presentation.docs.PlatformCont
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +31,7 @@ public class PlatformController implements PlatformControllerDocs {
     ) {
         PlatformResponse.PlatformAccount response =
                 platformService.addNaverAdAccount(userId, orgId, dto);
-        return ResponseEntity.ok(DataResponse.created(response));
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(DataResponse.created(response));
     }
 }
