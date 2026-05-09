@@ -102,11 +102,7 @@ public class UserService {
 
     /**
      * 마이페이지 조회
-     * 파라미터 추가: userId 외에 'provider'(로그인 유형) 도 받기
-     * 캐시 키 수정: key = "#userId + ':' + #provider"
-     * 같은 유저(userId=1)라도 '구글'로 로그인했을 때와 '이메일'로 로그인했을 때
-     * 응답 데이터(MyPageResponse의 provider 필드)가 다르므로 캐시를 구분해야 합니다.
-     * 예) user:profile::1:GOOGLE / user:profile::1:EMAIL 로 따로 저장됨.
+     * 조직 정보 (Id, name, OrgRole) 함께 출력
      */
     @Transactional(readOnly = true)
     public MyPageResponse getMyPage(Long userId, String provider) {
