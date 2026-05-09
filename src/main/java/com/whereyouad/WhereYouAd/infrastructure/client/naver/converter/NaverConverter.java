@@ -41,14 +41,13 @@ public class NaverConverter {
     public static void updateAdCampaign(AdCampaign entity, NaverDTO.CampaignResponse dto) {
         Long budget = dto.useDailyBudget() != null && dto.useDailyBudget() ? dto.dailyBudget() : null;
         Goal goal = mapToDomainGoal(dto.campaignTp());
-        entity.updateNaverMetadata(
+        entity.updateFromApi(
                 dto.name(),
                 mapToDomainStatus(dto.status()),
                 budget,
-                parseLocalDate(dto.periodStartDt()),
-                parseLocalDate(dto.periodEndDt()),
                 goal,
-                buildCampaignDescription(dto.name(), goal)
+                parseLocalDate(dto.periodStartDt()),
+                parseLocalDate(dto.periodEndDt())
         );
     }
 
@@ -65,7 +64,7 @@ public class NaverConverter {
 
     // 광고 그룹 갱신용
     public static void updateAdGroup(AdGroup entity, NaverDTO.AdGroupResponse dto, java.util.List<NaverDTO.KeywordResponse> keywords) {
-        entity.updateNaverMetadata(
+        entity.updateFromApi(
                 dto.name(),
                 mapToDomainStatus(dto.status()),
                 extractTargetingInfo(keywords)
@@ -88,10 +87,13 @@ public class NaverConverter {
 
     // 광고 소재 갱신용
     public static void updateAdContent(AdContent entity, NaverDTO.AdResponse dto) {
-        entity.updateStatus(mapToDomainStatus(dto.status()));
+        entity.updateFromApi(
+                dto.ad() != null ? dto.ad().headline() : entity.getName(),
+                dto.type(),
+                mapToDomainStatus(dto.status()),
+                dto.ad() != null ? dto.ad().description() : entity.getDescription()
+        );
         if (dto.ad() != null) {
-            entity.updateName(dto.ad().headline());
-            entity.updateDescription(dto.ad().description());
             entity.updateTrackingUrl(dto.ad().displayUrl());
             entity.updateLandingUrl(dto.ad().pcUrl());
         }

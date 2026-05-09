@@ -168,10 +168,13 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("provider") Provider provider
     );
 
+    // adContent + timeBucket + provider 으로 기존 지표 조회 (Meta UPSERT 중복 방지)
+    Optional<MetricFact> findByAdContentAndTimeBucketAndProvider(AdContent adContent, LocalDateTime timeBucket, Provider provider);
+
     // Upsert 선행 조회용
     Optional<MetricFact> findByAdContentAndTimeBucketAndGrain(
             AdContent adContent,
-            LocalDateTime timeBucket, 
+            LocalDateTime timeBucket,
             Grain grain
     );
 }
