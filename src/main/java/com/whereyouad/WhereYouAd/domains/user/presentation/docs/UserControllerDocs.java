@@ -89,7 +89,8 @@ public interface UserControllerDocs {
     @Operation(
             summary = "마이페이지 API",
             description = "Authorization : Bearer \\<AccessToken\\> 을 헤더로 받아 현재 로그인한 회원의 정보를 조회합니다.\n\n" +
-                    "회원 DB id,이메일, 이름, 프로필 이미지 URL, 전화번호, 이메일 인증 여부(true / false), 로그인 Provider(EMAIL, KAKAO, NAVER, GOOGLE) 를 반환합니다."
+                    "회원 DB id,이메일, 이름, 프로필 이미지 URL, 전화번호, 이메일 인증 여부(true / false), 로그인 Provider(EMAIL, KAKAO, NAVER, GOOGLE) 와,\n\n "
+                    + "사용자가 속한 조직 정보(각 조직의 Id, 이름, 조직에서의 역할(ADMIN/MEMBER))를 반환합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),

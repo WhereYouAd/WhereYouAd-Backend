@@ -1,6 +1,9 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.UserInfoModifyRequest;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyOrgResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.UserInfoModifiedResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
@@ -22,12 +25,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
+    private final OrgMemberRepository orgMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
     private final S3UploadService s3UploadService;
@@ -109,7 +116,17 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
-        return UserConverter.toMyPageResponse(user, provider);
+        //추가 : 사용자가 속한 조직의 정보(Id, name, OrgRole) 함께 반환
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
+
+        List<MyOrgResponse> orgResponses = new ArrayList<>();
+
+        for (OrgMember orgMember : orgMembers) {
+            MyOrgResponse myOrgResponse = UserConverter.toMyOrgResponse(orgMember);
+            orgResponses.add(myOrgResponse);
+        }
+
+        return UserConverter.toMyPageResponse(user, provider, orgResponses);
     }
 
     //회원 정보(이름, 프로필 이미지, 비밀번호 변경)
