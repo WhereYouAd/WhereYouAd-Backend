@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -112,12 +111,9 @@ public class UserService {
         //추가 : 사용자가 속한 조직의 정보(Id, name, OrgRole) 함께 반환
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
 
-        List<MyOrgResponse> orgResponses = new ArrayList<>();
-
-        for (OrgMember orgMember : orgMembers) {
-            MyOrgResponse myOrgResponse = UserConverter.toMyOrgResponse(orgMember);
-            orgResponses.add(myOrgResponse);
-        }
+        List<MyOrgResponse> orgResponses = orgMembers.stream()
+                .map(UserConverter::toMyOrgResponse)
+                .toList();
 
         return UserConverter.toMyPageResponse(user, provider, orgResponses);
     }
