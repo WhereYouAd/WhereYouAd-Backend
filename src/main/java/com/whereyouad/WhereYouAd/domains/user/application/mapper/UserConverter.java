@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.application.mapper;
 
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.*;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
@@ -36,7 +37,16 @@ public class UserConverter {
                 .build();
     }
 
-    public static MyPageResponse toMyPageResponse(User user, String provider) {
+    public static MyOrgResponse toMyOrgResponse(OrgMember orgMember) {
+
+        return new MyOrgResponse(
+                orgMember.getOrganization().getId(),
+                orgMember.getOrganization().getName(),
+                orgMember.getRole()
+        );
+    }
+
+    public static MyPageResponse toMyPageResponse(User user, String provider, List<MyOrgResponse> orgResponses) {
 
         return new MyPageResponse(user.getId(),
                 user.getEmail(),
@@ -44,7 +54,8 @@ public class UserConverter {
                 user.getProfileImageUrl(),
                 user.getPhoneNumber(),
                 user.isEmailVerified(),
-                provider
+                provider,
+                orgResponses
         );
     }
 

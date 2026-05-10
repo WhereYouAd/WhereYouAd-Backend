@@ -1,6 +1,9 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.UserInfoModifyRequest;
+import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyOrgResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.UserInfoModifiedResponse;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
@@ -15,12 +18,12 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserReposit
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import com.whereyouad.WhereYouAd.infrastructure.client.aws.s3.S3UploadService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Service
 @Transactional
@@ -28,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final OrgMemberRepository orgMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
     private final S3UploadService s3UploadService;
@@ -97,23 +101,24 @@ public class UserService {
 
     /**
      * 마이페이지 조회
-     * 파라미터 추가: userId 외에 'provider'(로그인 유형) 도 받기
-     * 캐시 키 수정: key = "#userId + ':' + #provider"
-     * 같은 유저(userId=1)라도 '구글'로 로그인했을 때와 '이메일'로 로그인했을 때
-     * 응답 데이터(MyPageResponse의 provider 필드)가 다르므로 캐시를 구분해야 합니다.
-     * 예) user:profile::1:GOOGLE / user:profile::1:EMAIL 로 따로 저장됨.
+     * 조직 정보 (Id, name, OrgRole) 함께 출력
      */
-    @Cacheable(value = "user:profile", key = "#userId + ':' + #provider", unless = "#result == null")
     @Transactional(readOnly = true)
     public MyPageResponse getMyPage(Long userId, String provider) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
-        return UserConverter.toMyPageResponse(user, provider);
+        //추가 : 사용자가 속한 조직의 정보(Id, name, OrgRole) 함께 반환
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
+
+        List<MyOrgResponse> orgResponses = orgMembers.stream()
+                .map(UserConverter::toMyOrgResponse)
+                .toList();
+
+        return UserConverter.toMyPageResponse(user, provider, orgResponses);
     }
 
     //회원 정보(이름, 프로필 이미지, 비밀번호 변경)
-    @CacheEvict(value = "user:profile", key = "#userId + ':' + #provider") //정보 변경시 마이페이지 관련 Redis 캐시 삭제하여 이전 데이터 반환 방지
     public UserInfoModifiedResponse modifyUserInfo(Long userId, Provider provider, UserInfoModifyRequest request, MultipartFile image) {
         // 회원 조회
         User user = userRepository.findById(userId)
