@@ -1,9 +1,5 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.domain.service;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
-import com.whereyouad.WhereYouAd.domains.platform.exception.PlatformHandler;
-import com.whereyouad.WhereYouAd.domains.platform.exception.code.PlatformErrorCode;
-import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.global.utils.AdApiAuthUtil;
 import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;
@@ -11,9 +7,15 @@ import com.whereyouad.WhereYouAd.infrastructure.client.naver.client.NaverClient;
 import com.whereyouad.WhereYouAd.infrastructure.client.naver.dto.NaverDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
+import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.NaverAdErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -28,29 +30,156 @@ public class NaverAdApiService {
 
     // 캠페인 목록 조회
     @Transactional(readOnly = true)
-    public List<NaverDTO.Campaign> getCampaigns(Long orgId) {
-        //
-        PlatformConnection conn = resolveNaverConnection(orgId);
+    public List<NaverDTO.CampaignResponse> getCampaigns(Long connectionId) {
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
-                    conn.getId(), AdAuthRequest.forMethodAndPath("GET", "/ncc/campaigns")
-            );
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/ncc/campaigns"));
             return naverClient.getCampaigns(headers);
         } catch (Exception e) {
-            log.error("[NAVER] 캠페인 조회 실패 - orgId={}", orgId, e);
-            throw new RuntimeException("네이버 캠페인 조회 실패", e);
+            log.error("[NAVER] 캠페인 조회 실패 - connectionId={}", connectionId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_CAMPAIGN_FETCH_FAILED);
         }
     }
 
-    // private 내부 메서드
-
-    // orgId 기반으로 NAVER Connection을 찾아 반환
-    private PlatformConnection resolveNaverConnection(Long orgId) {
-        List<PlatformConnection> connections = connectionRepository
-                .findByPlatformAccount_Organization_IdAndPlatformAccount_Provider(orgId, Provider.NAVER);
-        if (connections.isEmpty()) {
-            throw new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND);
+    // 광고 그룹 목록 조회
+    @Transactional(readOnly = true)
+    public List<NaverDTO.AdGroupResponse> getAdGroups(Long connectionId, String nccCampaignId) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/ncc/adgroups"));
+            return naverClient.getAdGroups(headers, nccCampaignId);
+        } catch (Exception e) {
+            log.error("[NAVER] 광고 그룹 조회 실패 - connectionId={}, campaignId={}", connectionId, nccCampaignId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_GROUP_FETCH_FAILED);
         }
-        return connections.get(0);
+    }
+
+    // 광고(소재) 목록 조회
+    @Transactional(readOnly = true)
+    public List<NaverDTO.AdResponse> getAds(Long connectionId, String nccAdgroupId) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/ncc/ads"));
+            return naverClient.getAds(headers, nccAdgroupId);
+        } catch (Exception e) {
+            log.error("[NAVER] 광고 소재 조회 실패 - connectionId={}, adGroupId={}", connectionId, nccAdgroupId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_CONTENT_FETCH_FAILED);
+        }
+    }
+
+    // 키워드 목록 조회
+    @Transactional(readOnly = true)
+    public List<NaverDTO.KeywordResponse> getKeywords(Long connectionId, String nccAdgroupId) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/ncc/keywords"));
+            return naverClient.getKeywords(headers, nccAdgroupId);
+        } catch (Exception e) {
+            log.error("[NAVER] 키워드 조회 실패 - connectionId={}, adGroupId={}", connectionId, nccAdgroupId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_KEYWORD_FETCH_FAILED);
+        }
+    }
+
+    // AD 리포트 생성
+    @Transactional
+    public NaverDTO.StatReportResponse requestAdReport(Long connectionId, String statDt) {
+        return requestStatReport(connectionId, "AD", statDt);
+    }
+
+    // AD_CONVERSION 리포트 생성
+    @Transactional
+    public NaverDTO.StatReportResponse requestAdConversionReport(Long connectionId, String statDt) {
+        return requestStatReport(connectionId, "AD_CONVERSION", statDt);
+    }
+
+    // 리포트 조회 private 메서드
+    private NaverDTO.StatReportResponse requestStatReport(Long connectionId, String reportTp, String statDt) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("POST", "/stat-reports"));
+            NaverDTO.StatReportRequest request = new NaverDTO.StatReportRequest(reportTp, statDt);
+            return naverClient.createStatReport(headers, request);
+        } catch (feign.FeignException.BadRequest e) {
+            String errorBody = e.contentUTF8();
+            if (errorBody != null && errorBody.contains("10004")) {
+                log.info("[NAVER] {} 보고서 지표 없음 (코드 10004) - connectionId={}, statDt={}. 리포트 생성을 취소합니다.", reportTp, connectionId, statDt);
+                return null;
+            }
+            log.error("[NAVER] {} 보고서 생성 실패 (BadRequest) - connectionId={}", reportTp, connectionId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_REPORT_REQUEST_FAILED);
+        } catch (Exception e) {
+            log.error("[NAVER] {} 보고서 생성 실패 - connectionId={}", reportTp, connectionId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_REPORT_REQUEST_FAILED);
+        }
+    }
+
+    // 보고서 상태 조회
+    @Transactional(readOnly = true)
+    public NaverDTO.StatReportResponse getReportStatus(Long connectionId, String reportJobId) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/stat-reports/" + reportJobId));
+            return naverClient.getStatReportStatus(headers, reportJobId);
+        } catch (Exception e) {
+            log.error("[NAVER] 보고서 상태 조회 실패 - connectionId={}, reportJobId={}", connectionId, reportJobId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_REPORT_STATUS_CHECK_FAILED);
+        }
+    }
+
+    private void validateDownloadUrl(String downloadUrl) {
+        URI uri;
+        try {
+            uri = new URI(downloadUrl);
+        } catch (URISyntaxException e) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_DOWNLOAD_URL);
+        }
+        if (!"https".equals(uri.getScheme())) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_DOWNLOAD_URL);
+        }
+        if (uri.getUserInfo() != null) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_DOWNLOAD_URL);
+        }
+        String host = uri.getHost();
+        if (host == null || !host.endsWith(".naver.com")) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_DOWNLOAD_URL);
+        }
+    }
+
+    // 보고서 다운로드 (원문 받아오기)
+    @Transactional(readOnly = true)
+    public NaverDTO.RawReportResponse downloadReport(Long connectionId, String downloadUrl) {
+        validateDownloadUrl(downloadUrl);
+        try {
+            URI uri = URI.create(downloadUrl);
+            // 다운로드 Path를 바탕으로 서명 생성
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", uri.getPath()));
+            feign.Response response = naverClient.downloadStatReport(headers, uri);
+
+            try (InputStream is = response.body().asInputStream()) {
+                String rawContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                return new NaverDTO.RawReportResponse(rawContent);
+            }
+        } catch (Exception e) {
+            log.error("[NAVER] 보고서 다운로드 실패 - connectionId={}, url={}", connectionId, downloadUrl, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_REPORT_DOWNLOAD_FAILED);
+        }
+    }
+
+    // 일별 기본 지표 조회 (/stats, 기본 일 단위)
+    @Transactional(readOnly = true)
+    public List<NaverDTO.StatResponse> getDailyStats(Long connectionId, String id, String since, String until) {
+        try {
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("GET", "/stats"));
+
+            String fields = "[\"impCnt\",\"clkCnt\",\"salesAmt\",\"ctr\",\"cpc\"]";
+            String timeRange = String.format("{\"since\":\"%s\",\"until\":\"%s\"}", since, until);
+            NaverDTO.StatListResponse result = naverClient.getStats(headers, id, fields, timeRange, null, null);
+            return result != null && result.data() != null ? result.data() : List.of();
+        } catch (Exception e) {
+            log.error("[NAVER] 일별 통계 조회 실패 - connectionId={}, id={}", connectionId, id, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_HOURLY_STAT_FETCH_FAILED);
+        }
     }
 }
