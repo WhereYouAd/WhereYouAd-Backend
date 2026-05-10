@@ -1,7 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.AdvertisementRequest;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
-import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaRequest;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -68,7 +68,7 @@ public interface MetaAdApiControllerDocs {
     })
     ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> syncManually(
             @PathVariable Long orgId,
-            @RequestBody @Valid MetaRequest.MetaManualSyncRequest request
+            @RequestBody @Valid AdvertisementRequest.ManualSyncRequest request
     );
 
     @Operation(

@@ -15,7 +15,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+
 public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
+
     void findAllByProvider(String provider);
 
     @Query("SELECT SUM(c.budget) FROM AdCampaign c JOIN c.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId AND o.id = :orgId AND c.status = 'ON_GOING'")
@@ -64,6 +66,6 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     @Query("SELECT adc FROM AdCampaign adc WHERE adc.provider = :provider AND adc.project IS null AND adc.organization.id = :orgId")
     List<AdCampaign> findByOrgIdAndProviderWithNullProject(@Param("orgId") Long orgId, @Param("provider") Provider provider);
 
-    // externalCampaignId + provider로 기존 캠페인 조회 (Meta UPSERT 용)
+    // 외부 캠페인 ID + 플랫폼 계정으로 AdCampaign 조회
     Optional<AdCampaign> findByExternalCampaignIdAndPlatformAccount(String externalCampaignId, PlatformAccount platformAccount);
 }

@@ -1,12 +1,12 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.presentation;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.AdvertisementRequest;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.MetaAdApiService;
 import com.whereyouad.WhereYouAd.domains.advertisement.presentation.docs.MetaAdApiControllerDocs;
 import com.whereyouad.WhereYouAd.global.adapi.exception.code.AdApiErrorCode;
 import com.whereyouad.WhereYouAd.global.exception.AppException;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.config.MetaAdConfig;
-import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaRequest;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -84,7 +84,7 @@ public class MetaAdApiController implements MetaAdApiControllerDocs {
     @PostMapping("/{orgId}/sync")
     public ResponseEntity<DataResponse<MetaResponse.MetaSyncSummary>> syncManually(
             @PathVariable Long orgId,
-            @RequestBody @Valid MetaRequest.MetaManualSyncRequest request
+            @RequestBody @Valid AdvertisementRequest.ManualSyncRequest request
     )
     {
 

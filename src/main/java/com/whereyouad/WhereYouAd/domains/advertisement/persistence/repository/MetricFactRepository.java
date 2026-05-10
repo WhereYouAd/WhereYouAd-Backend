@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
@@ -169,4 +170,11 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
 
     // adContent + timeBucket + provider 으로 기존 지표 조회 (Meta UPSERT 중복 방지)
     Optional<MetricFact> findByAdContentAndTimeBucketAndProvider(AdContent adContent, LocalDateTime timeBucket, Provider provider);
+
+    // Upsert 선행 조회용
+    Optional<MetricFact> findByAdContentAndTimeBucketAndGrain(
+            AdContent adContent,
+            LocalDateTime timeBucket,
+            Grain grain
+    );
 }
