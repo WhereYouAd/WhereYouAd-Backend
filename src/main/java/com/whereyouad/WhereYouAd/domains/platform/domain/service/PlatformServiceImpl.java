@@ -14,6 +14,8 @@ import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAcc
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformAccountRepository;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
+import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
+import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;
@@ -27,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -78,6 +81,65 @@ public class PlatformServiceImpl implements PlatformService {
         platformConnectionRepository.save(
                 PlatformConverter.toPlatformConnection(dto, user, platformAccount)
         );
+
+        return PlatformConverter.toPlatformAccountResponse(platformAccount);
+    }
+
+    // 사용자의 특정 조직에 대한 광고 플랫폼 연동 정보 조회
+    // ADMIN 만 요청 가능 & 실제 연동한 광고 플랫폼 계정 주인만 조회 가능(ADMIN 인데 계정 주인 아닌 경우 빈 리스트 반환)
+    @Override
+    public PlatformResponse.PlatformAccountListResponse getPlatformSyncInfos(Long userId, Long orgId) {
+        // 회원 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 조직 회원 검증
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ORG_MEMBER_NOT_FOUND));
+
+        // ADMIN 아닐 시 요청 불가
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
+        }
+
+        // userId, orgId 기반 PlatformConnection 모두 조회
+        List<PlatformConnection> connections = platformConnectionRepository.findByUserIdAndOrgId(userId, orgId);
+
+        // DTO 로 변환 및 반환
+        return PlatformConverter.toPlatformAccountListResponse(connections);
+    }
+
+    @Override
+    public PlatformResponse.PlatformAccount updateNaverAdAccount(Long userId, Long orgId, PlatformRequest.UpdateNaverApiRequest request) {
+        // 유저 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 조직 멤버 여부 검증
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ORG_MEMBER_NOT_FOUND));
+
+        // ADMIN 권한 검증
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
+        }
+
+        // 기존 PlatformAccount 조회
+        Organization organization = orgMember.getOrganization();
+        PlatformAccount platformAccount = platformAccountRepository
+                .findByExternalAccountIdAndProviderAndOrganization(request.customerId(), Provider.NAVER, organization)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
+
+        // 새 자격증명으로 네이버 광고 API 검증
+        validateNaverCredentials(request.customerId(), request.apiKey(), request.secretKey());
+
+        // 기존 PlatformConnection 조회
+        PlatformConnection connection = platformConnectionRepository
+                .findByUserIdAndPlatformAccountId(userId, platformAccount.getId())
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
+
+        // 키값 및 secret 값 갱신 (apiKey / secretKey)
+        connection.renewApiKey(request.apiKey(), request.secretKey());
 
         return PlatformConverter.toPlatformAccountResponse(platformAccount);
     }
