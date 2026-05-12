@@ -64,4 +64,8 @@ public class Timeline extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id", nullable = false)
     private Organization organization;
+
+    public void updatePerformanceStatus(PerformanceStatus status) {
+        this.performanceStatus = status;
+    }
 }
