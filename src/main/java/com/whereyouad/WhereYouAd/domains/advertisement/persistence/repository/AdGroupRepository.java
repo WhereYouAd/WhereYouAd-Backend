@@ -13,6 +13,10 @@ import java.util.Optional;
 
 public interface AdGroupRepository extends JpaRepository<AdGroup, Long> {
 
+    // 플랫폼 계정이랑 그룹 ID가 일치하는 광고 그룹 단건 조회
+    @Query("SELECT g FROM AdGroup g WHERE g.externalGroupId = :externalGroupId AND g.adCampaign.platformAccount = :platformAccount")
+    Optional<AdGroup> findByExternalGroupIdAndPlatformAccount(@Param("externalGroupId") String externalGroupId, @Param("platformAccount") PlatformAccount platformAccount);
+
     @Modifying
     @Query("UPDATE AdGroup a SET a.status = :status WHERE a.adCampaign.project.id = :projectId")
     void updateStatusByProjectId(@Param("projectId") Long projectId, @Param("status") Status status);
@@ -20,6 +24,9 @@ public interface AdGroupRepository extends JpaRepository<AdGroup, Long> {
     @Modifying
     @Query("UPDATE AdGroup a SET a.status = :status WHERE a.adCampaign.project.organization.id = :orgId")
     void updateStatusByOrganizationId(@Param("orgId") Long orgId, @Param("status") Status status);
+
+    // externalGroupId + 부모 캠페인으로 기존 광고그룹 조회 (Meta UPSERT 용 — 계정 간 ID 충돌 방지)
+    Optional<AdGroup> findByExternalGroupIdAndAdCampaign(String externalGroupId, AdCampaign adCampaign);
 
     Optional<AdGroup> findByAdCampaignAndExternalGroupId(AdCampaign adCampaign, String externalGroupId);
 

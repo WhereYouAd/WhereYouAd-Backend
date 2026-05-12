@@ -111,10 +111,10 @@ public class GoogleAdService {
                                 newCampaign.getName(),
                                 newCampaign.getStatus(),
                                 newCampaign.getBudget(),
-                                newCampaign.getDescription(),
+                                newCampaign.getGoal(),
                                 newCampaign.getStartDate(),
                                 newCampaign.getEndDate(),
-                                newCampaign.getGoal()
+                                newCampaign.getDescription()
                         );
                     } else {
                         adCampaignRepository.save(newCampaign);
@@ -149,7 +149,11 @@ public class GoogleAdService {
                     AdGroup newGroup = googleConverter.toAdGroup(result, adCampaign);
 
                     if (existing.isPresent()) {
-                        existing.get().update(newGroup.getName(), newGroup.getStatus());
+                        existing.get().update(
+                                newGroup.getName(), 
+                                newGroup.getStatus(), 
+                                existing.get().getTargetingInfo()
+                        );
                     } else {
                         adGroupRepository.save(newGroup);
                     }
@@ -184,9 +188,10 @@ public class GoogleAdService {
                         existing.get().update(
                                 newContent.getName(),
                                 newContent.getType(),
+                                newContent.getStatus(),
+                                existing.get().getDescription(),
                                 newContent.getTrackingUrl(),
-                                newContent.getLandingUrl(),
-                                newContent.getStatus()
+                                newContent.getLandingUrl()
                         );
                     } else {
                         adContentRepository.save(newContent);

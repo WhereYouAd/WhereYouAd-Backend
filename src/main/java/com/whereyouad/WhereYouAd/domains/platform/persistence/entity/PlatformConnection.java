@@ -47,6 +47,13 @@ public class PlatformConnection extends BaseEntity {
     @JoinColumn(name = "platform_account_id")
     private PlatformAccount platformAccount;
 
+    public void renewOAuth(String authIdentifier, LocalDateTime tokenExpireAt) {
+        this.authType = AuthType.OAUTH;
+        this.authIdentifier = authIdentifier;
+        this.tokenExpireAt = tokenExpireAt;
+        this.revokedAt = null;
+    }
+
     public void updateAuth(String authIdentifier, String authCredential, LocalDateTime tokenExpireAt) {
         this.authIdentifier = authIdentifier;
         this.authCredential = authCredential;

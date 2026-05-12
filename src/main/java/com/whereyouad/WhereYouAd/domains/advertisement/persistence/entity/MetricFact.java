@@ -31,9 +31,6 @@ public class MetricFact extends BaseEntity {
     @Column(name = "time_bucket", nullable = false)
     private LocalDateTime timeBucket; // 집계 단위 시작 시간
 
-    // @Column(name = "dimension_type")
-    // private String dimensionType;
-
     @Column(name = "impressions")
     private Long impressions; // 노출수
 
@@ -73,6 +70,18 @@ public class MetricFact extends BaseEntity {
     @JoinColumn(name = "ad_campaign_id")
     private AdCampaign adCampaign;
 
+    public void updateBasicMetrics(Long impressions, Long clicks, BigDecimal spend) {
+        this.impressions = impressions;
+        this.clicks = clicks;
+        this.spend = spend;
+    }
+
+    public void updateConversionMetrics(Long conversions, BigDecimal revenue) {
+        this.conversions = conversions;
+        this.revenue = revenue;
+    }
+
+    // UPSERT 용 메서드
     public void update(Long impressions, Long clicks, Long conversions, BigDecimal spend, BigDecimal revenue) {
         this.impressions = impressions;
         this.clicks = clicks;

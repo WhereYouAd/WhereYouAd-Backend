@@ -38,4 +38,28 @@ public class AdvertisementResponse {
             String name,
             String description
     ) {}
+
+    // 네이버 광고 메타데이터 동기화 결과
+    public record NaverMetadataSyncResponse(
+            Long connectionId,
+            int syncedCampaignCount,
+            int syncedAdGroupCount,
+            int syncedAdContentCount
+    ) {}
+
+    // 네이버 광고 통계 동기화 결과
+    public record NaverStatSyncResponse(
+            Long connectionId,
+            String statDate,
+            int processedAdContentCount
+    ) {}
+
+    // 네이버 수동 동기화 결과
+    public record NaverManualSyncSummary(
+            int adCampaignCount,
+            int adGroupCount,
+            int adContentCount,
+            int metricCount,
+            List<Long> failedConnectionIds
+    ) {}
 }

@@ -47,8 +47,12 @@ public class AdGroup extends BaseEntity {
     @JoinColumn(name = "ad_campaign_id")
     private AdCampaign adCampaign;
 
-    public void update(String name, Status status) {
+    // UPSERT 용 메서드
+    public void update(String name, Status status, String targetingInfo) {
         this.name = name;
         this.status = status;
+        if (targetingInfo != null) {
+            this.targetingInfo = targetingInfo;
+        }
     }
 }

@@ -66,6 +66,8 @@ public class AdCampaign extends BaseEntity {
     @JoinColumn(name = "project_id")
     private Project project;
 
+    //Organization 의존성
+    //API 연동 시 리팩터링 필요
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id")
     private Organization organization;
@@ -79,14 +81,17 @@ public class AdCampaign extends BaseEntity {
         this.project = project;
     }
 
-    public void update(String name, Status status, Long budget, String description, LocalDate startDate,
-            LocalDate endDate, Goal goal) {
+    // UPSERT 용 메서드
+    public void update(String name, Status status, Long budget, Goal goal,
+                              LocalDate startDate, LocalDate endDate, String description) {
         this.name = name;
         this.status = status;
         this.budget = budget;
-        this.description = description;
+        this.goal = goal;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.goal = goal;
+        if (description != null) {
+            this.description = description;
+        }
     }
 }

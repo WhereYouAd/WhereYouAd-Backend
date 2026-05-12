@@ -24,6 +24,7 @@ public class AdContent extends BaseEntity {
     @Column(name = "ad_content_id")
     private Long id;
 
+    //광고 개체 외부 Id
     @Column(name = "external_ad_id")
     private String externalAdId;
 
@@ -60,11 +61,20 @@ public class AdContent extends BaseEntity {
         this.landingUrl = landingUrl;
     }
 
-    public void update(String name, String type, String trackingUrl, String landingUrl, Status status) {
+    // UPSERT 용 메서드
+    public void update(String name, String type, Status status, String description,
+                       String trackingUrl, String landingUrl) {
         this.name = name;
         this.type = type;
-        this.trackingUrl = trackingUrl;
-        this.landingUrl = landingUrl;
         this.status = status;
+        if (description != null) {
+            this.description = description;
+        }
+        if (trackingUrl != null) {
+            this.trackingUrl = trackingUrl;
+        }
+        if (landingUrl != null) {
+            this.landingUrl = landingUrl;
+        }
     }
 }

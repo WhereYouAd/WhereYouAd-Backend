@@ -15,13 +15,13 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class KakaoAdAuthStrategy implements AdAuthStrategy {
+public class MetaAdAuthStrategy implements AdAuthStrategy {
 
     private final AESUtil aesUtil;
 
     @Override
     public Provider getProvider() {
-        return Provider.KAKAO;
+        return Provider.META;
     }
 
     @Override
@@ -29,11 +29,12 @@ public class KakaoAdAuthStrategy implements AdAuthStrategy {
         Map<String, String> headers = new HashMap<>();
 
         // 1. 암호화된 액세스 토큰 복호화
-        String accessToken = new String(aesUtil.decryptAES(connection.getAuthIdentifier()), StandardCharsets.UTF_8);
+        String accessToken = new String(aesUtil.decryptAES(connection.getAuthIdentifier()), StandardCharsets.UTF_8).trim();
 
         // 헤더 생성 로직 추가
-
-
+        // Authorization 헤더 (Bearer 토큰)
+        // 헤더 대신 파라미터 이름표로 맵핑(FeignClient에서 꺼내 쓸 용도)
+        headers.put("access_token", accessToken);
 
         return headers;
     }
