@@ -21,10 +21,11 @@ public class GoogleAdWebClient {
     private final GoogleAdAuthStrategy googleAdAuthStrategy;
     private final String apiBaseUrl = "https://googleads.googleapis.com/v23/customers/";
 
-    // 1일간의 MetricFact(통계) 조회
+    // 최근 7일간의 MetricFact(통계) 조회
     public Mono<String> searchGoogleAdsData(String customerId, PlatformConnection connection, AdAuthRequest request) {
         String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
-        String targetDate = LocalDate.now().minusDays(1).toString();
+        String startDate = LocalDate.now().minusDays(7).toString();
+        String endDate = LocalDate.now().minusDays(1).toString();
 
         String requestBody = "{\n" +
                 "  \"query\": \"SELECT " +
@@ -37,7 +38,7 @@ public class GoogleAdWebClient {
                 "metrics.cost_micros, " +
                 "metrics.conversions_value " +
                 "FROM ad_group_ad " +       // customer 대신 ad_group_ad 에서 조회
-                "WHERE segments.date = '" + targetDate + "'\"\n" +
+                "WHERE segments.date BETWEEN '" + startDate + "' AND '" + endDate + "'\"\n" +
                 "}";
 
         return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
