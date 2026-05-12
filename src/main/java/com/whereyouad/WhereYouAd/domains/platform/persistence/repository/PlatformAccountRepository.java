@@ -2,13 +2,13 @@ package com.whereyouad.WhereYouAd.domains.platform.persistence.repository;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
 public interface PlatformAccountRepository extends JpaRepository<PlatformAccount, Long> {
+    Optional<PlatformAccount> findByExternalAccountIdAndProviderAndOrganization_Id(String externalAccountId, Provider provider, Long orgId);
 
     // 계정이 존재하는지 확인
     boolean existsByExternalAccountIdAndOrganizationIdAndProvider(

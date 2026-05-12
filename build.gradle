@@ -84,6 +84,15 @@ dependencies {
 
 	// Kafka
 	implementation 'org.springframework.kafka:spring-kafka'
+
+	// Google Ads API
+	implementation 'com.google.api-ads:google-ads:42.0.0'
+
+	// Google API Client
+	implementation 'com.google.api-client:google-api-client:2.4.1'
+
+	// WebClient
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 }
 
 tasks.named('test') {

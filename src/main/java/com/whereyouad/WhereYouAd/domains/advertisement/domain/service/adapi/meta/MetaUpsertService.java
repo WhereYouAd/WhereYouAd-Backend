@@ -51,13 +51,14 @@ public class MetaUpsertService {
             AdCampaign saved = adCampaignRepository
                     .findByExternalCampaignIdAndPlatformAccount(src.id(), platformAccount)
                     .map(existing -> {
-                        existing.updateFromApi(
+                        existing.update(
                                 newData.getName(),
                                 newData.getStatus(),
                                 newData.getBudget(),
                                 newData.getGoal(),
                                 newData.getStartDate(),
-                                newData.getEndDate()
+                                newData.getEndDate(),
+                                newData.getDescription()
                         );
                         return adCampaignRepository.save(existing);
                     })
@@ -78,7 +79,7 @@ public class MetaUpsertService {
             AdGroup saved = adGroupRepository
                     .findByExternalGroupIdAndAdCampaign(src.id(), parentCampaign)
                     .map(existing -> {
-                        existing.updateFromApi(
+                        existing.update(
                                 newData.getName(),
                                 newData.getStatus(),
                                 newData.getTargetingInfo());
@@ -102,11 +103,13 @@ public class MetaUpsertService {
             AdContent saved = adContentRepository
                     .findByExternalAdIdAndAdGroup(src.id(), parentAdGroup)
                     .map(existing -> {
-                        existing.updateFromApi(
+                        existing.update(
                                 newData.getName(),
                                 newData.getType(),
                                 newData.getStatus(),
-                                newData.getDescription());
+                                newData.getDescription(),
+                                newData.getTrackingUrl(),
+                                newData.getLandingUrl());
                         return adContentRepository.save(existing);
                     })
                     .orElseGet(() -> adContentRepository.save(newData));
@@ -130,7 +133,7 @@ public class MetaUpsertService {
                     .findByAdContentAndTimeBucketAndProvider(adContent, newData.getTimeBucket(), Provider.META)
                     .ifPresentOrElse(
                             existing -> {
-                                existing.updateFromApi(
+                                existing.update(
                                         newData.getImpressions(),
                                         newData.getClicks(),
                                         newData.getConversions(),

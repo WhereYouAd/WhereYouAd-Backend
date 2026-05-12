@@ -53,4 +53,10 @@ public class PlatformConnection extends BaseEntity {
         this.tokenExpireAt = tokenExpireAt;
         this.revokedAt = null;
     }
+
+    public void updateAuth(String authIdentifier, String authCredential, LocalDateTime tokenExpireAt) {
+        this.authIdentifier = authIdentifier;
+        this.authCredential = authCredential;
+        this.tokenExpireAt = tokenExpireAt;
+    }
 }

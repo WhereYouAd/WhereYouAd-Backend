@@ -82,8 +82,7 @@ public class MetricFact extends BaseEntity {
     }
 
     // UPSERT 용 메서드
-    public void updateFromApi(Long impressions, Long clicks, Long conversions,
-                              BigDecimal spend, BigDecimal revenue) {
+    public void update(Long impressions, Long clicks, Long conversions, BigDecimal spend, BigDecimal revenue) {
         this.impressions = impressions;
         this.clicks = clicks;
         this.conversions = conversions;
