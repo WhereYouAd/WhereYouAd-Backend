@@ -64,6 +64,6 @@ public interface PlatformControllerDocs {
     ResponseEntity<DataResponse<PlatformResponse.PlatformAccount>> updateNaverAdAccount(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestBody PlatformRequest.UpdateNaverApiRequest request
+            @RequestBody PlatformRequest.PlatformAccount request
     );
 }
