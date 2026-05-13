@@ -162,19 +162,19 @@ src/main/java/com/whereyouad/WhereYouAd/
 ### 2. Commit Convention
 Angular Commit Convention을 따릅니다.
 
-`type: subject`
+`:gitmoji: type: subject`
 
-| Type | 설명 |
-| --- | --- |
-| `feat` | 새로운 기능 추가 |
-| `fix` | 버그 수정 |
-| `docs` | 문서 수정 (README 등) |
-| `style` | 코드 포맷팅, 세미콜론 누락, 공백 등 (코드 변경 없음) |
-| `refactor` | 코드 리팩토링 (기능 변화 없음) |
-| `test` | 테스트 코드 추가/수정 |
-| `chore` | 빌드, 설정, 패키지 매니저 등 기타 변경사항 |
-| `ci` | CI 관련 설정 변경 |
-| `setting` | 프로젝트 환경 설정 변경 |
+| Gitmoji                | Type       | 설명                                         |
+|------------------------|------------|--------------------------------------------|
+| ✨ `:sparkles:`         | `feat`     | 새로운 기능 추가                                  |
+| 🐛 `:bug:`             | `fix`      | 버그 수정                                      |
+| 📝 `:memo:`            | `docs`     | 문서 수정 (README, Swagger Docs 등)             |
+| 🎨 `:art:`             | `style`    | 코드 포맷팅, 세미콜론 누락, 공백 등 (코드 변경 없음)           |
+| ♻️ `:recycle:`         | `refactor` | 코드 리팩토링 (기능 변화 없음)                         |
+| ✅ `:white_check_mark:` | `test`     | 테스트 코드 추가/수정                               |
+| 🔧 `:wrench:`          | `chore`    | 빌드, 설정, 패키지 매니저 등 기타 변경사항                  |
+| 💚 `:green_heart:`     | `ci`       | CI 관련 설정 변경                                |
+| 🚀 `:rocket:`     | `deploy`   | 배포 관련 수정(Dockerfile, docker-compose.yml 등) |
 
 &nbsp;
 
