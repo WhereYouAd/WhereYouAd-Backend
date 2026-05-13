@@ -16,7 +16,7 @@ WhereYouAd는 **광고 성과 및 워크스페이스 관리를 효율적으로 �
 ### 주요 기능
 
 - **소셜 로그인 & JWT 인증** — Naver / Google / Kakao OAuth2 로그인 및 JWT 세션 관리
-- **광고 플랫폼 연동** — Google Ads, Meta Marketing, Naver Ads API와 OAuth2 토큰 기반 연결
+- **광고 플랫폼 연동** — Google Ads, Meta Marketing API와 OAuth2 토큰 기반 연결, Naver Ads API와 Key/Secret 기반 API 연결
 - **캠페인 / 광고 관리** — 다중 플랫폼 데이터를 통합 모델로 정규화하여 제공
 - **광고 성과 대시보드** — 플랫폼별·기간별 지표 집계 및 커서 기반 페이지네이션
 - **클릭 이벤트 수집** — Kafka를 통한 비동기 클릭 이벤트 처리
