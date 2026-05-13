@@ -51,7 +51,7 @@ public class PlatformController implements PlatformControllerDocs {
     public ResponseEntity<DataResponse<PlatformResponse.PlatformAccount>> updateNaverAdAccount(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @Valid @RequestBody PlatformRequest.UpdateNaverApiRequest request
+            @Valid @RequestBody PlatformRequest.PlatformAccount request
     )
     {
         PlatformResponse.PlatformAccount response = platformService.updateNaverAdAccount(userId, orgId, request);

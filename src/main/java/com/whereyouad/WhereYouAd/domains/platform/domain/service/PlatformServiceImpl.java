@@ -110,7 +110,7 @@ public class PlatformServiceImpl implements PlatformService {
     }
 
     @Override
-    public PlatformResponse.PlatformAccount updateNaverAdAccount(Long userId, Long orgId, PlatformRequest.UpdateNaverApiRequest request) {
+    public PlatformResponse.PlatformAccount updateNaverAdAccount(Long userId, Long orgId, PlatformRequest.PlatformAccount request) {
         // 유저 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
