@@ -36,6 +36,8 @@ public interface PlatformConnectionRepository extends JpaRepository<PlatformConn
     @Query("SELECT c FROM PlatformConnection c WHERE c.user.id = :userId " + "AND c.platformAccount.id = :platformAccountId")
     Optional<PlatformConnection> findByUserIdAndPlatformAccountId(@Param("userId") Long userId, @Param("platformAccountId") Long platformAccountId);
 
-    @Query("SELECT c FROM PlatformConnection c  WHERE c.user.id = :userId AND c.platformAccount.organization.id = :orgId")
+    @Query("SELECT c FROM PlatformConnection c " +
+            "JOIN FETCH c.platformAccount pa " +
+            "WHERE c.user.id = :userId AND pa.organization.id = :orgId")
     List<PlatformConnection> findByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
 }
