@@ -92,7 +92,7 @@ cp .env.example .env
 필요한 환경 변수 그룹:
 - DB / Redis / Kafka 접속 정보
 - OAuth2 클라이언트 자격증명 (Naver / Google / Kakao)
-- 광고 플랫폼 자격증명 (Meta, Google Ads)
+- 광고 플랫폼 자격증명 (Meta Marketing, Google Ads, Naver Ads)
 - JWT / AES 시크릿
 - AWS S3, OpenAI, CoolSMS, Gmail 자격증명
 
