@@ -48,9 +48,11 @@ public class AdGroup extends BaseEntity {
     private AdCampaign adCampaign;
 
     // UPSERT 용 메서드
-    public void updateFromApi(String name, Status status, String targetingInfo) {
+    public void update(String name, Status status, String targetingInfo) {
         this.name = name;
         this.status = status;
-        this.targetingInfo = targetingInfo;
+        if (targetingInfo != null) {
+            this.targetingInfo = targetingInfo;
+        }
     }
 }

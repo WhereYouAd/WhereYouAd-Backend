@@ -15,7 +15,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-
 public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
 
     void findAllByProvider(String provider);
@@ -68,4 +67,6 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
 
     // 외부 캠페인 ID + 플랫폼 계정으로 AdCampaign 조회
     Optional<AdCampaign> findByExternalCampaignIdAndPlatformAccount(String externalCampaignId, PlatformAccount platformAccount);
+
+    Optional<AdCampaign> findByPlatformAccountAndExternalCampaignId(PlatformAccount platformAccount, String externalCampaignId);
 }

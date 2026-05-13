@@ -82,13 +82,16 @@ public class AdCampaign extends BaseEntity {
     }
 
     // UPSERT 용 메서드
-    public void updateFromApi(String name, Status status, Long budget, Goal goal,
-                              LocalDate startDate, LocalDate endDate) {
+    public void update(String name, Status status, Long budget, Goal goal,
+                              LocalDate startDate, LocalDate endDate, String description) {
         this.name = name;
         this.status = status;
         this.budget = budget;
         this.goal = goal;
         this.startDate = startDate;
         this.endDate = endDate;
+        if (description != null) {
+            this.description = description;
+        }
     }
 }

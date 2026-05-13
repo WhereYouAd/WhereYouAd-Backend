@@ -177,4 +177,6 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             LocalDateTime timeBucket,
             Grain grain
     );
+
+    Optional<MetricFact> findByPlatformAccount_IdAndAdContent_IdAndTimeBucket(Long platformAccountId, Long adContentId, LocalDateTime timeBucket);
 }

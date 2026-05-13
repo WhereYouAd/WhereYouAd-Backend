@@ -84,4 +84,8 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
 
         // externalAdId + 부모 광고그룹으로 기존 소재 조회 (Meta UPSERT 용 — 계정 간 ID 충돌 방지)
         Optional<AdContent> findByExternalAdIdAndAdGroup(String externalAdId, AdGroup adGroup);
+
+        Optional<AdContent> findByAdGroupAndExternalAdId(AdGroup adGroup, String externalAdId);
+
+        Optional<AdContent> findByAdGroup_AdCampaign_PlatformAccountAndExternalAdId(PlatformAccount platformAccount, String externalAdId);
 }

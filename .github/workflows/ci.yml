@@ -58,3 +58,24 @@ jobs:
           OPENAI_API_KEY: test_openai_key
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
           AES_SECRET: test_aes_key
+          GOOGLE_ADS_CLIENT_ID: test_google_client_id
+          GOOGLE_ADS_CLIENT_SECRET: test_google_client_secret
+          GOOGLE_ADS_OAUTH2_REDIRECT_URL: http://localhost:8080/api/google/callback
+          GOOGLE_ADS_DEVELOPER_TOKEN: test_google_developer_token
+          GOOGLE_ADS_LOGIN_CUSTOMER_ID: test_google_ads_login_customer_id
+          NAVER_CLIENT_ID: test_naver_client_id
+          NAVER_CLIENT_SECRET: test_naver_client_secret
+          KAKAO_CLIENT_ID: test_kakao_client_id
+          KAKAO_CLIENT_SECRET: test_kakao_client_secret
+          OAUTH2_REDIRECT_URL: http://localhost:3000/oauth2/redirect
+          BASE_URL: http://localhost:8080
+          META_APP_ID: test_meta_app_id
+          META_APP_SECRET: test_meta_app_secret
+          META_REDIRECT_URI: http://localhost:8080/api/meta/callback
+          META_FRONTEND_CALLBACK_URL: http://localhost:5173/oauth2/meta/result
+          AWS_ACCESS_KEY: test_aws_access_key
+          AWS_SECRET_KEY: test_aws_secret_key
+          KAFKA_HOST_IP: localhost
+          COOKIE_SECURE: false
+          COOKIE_DOMAIN: localhost
+          COOKIE_SAME_SITE: Lax

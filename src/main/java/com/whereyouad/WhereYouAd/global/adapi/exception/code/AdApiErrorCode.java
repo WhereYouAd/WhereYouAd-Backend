@@ -27,6 +27,15 @@ public enum AdApiErrorCode implements BaseErrorCode {
     EXTERNAL_API_COMMUNICATION_ERROR(HttpStatus.BAD_GATEWAY, "ADAPI_502_1", "외부 광고 플랫폼 API 통신 중 에러가 발생했습니다."),
     TOKEN_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, "ADAPI_502_2", "광고 플랫폼으로부터 비어있는 토큰 응답을 받았습니다."),
 
+    // OAuth 연동 관련
+    INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "ADAPI_400_1", "유효하지 않거나 만료된 구글 연동 요청입니다."),
+    OAUTH_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ADAPI_403_1", "사용자가 구글 연동 권한을 거부했습니다."),
+
+    // 500
+    GOOGLE_TOKEN_REFRESH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "ADAPI_500_1", "구글 광고 API 토큰 갱신에 실패했습니다."),
+    GOOGLE_TOKEN_ENCRYPTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "ADAPI_500_2", "구글 인증 토큰 암호화 중 오류가 발생했습니다."),
+    GOOGLE_API_CONNECTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "ADAPI_500_3", "구글 광고 API 호출 중 오류가 발생했습니다."),
+    GOOGLE_DATA_SYNC_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "ADAPI_500_4", "구글 광고 데이터(JSON 파싱 및 저장) 동기화에 실패했습니다.")
     ;
 
     private final HttpStatus httpStatus;
