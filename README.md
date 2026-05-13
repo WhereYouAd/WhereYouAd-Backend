@@ -68,7 +68,7 @@ WhereYouAd는 **광고 성과 및 워크스페이스 관리를 효율적으로 �
 
 ### Cloud & Infra
 - **Storage**: AWS S3 (Spring Cloud AWS)
-- **Notification**: Gmail SMTP, CoolSMS
+- **Verification**: Gmail SMTP, CoolSMS (계정 찾기 · 비밀번호 재설정 인증 코드 발송)
 - **Container**: Docker, Docker Compose
 
 ### Docs
@@ -126,21 +126,24 @@ src/main/java/com/whereyouad/WhereYouAd/
 │       ├── presentation/ # Controller + Swagger 문서 인터페이스
 │       └── exception/    # 도메인 예외 + ErrorCode
 ├── global/               # 전역 공통 설정 및 유틸
+│   ├── common/           # 공용 베이스 클래스 (BaseEntity 등)
 │   ├── security/         # JWT, OAuth2 필터/핸들러
-│   ├── config/           # Feign, Redis, Kafka 설정
+│   ├── config/           # Swagger, Redis, OpenAI, WebClient 설정
 │   ├── response/         # 응답 래퍼 (BaseResponse, DataResponse)
 │   ├── exception/        # 전역 예외 핸들러
-│   └── util/             # AESUtil, RedisUtil, CursorUtil 등
+│   ├── adapi/            # 광고 플랫폼 API 인증 (Factory + Strategy 패턴)
+│   ├── sse/              # SSE Emitter (실시간 이벤트 전송)
+│   └── utils/            # AESUtil, RedisUtil, CursorUtil 등
 └── infrastructure/       # 외부 시스템 연동
-    ├── meta/             # Meta Marketing API Feign 클라이언트
+    ├── meta/             # Meta Marketing API 클라이언트
     ├── naver/            # Naver Ads API 클라이언트
+    ├── google/           # Google Ads API 클라이언트
     ├── openai/           # OpenAI Feign 클라이언트
     ├── s3/               # AWS S3 이미지 업로드
-    ├── kafka/            # Kafka Producer / Consumer
-    └── notification/     # Gmail SMTP, CoolSMS
+    └── kafka/            # Kafka Producer / Consumer
 ```
 
-**핵심 도메인**: `user` · `advertisement` · `project` · `organization` · `platform` · `dashboard` · `image` · `click` · `ai`
+**핵심 도메인**: `user` · `advertisement` · `organization` · `platform` · `dashboard` · `click` · `ai`
 
 &nbsp;
 
