@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-@RequestMapping("/api/timeline")
+@RequestMapping("/api/org/{orgId}/timeline")
 public class TimelineController implements TimelineControllerDocs {
 
 }
