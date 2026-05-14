@@ -1,8 +1,11 @@
 package com.whereyouad.WhereYouAd.domains.timeline.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.timeline.application.dto.request.TimelineRequest;
 import com.whereyouad.WhereYouAd.domains.timeline.application.dto.response.TimelineResponse;
@@ -28,6 +31,7 @@ public class TimelineServiceImpl implements TimelineService {
 
     private final TimelineRepository timelineRepository;
     private final OrgRepository orgRepository;
+    private final OrgMemberRepository orgMemberRepository;
     private final TimelineUtil timelineUtil;
 
     @Override
@@ -53,6 +57,31 @@ public class TimelineServiceImpl implements TimelineService {
 
         // 엔티티 저장 및 반환
         return TimelineConverter.toCreateResponse(timelineRepository.save(timeline));
+    }
+
+    @Override
+    public void deleteTimeline(Long userId, Long orgId, Long timelineId) {
+
+        // 타임라인이 없는 경우
+        Timeline timeline = timelineRepository.findById(timelineId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND));
+
+        // 조직 검증에 실패한 경우
+        if (!timeline.getOrganization().getId().equals(orgId)) {
+            throw new OrgHandler(OrgErrorCode.ORG_NOT_FOUND);
+        }
+
+        // 조직 맴버가 아닌 경우
+        OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_FORBIDDEN));
+
+        // ADMIN 권한이 없는 경우
+        if (member.getRole() != OrgRole.ADMIN) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_FORBIDDEN);
+        }
+
+        // 삭제
+        timelineRepository.delete(timeline);
     }
 
     // 비교 날짜 내부 DTO

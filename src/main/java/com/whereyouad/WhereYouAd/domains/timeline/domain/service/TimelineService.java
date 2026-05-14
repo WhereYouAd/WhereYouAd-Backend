@@ -5,4 +5,5 @@ import com.whereyouad.WhereYouAd.domains.timeline.application.dto.response.Timel
 
 public interface TimelineService {
     TimelineResponse.CreateResponseDTO createTimeline(Long userId, Long orgId, TimelineRequest.TimelineCreateDto dto);
+    void deleteTimeline(Long userId, Long orgId, Long timelineId);
 }
