@@ -29,4 +29,14 @@ public class TimelineController implements TimelineControllerDocs {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(DataResponse.created(timelineService.createTimeline(userId, orgId, dto)));
     }
+
+    @DeleteMapping("/{timelineId}")
+    public ResponseEntity<DataResponse<Void>> deleteTimeline(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId
+    ) {
+        timelineService.deleteTimeline(userId, orgId, timelineId);
+        return ResponseEntity.ok(DataResponse.ok());
+    }
 }

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface TimelineControllerDocs {
 
@@ -27,5 +28,20 @@ public interface TimelineControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @Valid @RequestBody TimelineRequest.TimelineCreateDto dto
+    );
+
+    @Operation(
+            summary = "타임라인 삭제 API",
+            description = "조직의 ADMIN 역할을 가진 멤버만 삭제 가능합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "삭제 성공"),
+            @ApiResponse(responseCode = "403_1", description = "삭제 권한 없음 (ADMIN이 아닌 경우)"),
+            @ApiResponse(responseCode = "404_1", description = "타임라인을 찾을 수 없는 경우")
+    })
+    ResponseEntity<DataResponse<Void>> deleteTimeline(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId
     );
 }
