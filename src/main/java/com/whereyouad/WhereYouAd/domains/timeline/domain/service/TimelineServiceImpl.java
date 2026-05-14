@@ -49,7 +49,7 @@ public class TimelineServiceImpl implements TimelineService {
         }
 
         // 비교 기준 날짜(지난 주, 지난 달, 지난 년도와 비교)
-        ComparisonDateRange comparisonDates = calculateComparisonDates(dto.startDate(), dto.endDate(), dto.comparisonPeriodType());
+        ComparisonDateRange comparisonDates = calculateComparisonDates(dto.startDate(), dto.comparisonPeriodType());
 
         // 비교 기간에 성과 데이터가 없으면 타임라인 생성 불가
         boolean hasComparisonData = metricFactRepository.existsByTimeBucketBetweenAndOrg(
@@ -101,11 +101,12 @@ public class TimelineServiceImpl implements TimelineService {
     private record ComparisonDateRange(LocalDate start, LocalDate end) {}
 
     // enum -> 날짜 메서드
-    private ComparisonDateRange calculateComparisonDates(LocalDate startDate, LocalDate endDate, ComparisonPeriodType type) {
+    private ComparisonDateRange calculateComparisonDates(LocalDate startDate, ComparisonPeriodType type) {
+        LocalDate comparisonEnd = startDate.minusDays(1);
         return switch (type) {
-            case LAST_WEEK -> new ComparisonDateRange(startDate.minusDays(7), endDate.minusDays(7));
-            case LAST_MONTH -> new ComparisonDateRange(startDate.minusMonths(1), endDate.minusMonths(1));
-            case LAST_YEAR -> new ComparisonDateRange(startDate.minusYears(1), endDate.minusYears(1));
+            case LAST_WEEK -> new ComparisonDateRange(comparisonEnd.minusDays(6),   comparisonEnd);
+            case LAST_MONTH -> new ComparisonDateRange(comparisonEnd.minusDays(29),  comparisonEnd);
+            case LAST_YEAR -> new ComparisonDateRange(comparisonEnd.minusDays(364), comparisonEnd);
         };
     }
 }
