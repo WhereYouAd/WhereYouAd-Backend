@@ -16,6 +16,7 @@ import com.whereyouad.WhereYouAd.domains.timeline.domain.util.TimelineUtil;
 import com.whereyouad.WhereYouAd.domains.timeline.exception.TimelineException;
 import com.whereyouad.WhereYouAd.domains.timeline.exception.code.TimelineErrorCode;
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.entity.Timeline;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.repository.TimelineRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Service
 @Transactional
@@ -30,6 +32,7 @@ import java.time.LocalDate;
 public class TimelineServiceImpl implements TimelineService {
 
     private final TimelineRepository timelineRepository;
+    private final MetricFactRepository metricFactRepository;
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final TimelineUtil timelineUtil;
@@ -47,6 +50,16 @@ public class TimelineServiceImpl implements TimelineService {
 
         // 비교 기준 날짜(지난 주, 지난 달, 지난 년도와 비교)
         ComparisonDateRange comparisonDates = calculateComparisonDates(dto.startDate(), dto.endDate(), dto.comparisonPeriodType());
+
+        // 비교 기간에 성과 데이터가 없으면 타임라인 생성 불가
+        boolean hasComparisonData = metricFactRepository.existsByTimeBucketBetweenAndOrg(
+                comparisonDates.start().atStartOfDay(),
+                comparisonDates.end().atTime(LocalTime.MAX),
+                orgId
+        );
+        if (!hasComparisonData) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_COMPARISON_DATA);
+        }
 
         // 입력받은 DTO를 타임라인 엔티티로 변환
         Timeline timeline = TimelineConverter.toTimeline(dto, organization, userId, comparisonDates.start(), comparisonDates.end());
