@@ -66,9 +66,9 @@ public class TimelineServiceImpl implements TimelineService {
         Timeline timeline = timelineRepository.findById(timelineId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND));
 
-        // 조직 검증에 실패한 경우
+        // 조직에 타임라인 검증에 실패한 경우
         if (!timeline.getOrganization().getId().equals(orgId)) {
-            throw new OrgHandler(OrgErrorCode.ORG_NOT_FOUND);
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND);
         }
 
         // 조직 맴버가 아닌 경우
