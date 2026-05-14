@@ -34,6 +34,20 @@ public class TimelineServiceImpl implements TimelineService {
     private final OrgMemberRepository orgMemberRepository;
     private final TimelineUtil timelineUtil;
 
+    /**
+     * Creates a new Timeline for the specified organization and returns a DTO representing the created timeline.
+     *
+     * The method validates the target organization exists, verifies the provided date range is valid,
+     * computes comparison-period dates, converts the request into a Timeline entity, computes and sets
+     * the timeline's performance status, persists the entity, and returns a create-response DTO.
+     *
+     * @param userId the ID of the user creating the timeline
+     * @param orgId the ID of the organization that will own the timeline
+     * @param dto the timeline creation request data
+     * @return the created timeline represented as a CreateResponseDTO
+     * @throws OrgHandler if the organization with the given orgId does not exist
+     * @throws TimelineException if the provided date range is invalid (end date before start date)
+     */
     @Override
     public TimelineResponse.CreateResponseDTO createTimeline(Long userId, Long orgId, TimelineRequest.TimelineCreateDto dto) {
         // 1. 조직 검증
@@ -59,6 +73,12 @@ public class TimelineServiceImpl implements TimelineService {
         return TimelineConverter.toCreateResponse(timelineRepository.save(timeline));
     }
 
+    /**
+     * Deletes the specified timeline when the requesting user is an admin of the timeline's organization.
+     *
+     * @throws TimelineException if the timeline does not exist, the user is not a member of the organization, or the user lacks ADMIN role
+     * @throws OrgHandler if the provided organization id does not match the timeline's owning organization
+     */
     @Override
     public void deleteTimeline(Long userId, Long orgId, Long timelineId) {
 
@@ -87,7 +107,14 @@ public class TimelineServiceImpl implements TimelineService {
     // 비교 날짜 내부 DTO
     private record ComparisonDateRange(LocalDate start, LocalDate end) {}
 
-    // enum -> 날짜 메서드
+    /**
+     * Compute comparison-period start and end dates by shifting the provided date range according to the comparison period type.
+     *
+     * @param startDate the original period start date
+     * @param endDate   the original period end date
+     * @param type      the comparison period type that determines the shift (e.g., last week, last month, last year)
+     * @return a ComparisonDateRange containing the computed comparison start and end dates
+     */
     private ComparisonDateRange calculateComparisonDates(LocalDate startDate, LocalDate endDate, ComparisonPeriodType type) {
         return switch (type) {
             case LAST_WEEK -> new ComparisonDateRange(startDate.minusDays(7), endDate.minusDays(7));

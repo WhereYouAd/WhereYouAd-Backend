@@ -15,6 +15,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 public interface TimelineControllerDocs {
 
+    /**
+     * Create a timeline for the specified organization.
+     *
+     * @param userId the authenticated user's ID
+     * @param orgId  the organization ID in which to create the timeline
+     * @param dto    timeline details including name, start/end dates, performance metric criteria, and comparison period
+     * @return the created timeline's data wrapped in a DataResponse
+     */
     @Operation(
             summary = "타임라인 생성 API",
             description = "타임라인 이름, 기간, 성과 기준 지표, 비교 기준 기간을 입력받아 타임라인을 생성합니다."
@@ -30,6 +38,14 @@ public interface TimelineControllerDocs {
             @Valid @RequestBody TimelineRequest.TimelineCreateDto dto
     );
 
+    /**
+     * Deletes the specified timeline from the given organization; only an authenticated member with the organization's ADMIN role may perform this action.
+     *
+     * @param userId     the authenticated user's id extracted from the security principal
+     * @param orgId      the organization id containing the timeline
+     * @param timelineId the id of the timeline to delete
+     * @return           a ResponseEntity wrapping a DataResponse with no payload indicating successful deletion
+     */
     @Operation(
             summary = "타임라인 삭제 API",
             description = "조직의 ADMIN 역할을 가진 멤버만 삭제 가능합니다."

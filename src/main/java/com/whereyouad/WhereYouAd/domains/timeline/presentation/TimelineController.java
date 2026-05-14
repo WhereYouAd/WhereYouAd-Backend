@@ -20,6 +20,14 @@ public class TimelineController implements TimelineControllerDocs {
 
     private final TimelineService timelineService;
 
+    /**
+     * Create a new timeline within the specified organization.
+     *
+     * @param userId the authenticated user's identifier (extracted from the security principal)
+     * @param orgId  the organization identifier from the request path
+     * @param dto    the timeline creation payload
+     * @return       a ResponseEntity containing a DataResponse with the created TimelineResponse.CreateResponseDTO (HTTP 201 Created)
+     */
     @PostMapping
     public ResponseEntity<DataResponse<TimelineResponse.CreateResponseDTO>> createTimeline(
             @AuthenticationPrincipal(expression = "userId") Long userId,
@@ -30,6 +38,14 @@ public class TimelineController implements TimelineControllerDocs {
                 .body(DataResponse.created(timelineService.createTimeline(userId, orgId, dto)));
     }
 
+    /**
+     * Deletes the specified timeline for the given organization on behalf of the authenticated user.
+     *
+     * @param userId     the authenticated user's ID (extracted from the security principal)
+     * @param orgId      the organization ID containing the timeline
+     * @param timelineId the ID of the timeline to delete
+     * @return a ResponseEntity containing an empty DataResponse<Void> indicating successful deletion
+     */
     @DeleteMapping("/{timelineId}")
     public ResponseEntity<DataResponse<Void>> deleteTimeline(
             @AuthenticationPrincipal(expression = "userId") Long userId,

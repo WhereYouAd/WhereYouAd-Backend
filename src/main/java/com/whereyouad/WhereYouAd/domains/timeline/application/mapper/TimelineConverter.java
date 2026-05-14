@@ -12,7 +12,16 @@ import java.util.List;
 
 public class TimelineConverter {
 
-    // 타임라인 엔티티로 변환
+    /**
+     * Create a Timeline entity from the provided create DTO and contextual data.
+     *
+     * @param dto the request DTO containing timeline name, start/end dates and selected metrics
+     * @param organization the organization that will own the timeline
+     * @param userId id of the user who creates the timeline
+     * @param comparisonStartDate start date for the comparison period
+     * @param comparisonEndDate end date for the comparison period
+     * @return the constructed Timeline entity with metric flags and audit/context fields set
+     */
     public static Timeline toTimeline(
             TimelineCreateDto dto,
             Organization organization,
@@ -35,7 +44,15 @@ public class TimelineConverter {
                 .build();
     }
 
-    // entity -> dto
+    /**
+     * Convert a Timeline entity into a CreateResponseDTO containing its selected metrics and metadata.
+     *
+     * Reconstructs the list of MetricType values from the entity's metric flags and maps identifier, name,
+     * date ranges, performance status, and creation timestamp into the response DTO.
+     *
+     * @param timeline the Timeline entity to convert
+     * @return a populated TimelineResponse.CreateResponseDTO representing the given timeline
+     */
     public static TimelineResponse.CreateResponseDTO toCreateResponse(Timeline timeline) {
         List<MetricType> metrics = new ArrayList<>();
         if (timeline.isUseClick()) metrics.add(MetricType.CLICK);

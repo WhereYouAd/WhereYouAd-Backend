@@ -6,7 +6,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TimelineUtil {
-    // TODO: PerformanceStatus 판별 로직 추가
+    /**
+     * Determines the performance status for the given timeline based on its metrics and state.
+     *
+     * @param timeline the timeline whose performance should be evaluated
+     * @return the determined {@code PerformanceStatus} for the timeline, or {@code null} if a status cannot be determined
+     */
     public PerformanceStatus calculatePerformanceStatus(Timeline timeline) {
         return null;
     }
