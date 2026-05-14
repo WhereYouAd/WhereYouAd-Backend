@@ -69,9 +69,8 @@ public class PlatformConverter {
                 connection.getAuthType(),
                 connection.getPlatformAccount().getStatus(),
                 connection.getTokenExpireAt() != null ? LocalDate.from(connection.getTokenExpireAt()) : null,
-                connection.getUpdatedAt() != null ? LocalDate.from(connection.getUpdatedAt()) : null
-                // TODO : 마지막 연동일자? 를 나타내는 것에 대해 논의 필요
-                // -> PlatformConnection 에 lastSyncedAt 로 필드를 추가하는게 나을지? 지금처럼 updatedAt 를 가져다 쓰는게 나을지?
+                connection.getCreatedAt() != null ? LocalDate.from(connection.getCreatedAt()) : null
+                // 연동 시각은 PlatformConnection 에 createdAt 로
         );
     }
 
