@@ -26,8 +26,7 @@ public class OrgController implements OrgControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestPart(value = "request") @Valid OrgRequest.Create request,
             @RequestPart(value = "image", required = false) MultipartFile image
-    )
-    {
+    ) {
         OrgResponse.Create response = orgService.createOrganization(userId, request, image);
         return ResponseEntity.ok(
                 DataResponse.created(response)
@@ -37,8 +36,7 @@ public class OrgController implements OrgControllerDocs {
     @GetMapping("/my")
     public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getMyOrganizations(
             @AuthenticationPrincipal(expression = "userId") Long userId
-    )
-    {
+    ) {
         OrgResponse.MyOrganizations response = orgService.getMyOrganizations(userId);
 
         return ResponseEntity.ok(
@@ -49,8 +47,7 @@ public class OrgController implements OrgControllerDocs {
     @PostMapping("/{orgId}/workspace")
     public ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> setCurrentWorkspace(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId)
-    {
+            @PathVariable Long orgId) {
         OrgResponse.CurrentWorkspace response = orgService.setCurrentWorkspace(userId, orgId);
 
         return ResponseEntity.ok(
@@ -60,8 +57,7 @@ public class OrgController implements OrgControllerDocs {
 
     @GetMapping("/my/workspace")
     public ResponseEntity<DataResponse<OrgResponse.CurrentWorkspace>> getCurrentWorkspace(
-            @AuthenticationPrincipal(expression = "userId") Long userId)
-    {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         OrgResponse.CurrentWorkspace response = orgService.getCurrentWorkspace(userId);
 
         return ResponseEntity.ok(
@@ -70,8 +66,7 @@ public class OrgController implements OrgControllerDocs {
     }
 
     @GetMapping("/{orgId}")
-    public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId)
-    {
+    public ResponseEntity<DataResponse<OrgResponse.OrgDetail>> getOrganizationDetail(@PathVariable Long orgId) {
         OrgResponse.OrgDetail response = orgService.getOrganizationDetail(orgId);
 
         return ResponseEntity.ok(
@@ -82,8 +77,7 @@ public class OrgController implements OrgControllerDocs {
     @GetMapping("/deleted")
     public ResponseEntity<DataResponse<OrgResponse.MyOrganizations>> getSoftDeletedOrganizations(
             @AuthenticationPrincipal(expression = "userId") Long userId
-    )
-    {
+    ) {
         OrgResponse.MyOrganizations response = orgService.getSoftDeletedOrgs(userId);
 
         return ResponseEntity.ok(
@@ -98,8 +92,7 @@ public class OrgController implements OrgControllerDocs {
             @PathVariable Long orgId,
             @RequestPart(value = "request") @Valid OrgRequest.Update request,
             @RequestPart(value = "image", required = false) MultipartFile imageFile
-    )
-    {
+    ) {
         OrgResponse.Update response = orgService.modifyOrganization(userId, orgId, request, imageFile);
         return ResponseEntity.ok(
                 DataResponse.from(response)
@@ -110,8 +103,7 @@ public class OrgController implements OrgControllerDocs {
     public ResponseEntity<DataResponse<OrgResponse.Delete>> restoreOrganization(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId
-    )
-    {
+    ) {
         OrgResponse.Delete response = orgService.restoreOrganization(userId, orgId);
 
         return ResponseEntity.ok(
@@ -124,8 +116,7 @@ public class OrgController implements OrgControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestParam(defaultValue = "false") boolean isHard
-    )
-    {
+    ) {
         if (isHard) { //true 로 하여 Hard Delete 시
             orgService.removeOrganization(userId, orgId); //Hard Delete
         } else { //기본값(false) 이면
@@ -199,5 +190,19 @@ public class OrgController implements OrgControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId, @PathVariable String token) {
         OrgResponse.OrgInvitationResponse orgInvitationResponse = orgService.acceptOrgInvitation(userId, token);
         return ResponseEntity.ok(DataResponse.from(orgInvitationResponse));
+    }
+
+    @PatchMapping("/{orgId}/changeOwner")
+    public ResponseEntity<DataResponse<String>> changeOrgOwner(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody @Valid OrgRequest.ChangeOwner request
+    )
+    {
+        orgService.changeOwner(userId, orgId, request);
+
+        return ResponseEntity.ok(
+                DataResponse.from("워크스페이스 소유자가 Id=" + request.newOwnerUserId()  + " 인 사용자로 변경되었습니다.")
+        );
     }
 }
