@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 public interface TimelineControllerDocs {
 
@@ -22,6 +21,8 @@ public interface TimelineControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "생성 성공"),
             @ApiResponse(responseCode = "400_1", description = "종료일이 시작일보다 앞선 경우"),
+            @ApiResponse(responseCode = "400_2", description = "비교 기간에 해당하는 성과 데이터가 없는 경우"),
+            @ApiResponse(responseCode = "403_1", description = "조직 멤버가 아닌 경우"),
             @ApiResponse(responseCode = "404_1", description = "조직을 찾을 수 없는 경우")
     })
     ResponseEntity<DataResponse<TimelineResponse.CreateResponseDTO>> createTimeline(
