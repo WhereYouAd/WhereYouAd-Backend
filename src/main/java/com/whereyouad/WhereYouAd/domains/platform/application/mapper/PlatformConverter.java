@@ -12,6 +12,10 @@ import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAcc
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
 public class PlatformConverter {
 
     // dto -> entity
@@ -55,5 +59,28 @@ public class PlatformConverter {
                 platformAccount.getProvider(),
                 platformAccount.getStatus()
         );
+    }
+
+    public static PlatformResponse.PlatformKeyResponse toPlatformKeyResponse(PlatformConnection connection) {
+        return new PlatformResponse.PlatformKeyResponse(
+                connection.getPlatformAccount().getId(),
+                connection.getPlatformAccount().getExternalAccountId(),
+                connection.getPlatformAccount().getProvider(),
+                connection.getAuthType(),
+                connection.getPlatformAccount().getStatus(),
+                connection.getTokenExpireAt() != null ? LocalDate.from(connection.getTokenExpireAt()) : null,
+                connection.getCreatedAt() != null ? LocalDate.from(connection.getCreatedAt()) : null
+                // 연동 시각은 PlatformConnection 에 createdAt 로
+        );
+    }
+
+    public static PlatformResponse.PlatformAccountListResponse toPlatformAccountListResponse(List<PlatformConnection> connections) {
+        List<PlatformResponse.PlatformKeyResponse> responseList = new ArrayList<>();
+        for (PlatformConnection connection : connections) {
+            PlatformResponse.PlatformKeyResponse response = toPlatformKeyResponse(connection);
+            responseList.add(response);
+        }
+
+        return new PlatformResponse.PlatformAccountListResponse(responseList);
     }
 }
