@@ -35,4 +35,6 @@ public interface OrgService {
     OrgResponse.OrgInvitationResponse sendOrgInvitation(Long userId, Long orgId, String email);
 
     OrgResponse.OrgInvitationResponse acceptOrgInvitation(Long userId, String token);
+
+    void changeOwner(Long userId, Long orgId, OrgRequest.ChangeOwner request);
 }
