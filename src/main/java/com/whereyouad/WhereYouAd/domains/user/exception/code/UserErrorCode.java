@@ -17,6 +17,7 @@ public enum UserErrorCode implements BaseErrorCode {
     USER_PASSWORD_NOT_CORRECT(HttpStatus.BAD_REQUEST, "USER_400_6", "비밀번호가 일치하지 않습니다."),
     SOCIAL_USER_PASSWORD_CANNOT_MODIFY(HttpStatus.BAD_REQUEST, "USER_400_7", "소셜 로그인 회원은 비밀번호를 변경할 수 없습니다."),
     USER_OLD_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_8", "비밀번호 변경을 위해선 이전 비밀번호 입력이 필요합니다."),
+    USER_OWNS_ORGANIZATION(HttpStatus.BAD_REQUEST, "USER_400_9", "다른 멤버가 속한 조직의 생성자는 탈퇴할 수 없습니다. 소유권을 위임한 뒤 다시 시도해 주세요."),
 
     // 401
     USER_EMAIL_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, "USER_401_1", "이메일 인증이 진행되지 않았습니다."),
