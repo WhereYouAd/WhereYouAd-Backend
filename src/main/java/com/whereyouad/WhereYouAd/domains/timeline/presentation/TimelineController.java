@@ -13,12 +13,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @RequestMapping("/api/org/{orgId}/timeline")
 public class TimelineController implements TimelineControllerDocs {
 
     private final TimelineService timelineService;
+
+    @GetMapping
+    public ResponseEntity<DataResponse<List<TimelineResponse.TimelineSummaryDTO>>> getTimelines(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    ) {
+        return ResponseEntity.ok(DataResponse.from(timelineService.getTimelines(userId, orgId)));
+    }
 
     @PostMapping
     public ResponseEntity<DataResponse<TimelineResponse.CreateResponseDTO>> createTimeline(

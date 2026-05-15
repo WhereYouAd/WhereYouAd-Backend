@@ -11,7 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 public interface TimelineControllerDocs {
 
@@ -28,6 +29,20 @@ public interface TimelineControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @Valid @RequestBody TimelineRequest.TimelineCreateDto dto
+    );
+
+    @Operation(
+            summary = "타임라인 목록 조회 API",
+            description = "조직의 타임라인 목록을 최신순으로 조회합니다. 각 항목은 제목, 날짜 범위, 성과 상태를 포함합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "403_2", description = "조직 멤버가 아닌 경우"),
+            @ApiResponse(responseCode = "404_1", description = "조직을 찾을 수 없는 경우")
+    })
+    ResponseEntity<DataResponse<List<TimelineResponse.TimelineSummaryDTO>>> getTimelines(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
     );
 
     @Operation(
