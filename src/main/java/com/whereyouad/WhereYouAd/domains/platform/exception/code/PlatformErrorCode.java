@@ -18,6 +18,7 @@ public enum PlatformErrorCode implements BaseErrorCode {
     // 404
     PLATFORM_CONNECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PLATFORM_404_1", "조직과 연결된 인증 정보를 찾을 수 없습니다."),
     PLATFORM_ORG_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "PLATFORM_404_2", "해당 조직의 멤버가 아닙니다."),
+    PLATFORM_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "PLATFORM_404_3", "해당 광고 계정을 찾을 수 없습니다."),
 
     // 409
     PLATFORM_ACCOUNT_ALREADY_EXISTS(HttpStatus.CONFLICT, "PLATFORM_409_1", "이미 등록된 광고 계정입니다."),

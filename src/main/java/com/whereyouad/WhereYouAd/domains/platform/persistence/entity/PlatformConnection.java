@@ -59,4 +59,12 @@ public class PlatformConnection extends BaseEntity {
         this.authCredential = authCredential;
         this.tokenExpireAt = tokenExpireAt;
     }
+
+    public void renewApiKey(String authIdentifier, String authCredential) {
+        this.authType = AuthType.API_KEY;
+        this.authIdentifier = authIdentifier;
+        this.authCredential = authCredential;
+        this.tokenExpireAt = null;
+        this.revokedAt = null;
+    }
 }
