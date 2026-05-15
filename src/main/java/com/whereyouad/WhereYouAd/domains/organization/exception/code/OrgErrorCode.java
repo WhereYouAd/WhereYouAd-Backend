@@ -14,6 +14,7 @@ public enum OrgErrorCode implements BaseErrorCode {
     ORG_CANNOT_KICK_ADMIN(HttpStatus.BAD_REQUEST, "ORG_400_3", "ADMIN은 추방할 수 없습니다."),
     ORG_CANNOT_ROLE_CHANGE_SELF(HttpStatus.BAD_REQUEST, "ORG_400_4", "본인의 역할은 변경할 수 없습니다."),
     ORG_LAST_ADMIN(HttpStatus.BAD_REQUEST, "ORG_400_5", "마지막 ADMIN은 강등할 수 없습니다."),
+    ORG_OWNER_SAME_AS_BEFORE(HttpStatus.BAD_REQUEST, "ORG_400_6", "자기 자신으로 조직 소유자를 변경할 수 없습니다."),
 
     // 403
     ORG_FORBIDDEN(HttpStatus.FORBIDDEN, "ORG_403_1", "해당 요청은 조직 생성자만 요청 가능합니다."),
