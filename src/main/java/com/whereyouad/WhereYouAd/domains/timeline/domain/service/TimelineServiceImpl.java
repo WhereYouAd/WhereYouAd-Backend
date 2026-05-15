@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Service
 @Transactional
@@ -86,15 +87,30 @@ public class TimelineServiceImpl implements TimelineService {
 
         // 조직 맴버가 아닌 경우
         OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_FORBIDDEN));
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_DELETE_FORBIDDEN));
 
         // ADMIN 권한이 없는 경우
         if (member.getRole() != OrgRole.ADMIN) {
-            throw new TimelineException(TimelineErrorCode.TIMELINE_FORBIDDEN);
+            throw new TimelineException(TimelineErrorCode.TIMELINE_DELETE_FORBIDDEN);
         }
 
         // 삭제
         timelineRepository.delete(timeline);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TimelineResponse.TimelineSummaryDTO> getTimelines(Long userId, Long orgId) {
+        // 조직이 없는 경우
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 해당 조직의 맴버가 아닌 경우
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_READ_FORBIDDEN));
+
+        List<Timeline> timelines = timelineRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId);
+        return TimelineConverter.toTimelineSummaryList(timelines);
     }
 
     // 비교 날짜 내부 DTO
