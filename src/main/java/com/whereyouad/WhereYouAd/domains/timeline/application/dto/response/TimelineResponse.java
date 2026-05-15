@@ -20,4 +20,12 @@ public class TimelineResponse {
             PerformanceStatus performanceStatus,
             LocalDateTime createdAt
     ) {}
+
+    public record TimelineSummaryDTO(
+            Long timelineId,
+            String name,
+            LocalDate startDate,
+            LocalDate endDate,
+            PerformanceStatus performanceStatus
+    ) {}
 }
