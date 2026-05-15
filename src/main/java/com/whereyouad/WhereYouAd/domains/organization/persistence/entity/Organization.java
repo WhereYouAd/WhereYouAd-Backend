@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.Or
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
@@ -52,5 +53,9 @@ public class Organization extends BaseEntity {
 
     public void restoreDelete() {
         this.status = OrgStatus.ACTIVE;
+    }
+
+    public void changeOwner(Long newOwnerUserId) {
+        this.ownerUserId = newOwnerUserId;
     }
 }
