@@ -121,4 +121,22 @@ public interface UserControllerDocs {
             @RequestPart(value = "request") UserInfoModifyRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image
     );
+
+    @Operation(
+            summary = "회원 탈퇴 API",
+            description = "AccessToken 을 헤더로 받아 현재 로그인한 회원을 탈퇴 처리합니다.\n\n" +
+                    "1. 회원의 프로필 이미지가 S3 에 존재할 경우 함께 삭제됩니다. S3 이미지 삭제에 실패하더라도 회원 탈퇴는 정상적으로 진행되며, 실패한 이미지 URL 은 서버 로그로만 기록됩니다.\n\n" +
+                    "2. 회원이 속한 워크스페이스(Organization) 처리 방식\n\n" +
+                    "- 단순 ADMIN / MEMBER 로만 속해있는 조직 → 해당 가입 정보만 제거됩니다.\n\n" +
+                    "- 회원이 생성자인 조직 → 본인 외 다른 멤버가 없는 경우 조직이 함께 Soft Delete 처리되며, 본인 외 다른 멤버가 존재하는 경우 탈퇴가 차단됩니다. 이 경우 먼저 `PATCH /api/org/{orgId}/changeOwner` API 로 소유권을 위임한 뒤 다시 탈퇴를 시도해야 합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "404_1", description = "USER_404_1 : 해당 사용자 존재하지 않음"),
+            @ApiResponse(responseCode = "400_9", description = "USER_400_9 : 다른 멤버가 속한 조직의 소유자는 탈퇴할 수 없음 (소유권 위임 후 재시도 필요)")
+    })
+    public ResponseEntity<DataResponse<String>> deleteUser(
+            @AuthenticationPrincipal(expression = "userId") Long userId
+    );
+
 }
