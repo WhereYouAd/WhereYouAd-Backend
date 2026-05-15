@@ -168,6 +168,20 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("provider") Provider provider
     );
 
+    // FETCH JOIN 없이 MetricFact 정보만 빠르게 가져오는 쿼리 (대시보드 지표 합산용)
+    @Query("SELECT m FROM MetricFact m " +
+           "WHERE m.project.organization.id = :orgId " +
+           "AND m.provider = :provider " +
+           "AND m.timeBucket >= :start " +
+           "AND m.timeBucket <= :end " +
+           "ORDER BY m.timeBucket ASC")
+    List<MetricFact> findMetricFactsByOrgAndProviderAndPeriod(
+            @Param("orgId") Long orgId,
+            @Param("provider") Provider provider,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
     // adContent + timeBucket + provider 으로 기존 지표 조회 (Meta UPSERT 중복 방지)
     Optional<MetricFact> findByAdContentAndTimeBucketAndProvider(AdContent adContent, LocalDateTime timeBucket, Provider provider);
 
