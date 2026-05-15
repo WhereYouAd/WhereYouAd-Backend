@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -106,10 +107,16 @@ public class TimelineServiceImpl implements TimelineService {
 
     // enum -> 날짜 메서드
     private ComparisonDateRange calculateComparisonDates(LocalDate startDate, LocalDate endDate, ComparisonPeriodType type) {
-        LocalDate comparisonEnd = startDate.minusDays(1);
         return switch (type) {
-            case LAST_WEEK -> new ComparisonDateRange(comparisonEnd.minusDays(6),   comparisonEnd);
-            case LAST_MONTH -> new ComparisonDateRange(comparisonEnd.minusDays(29),  comparisonEnd);
+            case LAST_WEEK -> {
+                LocalDate lastWeekStart = startDate.with(DayOfWeek.MONDAY).minusWeeks(1);
+                yield new ComparisonDateRange(lastWeekStart, lastWeekStart.plusDays(6));
+            }
+            case LAST_MONTH -> {
+                LocalDate firstDayOfLastMonth = startDate.minusMonths(1).withDayOfMonth(1);
+                LocalDate lastDayOfLastMonth  = startDate.withDayOfMonth(1).minusDays(1);
+                yield new ComparisonDateRange(firstDayOfLastMonth, lastDayOfLastMonth);
+            }
             case LAST_YEAR -> new ComparisonDateRange(startDate.minusYears(1), endDate.minusYears(1));
         };
     }
