@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.UserInfoModifyRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyOrgResponse;
@@ -18,13 +19,16 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserReposit
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import com.whereyouad.WhereYouAd.infrastructure.client.aws.s3.S3UploadService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Objects;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -194,5 +198,50 @@ public class UserService {
         user.modifyInfo(finalName, finalImageUrl, finalEncodedPassword);
 
         return UserConverter.toUserInfoResponse(user.getId(), user.getName(), user.getProfileImageUrl());
+    }
+
+    // 회원 탈퇴
+    // 만약 탈퇴하려는 회원이 Organization 의 owner (organization.getOwnerUserId()) 면 탈퇴 불가 -> 양도 먼저 진행 필요
+    public void deleteUser(Long userId) {
+        // 회원 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 회원 프로필 이미지 S3 URL 추출
+        String profileImageUrl = user.getProfileImageUrl();
+
+        // 회원이 속한 조직 List 조회
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
+
+        List<Organization> organizations = orgMembers.stream()
+                .map(OrgMember::getOrganization)
+                .toList();
+
+        // 회원이 속한 모든 조직 중에서
+        for (Organization organization : organizations) {
+            if (Objects.equals(organization.getOwnerUserId(), userId)) { // 만약 회원이 생성자인 조직이 있으면
+                // 해당 조직의 회원 수를 조회
+                long memberCount = orgMemberRepository.countByOrganizationId(organization.getId());
+
+                if (memberCount > 1) { // 회원 수가 1 초과이면 (본인 제외 다른 회원이 조직에 속해있으면)
+                    // 탈퇴 불가(조직 생성자 양도부터 먼저 진행해야한다.)
+                    throw new UserHandler(UserErrorCode.USER_OWNS_ORGANIZATION);
+                }
+
+                // 회원 수가 1 이면 본인만 속한 조직(별도 회원이 없는 조직) 이므로 Soft Delete 진행
+                organization.softDelete();
+            }
+        }
+
+        // 회원 삭제
+        userRepository.deleteById(userId);
+
+        // 회원 삭제 이후 S3 에서 이미지 삭제 진행
+        try {
+            s3UploadService.deleteImageFromUrl(profileImageUrl);
+        } catch (Exception e) {
+            // 이미지 삭제에 실패하더라도 로그 처리만 하고 탈퇴는 정상 진행
+            log.error("회원 탈퇴 과정에서 S3 이미지 삭제 오류 발생");
+        }
     }
 }
