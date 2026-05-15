@@ -39,11 +39,15 @@ public class TimelineServiceImpl implements TimelineService {
 
     @Override
     public TimelineResponse.CreateResponseDTO createTimeline(Long userId, Long orgId, TimelineRequest.TimelineCreateDto dto) {
-        // 1. 조직 검증
+        // 조직 검증
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
-        // 2. 날짜 검증(시작일이 종료일보다 늦은 경우)
+        // 조직 멤버 검증
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_FORBIDDEN));
+
+        // 날짜 검증(시작일이 종료일보다 늦은 경우)
         if (dto.endDate().isBefore(dto.startDate())) {
             throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_DATE_RANGE);
         }
