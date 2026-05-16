@@ -75,4 +75,25 @@ public class Timeline extends BaseEntity {
     public void updateSummary(String summary) {
         this.summary = summary;
     }
+
+    public void update(String name,
+                       LocalDate startDate,
+                       LocalDate endDate,
+                       boolean useClick,
+                       boolean useConversion,
+                       boolean useImpression,
+                       boolean useRoas,
+                       LocalDate comparisonStartDate,
+                       LocalDate comparisonEndDate
+    ) {
+        this.name = name;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.useClick = useClick;
+        this.useConversion = useConversion;
+        this.useImpression = useImpression;
+        this.useRoas = useRoas;
+        this.comparisonStartDate = comparisonStartDate;
+        this.comparisonEndDate = comparisonEndDate;
+    }
 }
