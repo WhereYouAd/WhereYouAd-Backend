@@ -75,4 +75,26 @@ public class DashboardResponse {
             String adName,
             String message
     ) {}
+
+    // 일자별 및 합계 지표를 담을 레코드
+    public record DailyMetricFactResponse(
+            LocalDate date,        // 일자 (합계인 경우 null 또는 특정 값)
+            Long impressions,      // 노출수
+            Long clicks,           // 클릭수
+            Long spend,            // 광고비
+            Long conversions,      // 전환수
+            Long revenue,          // 매출 (ROAS 계산용)
+            Double ctr,            // 클릭률 (%)
+            Double cpa,            // 전환단가
+            Double roas            // 광고수익률 (%)
+    ) {}
+
+    // 플랫폼별 대시보드 메트릭 리스트 래퍼 응답
+    public record PlatformMetricFactSummaryResponse(
+            String providerType,
+            LocalDate startDate,
+            LocalDate endDate,
+            DailyMetricFactResponse total,              // 기간 전체 합계 지표
+            List<DailyMetricFactResponse> dailyMetrics  // 일자별 지표 리스트
+    ) {}
 }

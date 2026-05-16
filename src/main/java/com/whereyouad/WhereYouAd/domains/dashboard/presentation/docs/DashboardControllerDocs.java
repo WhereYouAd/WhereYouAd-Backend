@@ -98,6 +98,24 @@ public interface DashboardControllerDocs {
 
 
     @Operation(
+            summary = "대시보드 - 플랫폼별 기간 단위 지표(MetricFact) 조회 API",
+            description = "특정 플랫폼에 대하여 특정 기간 동안의 일자별 광고 지표(노출수, 클릭수, 광고비, 전환수, 매출 등) 및 비율 지표(CTR, CPA, ROAS), 그리고 기간 전체의 합계 데이터를 조회합니다.\n\n" +
+                          "조회 기간은 파라미터 `days`로 결정되며(기본값 7), 합계 데이터(`total`)와 일자별 데이터(`dailyMetrics`) 리스트가 포함된 형식으로 반환됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 플랫폼(providerType) 입력 값"),
+            @ApiResponse(responseCode = "403", description = "해당 조직에 대한 접근 권한이 없는 경우"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 조직")
+    })
+    ResponseEntity<DataResponse<DashboardResponse.PlatformMetricFactSummaryResponse>> getPlatformMetricFacts(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @Parameter(description = "조직 ID", required = true, example = "1") @PathVariable Long orgId,
+            @Parameter(description = "광고 플랫폼 (GOOGLE, META, NAVER)", required = true, example = "GOOGLE") @RequestParam(name = "providerType") String providerType,
+            @Parameter(description = "조회 기간(일 단위, 기본값 7)", example = "7") @RequestParam(required = false, defaultValue = "7") Integer days
+    );
+
+    @Operation(
             summary = "대시보드 - 실시간 클릭수 스트림 출력 API",
             description = "해당 조직의 최근 60분간 실시간 클릭수 추이와 이상 징후(봇) 감지 여부를 스트림으로 보내주는 API입니다.\n\n" +
                     "파라미터로 `mode`를 받아 `dummy`이면 서버 내에서 생성하는 가상 트래픽을, `real`일 경우 실제 수집된 클릭 데이터를 기반으로 반환합니다.\n\n" +

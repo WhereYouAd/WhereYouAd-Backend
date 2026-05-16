@@ -83,6 +83,19 @@ public class DashboardController implements DashboardControllerDocs {
         return ResponseEntity.ok(DataResponse.from(response));
     }
 
+    @GetMapping("/{orgId}/metric-facts")
+    public ResponseEntity<DataResponse<DashboardResponse.PlatformMetricFactSummaryResponse>> getPlatformMetricFacts(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(name = "providerType") String providerType,
+            @RequestParam(required = false, defaultValue = "7") Integer days
+    ) {
+        DashboardResponse.PlatformMetricFactSummaryResponse response =
+                dashboardService.getPlatformMetricFacts(userId, orgId, providerType, days);
+
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
+
     @GetMapping(value = "/{orgId}/clicks/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<SseEmitter> streamRealClicks(
             @AuthenticationPrincipal(expression = "userId") Long userId,
