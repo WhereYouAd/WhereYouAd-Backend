@@ -67,7 +67,7 @@ public class MetricCalculator {
     // 변화율 = ((current - past) / past) * 100 (반올림 정수)
     public Integer computeDiffRate(double currentVal, Double pastVal) {
         if (pastVal == null || pastVal == 0.0)
-            return null;
+            return 0;
 
         double rate = ((currentVal - pastVal) / pastVal) * 100.0;
         return (int) Math.round(rate);
