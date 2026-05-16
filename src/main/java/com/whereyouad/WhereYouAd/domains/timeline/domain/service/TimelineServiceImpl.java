@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -49,11 +50,15 @@ public class TimelineServiceImpl implements TimelineService {
 
     @Override
     public TimelineResponse.CreateResponseDTO createTimeline(Long userId, Long orgId, TimelineRequest.TimelineCreateDto dto) {
-        // 1. 조직 검증
+        // 조직 검증
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
-        // 2. 날짜 검증(시작일이 종료일보다 늦은 경우)
+        // 조직 멤버 검증
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_FORBIDDEN));
+
+        // 날짜 검증(시작일이 종료일보다 늦은 경우)
         if (dto.endDate().isBefore(dto.startDate())) {
             throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_DATE_RANGE);
         }
@@ -333,10 +338,16 @@ public class TimelineServiceImpl implements TimelineService {
 
     // enum -> 날짜 메서드
     private ComparisonDateRange calculateComparisonDates(LocalDate startDate, LocalDate endDate, ComparisonPeriodType type) {
-        LocalDate comparisonEnd = startDate.minusDays(1);
         return switch (type) {
-            case LAST_WEEK -> new ComparisonDateRange(comparisonEnd.minusDays(6),   comparisonEnd);
-            case LAST_MONTH -> new ComparisonDateRange(comparisonEnd.minusDays(29),  comparisonEnd);
+            case LAST_WEEK -> {
+                LocalDate lastWeekStart = startDate.with(DayOfWeek.MONDAY).minusWeeks(1);
+                yield new ComparisonDateRange(lastWeekStart, lastWeekStart.plusDays(6));
+            }
+            case LAST_MONTH -> {
+                LocalDate firstDayOfLastMonth = startDate.minusMonths(1).withDayOfMonth(1);
+                LocalDate lastDayOfLastMonth  = startDate.withDayOfMonth(1).minusDays(1);
+                yield new ComparisonDateRange(firstDayOfLastMonth, lastDayOfLastMonth);
+            }
             case LAST_YEAR -> new ComparisonDateRange(startDate.minusYears(1), endDate.minusYears(1));
         };
     }
