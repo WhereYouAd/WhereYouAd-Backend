@@ -18,6 +18,8 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.Org
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.project.exception.code.ProjectErrorCode;
 import com.whereyouad.WhereYouAd.global.utils.BudgetCalculator;
+import com.whereyouad.WhereYouAd.global.utils.MetricCalculator;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
     private final BudgetCalculator budgetCalculator;
+    private final MetricCalculator metricCalculator;
 
     @Override
     @Transactional(readOnly = true)
@@ -141,18 +143,18 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         //최근 ~ 한달전 ROAS 값 계산하기 -> revenue / spend * 100
-        BigDecimal currTotalRevenue = toZeroIfNull(currentProjection.getTotalRevenue());
-        BigDecimal currTotalSpend = toZeroIfNull(currentProjection.getTotalSpend());
-        BigDecimal currentRoasBigDecimal = safePercent(currTotalRevenue, currTotalSpend);
+        BigDecimal currTotalRevenue = metricCalculator.toZeroIfNull(currentProjection.getTotalRevenue());
+        BigDecimal currTotalSpend = metricCalculator.toZeroIfNull(currentProjection.getTotalSpend());
+        BigDecimal currentRoasBigDecimal = metricCalculator.safePercent(currTotalRevenue, currTotalSpend);
 
         //한달전 ~ 두달전 ROAS 값 계산 -> revenue / spend * 100
-        BigDecimal pastTotalRevenue = toZeroIfNull(pastProjection.getTotalRevenue());
-        BigDecimal pastTotalSpend = toZeroIfNull(pastProjection.getTotalSpend());
-        BigDecimal pastRoas = safePercent(pastTotalRevenue, pastTotalSpend);
+        BigDecimal pastTotalRevenue = metricCalculator.toZeroIfNull(pastProjection.getTotalRevenue());
+        BigDecimal pastTotalSpend = metricCalculator.toZeroIfNull(pastProjection.getTotalSpend());
+        BigDecimal pastRoas = metricCalculator.safePercent(pastTotalRevenue, pastTotalSpend);
 
         //전환율(CVR) 계산 -> totalConversions(전환수 합계) / totalClicks(클릭수 합계) * 100
-        double rawCurrentCvr = safePercent(currentProjection.getTotalConversions(), currentProjection.getTotalClicks());
-        double rawPastCvr = safePercent(pastProjection.getTotalConversions(), pastProjection.getTotalClicks());
+        double rawCurrentCvr = metricCalculator.safePercent(currentProjection.getTotalConversions(), currentProjection.getTotalClicks());
+        double rawPastCvr = metricCalculator.safePercent(pastProjection.getTotalConversions(), pastProjection.getTotalClicks());
 
         //각각의 지표값 -> 클릭수(totalClicks), 노출수(totalImpressions), 전환율(currentCvr), 광고비 대비 매출(ROAS)
         Long totalClicks = currentProjection.getTotalClicks() != null ? currentProjection.getTotalClicks() : 0L;
@@ -161,10 +163,10 @@ public class DashboardServiceImpl implements DashboardService {
         double currentRoas = currentRoasBigDecimal.doubleValue(); //ROAS 소수점 2번째자리까지만 파싱된 BigDecimal -> double 로 형변환
 
         //각 지표값의 변화율 -> 클릭수 변화율, 노출수 변화율, 전환율 변화율, ROAS 변화율
-        Double clickChangeRate = calculateChangeRate(currentProjection.getTotalClicks(), pastProjection.getTotalClicks());
-        Double impressionChangeRate = calculateChangeRate(currentProjection.getTotalImpressions(), pastProjection.getTotalImpressions());
-        Double cvrChangeRate = calculateChangeRate(rawCurrentCvr, rawPastCvr);
-        Double roasChangeRate = calculateChangeRate(currentRoasBigDecimal, pastRoas);
+        Double clickChangeRate = metricCalculator.calculateChangeRate(currentProjection.getTotalClicks(), pastProjection.getTotalClicks());
+        Double impressionChangeRate = metricCalculator.calculateChangeRate(currentProjection.getTotalImpressions(), pastProjection.getTotalImpressions());
+        Double cvrChangeRate = metricCalculator.calculateChangeRate(rawCurrentCvr, rawPastCvr);
+        Double roasChangeRate = metricCalculator.calculateChangeRate(currentRoasBigDecimal, pastRoas);
 
         return DashboardConverter.toAggregatedSummary(
                 totalClicks,
@@ -232,12 +234,12 @@ public class DashboardServiceImpl implements DashboardService {
         Map<String, Double> prevRoasMap = previous.stream()
                 .collect(Collectors.toMap(
                         RoasProjection::getProvider,
-                        proj -> calculateRoas(proj.getTotalRevenue(), proj.getTotalSpend())));
+                        proj -> metricCalculator.calculateRoas(proj.getTotalRevenue(), proj.getTotalSpend())));
 
         // 8. 현재 기간 결과를 ROAS 기준 내림차순 정렬
         List<RoasProjection> sorted = current.stream()
                 .sorted(Comparator.comparingDouble(
-                        (RoasProjection p) -> calculateRoas(p.getTotalRevenue(), p.getTotalSpend())).reversed())
+                        (RoasProjection p) -> metricCalculator.calculateRoas(p.getTotalRevenue(), p.getTotalSpend())).reversed())
                 .toList();
 
         // 9. DTO 변환 + 순위(rank) + diffRate 계산
@@ -248,9 +250,9 @@ public class DashboardServiceImpl implements DashboardService {
             RoasProjection proj = sorted.get(i);
 
             // 해당 RoasProjection에 대한 값들
-            Double currentRoas = calculateRoas(proj.getTotalRevenue(), proj.getTotalSpend()); // 현재 roas
+            Double currentRoas = metricCalculator.calculateRoas(proj.getTotalRevenue(), proj.getTotalSpend()); // 현재 roas
             Double prevRoas = prevRoasMap.get(proj.getProvider()); // 이전 roas
-            Integer diffRate = computeDiffRate(currentRoas, prevRoas); // 변화율 계산
+            Integer diffRate = metricCalculator.computeDiffRate(currentRoas, prevRoas); // 변화율 계산
             Provider provider = Provider.valueOf(proj.getProvider()); // String -> Enum 변환
 
             rankings.add(DashboardConverter.toRankingROAS(
@@ -301,83 +303,105 @@ public class DashboardServiceImpl implements DashboardService {
 
 
 
-    //------------------- private 내부 계산 메서드 --------------------
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardResponse.PlatformMetricFactSummaryResponse getPlatformMetricFacts(
+            Long userId, Long orgId, String providerType, Integer days) {
 
+        // 1. 조직 접근 권한 검증
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new DashboardException(OrgErrorCode.ORG_NOT_FOUND));
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new DashboardException(DashboardErrorCode.ACCESS_FORBIDDEN));
 
-    // ROAS = (revenue / spend) * 100
-    // spend가 null 또는 0이면 0.0 반환 (Division by Zero 방어)
-    private double calculateRoas(BigDecimal revenue, BigDecimal spend) {
-        // spend가 null이거나 0인 경우 -> 0.0 반환
-        if (spend == null || spend.compareTo(BigDecimal.ZERO) == 0)
-            return 0.0;
+        // 2. 파라미터 및 조회 기간 설정
+        Provider provider;
+        try {
+            provider = Provider.valueOf(providerType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
+        }
 
-        // 매출이 없는 경우 -> 0.0 반환
-        if (revenue == null)
-            return 0.0;
+        int targetDays = (days != null && days > 0) ? days : 7;
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(targetDays - 1); // targetDays가 7이면 당일 포함 7일
 
-        // ROAS 계산 후 반환
-        return revenue.divide(spend, 4, RoundingMode.HALF_UP) // 소수점 4째자리 까지 구하고 반올림
-                .multiply(BigDecimal.valueOf(100)) // * 100
-                .doubleValue(); // double로 형변환
-    }
+        // 3. MetricFact 조회
+        List<MetricFact> metricFacts = metricFactRepository.findMetricFactsByOrgAndProviderAndPeriod(
+                orgId,
+                provider,
+                startDate.atStartOfDay(),
+                endDate.atTime(23, 59, 59)
+        );
 
-    // 변화율 = ((current - prev) / prev) * 100 (반올림 정수)
-    // prevRoas가 null이거나 0이면 비교 불가 -> null 반환
-    private Integer computeDiffRate(double currentRoas, Double prevRoas) {
-        // 이전 데이터가 없거나 0인 경우 null 반환
-        if (prevRoas == null || prevRoas == 0.0)
-            return null;
+        // 4. 일자별 그룹화 및 합산
+        Map<LocalDate, List<MetricFact>> factsByDate = metricFacts.stream()
+                .collect(Collectors.groupingBy(mf -> mf.getTimeBucket().toLocalDate()));
 
-        // 변화율 계산 후 반환
-        double rate = ((currentRoas - prevRoas) / prevRoas) * 100.0;
-        return (int) Math.round(rate);
-    }
+        List<DashboardResponse.DailyMetricFactResponse> dailyMetrics = new ArrayList<>();
 
-    //변화율 계산 메서드
-    private Double calculateChangeRate(Number current, Number past) {
-        // null 방어 및 double 형변환
-        double currentVal = (current != null) ? current.doubleValue() : 0.0;
-        double pastVal = (past != null) ? past.doubleValue() : 0.0;
+        long sumImpressions = 0L;
+        long sumClicks = 0L;
+        long sumConversions = 0L;
+        BigDecimal sumSpend = BigDecimal.ZERO;
+        BigDecimal sumRevenue = BigDecimal.ZERO;
 
-        // Divide by Zero 방어 (과거 데이터가 0인 경우)
-        if (pastVal == 0.0) {
-            if (currentVal > 0.0) {
-                // 과거엔 0이었으나 현재 실적이 발생한 경우 (비즈니스 룰에 따라 100% 등으로 설정)
-                return 100.0;
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            List<MetricFact> dailyFacts = factsByDate.getOrDefault(date, List.of());
+
+            long dImpressions = 0L;
+            long dClicks = 0L;
+            long dConversions = 0L;
+            BigDecimal dSpend = BigDecimal.ZERO;
+            BigDecimal dRevenue = BigDecimal.ZERO;
+
+            for (MetricFact mf : dailyFacts) {
+                dImpressions += (mf.getImpressions() != null) ? mf.getImpressions() : 0L;
+                dClicks += (mf.getClicks() != null) ? mf.getClicks() : 0L;
+                dConversions += (mf.getConversions() != null) ? mf.getConversions() : 0L;
+                if (mf.getSpend() != null) dSpend = dSpend.add(mf.getSpend());
+                if (mf.getRevenue() != null) dRevenue = dRevenue.add(mf.getRevenue());
             }
-            // 둘 다 0이거나 데이터가 아예 없는 경우
-            return 0.0;
+
+            sumImpressions += dImpressions;
+            sumClicks += dClicks;
+            sumConversions += dConversions;
+            sumSpend = sumSpend.add(dSpend);
+            sumRevenue = sumRevenue.add(dRevenue);
+
+            dailyMetrics.add(new DashboardResponse.DailyMetricFactResponse(
+                    date,
+                    dImpressions,
+                    dClicks,
+                    dSpend.longValue(),
+                    dConversions,
+                    dRevenue.longValue(),
+                    metricCalculator.calculateCtr(dClicks, dImpressions),
+                    metricCalculator.calculateCpa(dSpend, dConversions),
+                    metricCalculator.calculateRoas(dRevenue, dSpend)
+            ));
         }
 
-        // 변화율 계산
-        double changeRate = ((currentVal - pastVal) / pastVal) * 100.0;
+        // 5. 합계 지표 객체 생성
+        DashboardResponse.DailyMetricFactResponse totalMetric = new DashboardResponse.DailyMetricFactResponse(
+                null,
+                sumImpressions,
+                sumClicks,
+                sumSpend.longValue(),
+                sumConversions,
+                sumRevenue.longValue(),
+                metricCalculator.calculateCtr(sumClicks, sumImpressions),
+                metricCalculator.calculateCpa(sumSpend, sumConversions),
+                metricCalculator.calculateRoas(sumRevenue, sumSpend)
+        );
 
-        // 소수점 둘째 자리까지 버림 처리
-        return BigDecimal.valueOf(changeRate)
-                .setScale(2, RoundingMode.DOWN)
-                .doubleValue();
-    }
-
-    //지표 값이 null 일 경우 BigDecimal 의 0 으로 바꿔주는 메서드
-    private BigDecimal toZeroIfNull(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
-    }
-
-    //나눗셈 계산시 분모가 0 일 경우 나눗셈 시행하지 않고 0.00 반환
-    private BigDecimal safePercent(BigDecimal numerator, BigDecimal denominator) {
-        if (denominator == null || denominator.signum() == 0 || numerator == null) {
-            return BigDecimal.ZERO.setScale(2, RoundingMode.DOWN);
-        }
-        return numerator.divide(denominator, 4, RoundingMode.DOWN)
-                .multiply(BigDecimal.valueOf(100))
-                .setScale(2, RoundingMode.DOWN);
-    }
-
-    //나눗셈 계산시 분모가 0 일 경우 나눗셈 시행하지 않고 0.00 반환
-    private double safePercent(Number numerator, Number denominator) {
-        double n = numerator == null ? 0.0 : numerator.doubleValue();
-        double d = denominator == null ? 0.0 : denominator.doubleValue();
-        if (d == 0.0) return 0.0;
-        return (n / d) * 100.0;
+        // 6. 결과 반환
+        return new DashboardResponse.PlatformMetricFactSummaryResponse(
+                provider.name(),
+                startDate,
+                endDate,
+                totalMetric,
+                dailyMetrics
+        );
     }
 }
