@@ -30,6 +30,15 @@ public class TimelineController implements TimelineControllerDocs {
         return ResponseEntity.ok(DataResponse.from(timelineService.getTimelines(userId, orgId)));
     }
 
+    @GetMapping("/{timelineId}")
+    public ResponseEntity<DataResponse<TimelineResponse.TimelineDetailDTO>> getTimelineDetail(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId
+    ) {
+        return ResponseEntity.ok(DataResponse.from(timelineService.getTimelineDetail(userId, orgId, timelineId)));
+    }
+
     @PostMapping
     public ResponseEntity<DataResponse<TimelineResponse.CreateResponseDTO>> createTimeline(
             @AuthenticationPrincipal(expression = "userId") Long userId,

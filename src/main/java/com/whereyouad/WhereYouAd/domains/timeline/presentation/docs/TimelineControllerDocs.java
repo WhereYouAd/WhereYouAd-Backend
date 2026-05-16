@@ -46,6 +46,21 @@ public interface TimelineControllerDocs {
     );
 
     @Operation(
+            summary = "타임라인 상세 조회 API",
+            description = "타임라인의 기본 정보, 기간 내 일별 지표 추이, 플랫폼별 기여 비율을 반환합니다. 플랫폼 기여율은 활성화된 지표별 비율의 평균으로 계산됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "403_2", description = "조직 멤버가 아닌 경우"),
+            @ApiResponse(responseCode = "404_1", description = "타임라인 또는 조직을 찾을 수 없는 경우")
+    })
+    ResponseEntity<DataResponse<TimelineResponse.TimelineDetailDTO>> getTimelineDetail(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId
+    );
+
+    @Operation(
             summary = "타임라인 삭제 API",
             description = "조직의 ADMIN 역할을 가진 멤버만 삭제 가능합니다."
     )
