@@ -76,11 +76,11 @@ public class MetricCalculator {
     // 분모가 0일 경우 나눗셈 시행하지 않고 0.0 반환 (BigDecimal 반환)
     public BigDecimal safePercent(BigDecimal numerator, BigDecimal denominator) {
         if (denominator == null || denominator.signum() == 0 || numerator == null) {
-            return BigDecimal.ZERO.setScale(2, RoundingMode.DOWN);
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
-        return numerator.divide(denominator, 4, RoundingMode.DOWN)
+        return numerator.divide(denominator, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
-                .setScale(2, RoundingMode.DOWN);
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     // 분모가 0일 경우 나눗셈 시행하지 않고 0.0 반환 (double 반환)
