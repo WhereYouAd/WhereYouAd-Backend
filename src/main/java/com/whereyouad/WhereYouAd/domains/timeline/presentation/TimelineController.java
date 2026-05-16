@@ -49,6 +49,16 @@ public class TimelineController implements TimelineControllerDocs {
                 .body(DataResponse.created(timelineService.createTimeline(userId, orgId, dto)));
     }
 
+    @PutMapping("/{timelineId}")
+    public ResponseEntity<DataResponse<TimelineResponse.CreateResponseDTO>> updateTimeline(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId,
+            @Valid @RequestBody TimelineRequest.TimelineCreateDto dto
+    ) {
+        return ResponseEntity.ok(DataResponse.from(timelineService.updateTimeline(userId, orgId, timelineId, dto)));
+    }
+
     @DeleteMapping("/{timelineId}")
     public ResponseEntity<DataResponse<Void>> deleteTimeline(
             @AuthenticationPrincipal(expression = "userId") Long userId,
