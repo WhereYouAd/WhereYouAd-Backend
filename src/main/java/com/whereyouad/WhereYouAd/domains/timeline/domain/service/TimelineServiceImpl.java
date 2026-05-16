@@ -244,11 +244,9 @@ public class TimelineServiceImpl implements TimelineService {
         Map<LocalDate, List<MetricFact>> byDate = facts.stream()
                 .collect(Collectors.groupingBy(f -> f.getTimeBucket().toLocalDate()));
 
-        return byDate.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(entry -> {
-                    LocalDate date = entry.getKey();
-                    List<MetricFact> dayFacts = entry.getValue();
+        return timeline.getStartDate().datesUntil(timeline.getEndDate().plusDays(1))
+                .map(date -> {
+                    List<MetricFact> dayFacts = byDate.getOrDefault(date, List.of());
 
                     // 활성화된 지표만 집계(비활성 지표는 null 반환)
                     Long clicks = timeline.isUseClick()
