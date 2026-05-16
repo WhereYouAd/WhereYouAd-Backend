@@ -137,6 +137,8 @@ public class TimelineServiceImpl implements TimelineService {
         timeline.update(dto.name(), dto.startDate(), dto.endDate(),
                 useClick, useConversion, useImpression, useRoas,
                 comparisonDates.start(), comparisonDates.end());
+        // AI 요약도 초기화
+        timeline.updateSummary(null);
 
         // 10. PerformanceStatus 재계산
         PerformanceStatus status = timelineUtil.calculatePerformanceStatus(timeline);
