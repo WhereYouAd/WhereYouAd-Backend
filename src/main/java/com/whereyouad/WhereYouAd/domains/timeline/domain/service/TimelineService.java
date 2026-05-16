@@ -9,4 +9,5 @@ public interface TimelineService {
     TimelineResponse.CreateResponseDTO createTimeline(Long userId, Long orgId, TimelineRequest.TimelineCreateDto dto);
     void deleteTimeline(Long userId, Long orgId, Long timelineId);
     List<TimelineResponse.TimelineSummaryDTO> getTimelines(Long userId, Long orgId);
+    TimelineResponse.TimelineDetailDTO getTimelineDetail(Long userId, Long orgId, Long timelineId);
 }

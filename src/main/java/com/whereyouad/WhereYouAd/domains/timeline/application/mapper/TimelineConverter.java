@@ -53,6 +53,25 @@ public class TimelineConverter {
         );
     }
 
+    public static TimelineResponse.TimelineDetailDTO toTimelineDetailDTO(
+            Timeline timeline,
+            List<MetricType> metrics,
+            List<TimelineResponse.DailyMetricDTO> dailyTrend,
+            List<TimelineResponse.PlatformContributionDTO> platformContributions
+    ) {
+        return new TimelineResponse.TimelineDetailDTO(
+                timeline.getId(),
+                timeline.getName(),
+                timeline.getStartDate(),
+                timeline.getEndDate(),
+                timeline.getPerformanceStatus(),
+                metrics,
+                timeline.getSummary(),
+                dailyTrend,
+                platformContributions
+        );
+    }
+
     // entity -> dto
     public static TimelineResponse.CreateResponseDTO toCreateResponse(Timeline timeline) {
         List<MetricType> metrics = new ArrayList<>();
