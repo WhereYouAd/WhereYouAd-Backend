@@ -182,7 +182,7 @@ public class TimelineServiceImpl implements TimelineService {
         orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_READ_FORBIDDEN));
 
-        List<Timeline> timelines = timelineRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId);
+        List<Timeline> timelines = timelineRepository.findByOrganizationIdOrderByEndDateDesc(orgId);
         return TimelineConverter.toTimelineSummaryList(timelines);
     }
 
