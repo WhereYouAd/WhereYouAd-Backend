@@ -83,6 +83,65 @@ public class TimelineServiceImpl implements TimelineService {
     }
 
     @Override
+    public TimelineResponse.CreateResponseDTO updateTimeline(Long userId, Long orgId, Long timelineId, TimelineRequest.TimelineCreateDto dto) {
+        // 1. 조직 검증
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 2. 타임라인 검증
+        Timeline timeline = timelineRepository.findById(timelineId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND));
+
+        // 3. 타임라인 조직 소속 검증
+        if (!timeline.getOrganization().getId().equals(orgId)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND);
+        }
+
+        // 4. ADMIN 권한 검증
+        OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_UPDATE_FORBIDDEN));
+        if (member.getRole() != OrgRole.ADMIN) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_UPDATE_FORBIDDEN);
+        }
+
+        // 5. 날짜 검증
+        if (dto.endDate().isBefore(dto.startDate())) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_DATE_RANGE);
+        }
+
+        // 6. 비교 기준 날짜 재계산
+        ComparisonDateRange comparisonDates = calculateComparisonDates(dto.startDate(), dto.endDate(), dto.comparisonPeriodType());
+
+        // 7. 비교 기간 성과 데이터 존재 검증
+        boolean hasComparisonData = metricFactRepository.existsByTimeBucketBetweenAndOrg(
+                comparisonDates.start().atStartOfDay(),
+                comparisonDates.end().atTime(LocalTime.MAX),
+                orgId
+        );
+        if (!hasComparisonData) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_COMPARISON_DATA);
+        }
+
+        // 8. 성과 리스트 -> boolean 플래그 변환
+        boolean useClick = dto.metrics().contains(MetricType.CLICK);
+        boolean useConversion = dto.metrics().contains(MetricType.CONVERSION);
+        boolean useImpression = dto.metrics().contains(MetricType.IMPRESSION);
+        boolean useRoas = dto.metrics().contains(MetricType.ROAS);
+
+        // 9. 엔티티 업데이트
+        timeline.update(dto.name(), dto.startDate(), dto.endDate(),
+                useClick, useConversion, useImpression, useRoas,
+                comparisonDates.start(), comparisonDates.end());
+
+        // 10. PerformanceStatus 재계산
+        PerformanceStatus status = timelineUtil.calculatePerformanceStatus(timeline);
+        timeline.updatePerformanceStatus(status);
+
+        // 11. 변환 후 반환
+        return TimelineConverter.toCreateResponse(timeline);
+    }
+
+    @Override
     public void deleteTimeline(Long userId, Long orgId, Long timelineId) {
 
         // 타임라인이 없는 경우
