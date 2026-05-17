@@ -3,6 +3,10 @@ package com.whereyouad.WhereYouAd.domains.user.domain.service;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformAccountRepository;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.UserInfoModifyRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyOrgResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
@@ -14,7 +18,9 @@ import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.application.mapper.UserConverter;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
+import com.whereyouad.WhereYouAd.domains.user.persistence.entity.AuthProviderAccount;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
+import com.whereyouad.WhereYouAd.domains.user.persistence.repository.AuthProviderAccountRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import com.whereyouad.WhereYouAd.infrastructure.client.aws.s3.S3UploadService;
@@ -36,6 +42,9 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final OrgMemberRepository orgMemberRepository;
+    private final AuthProviderAccountRepository authProviderAccountRepository;
+    private final PlatformConnectionRepository platformConnectionRepository;
+    private final PlatformAccountRepository platformAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
     private final S3UploadService s3UploadService;
@@ -231,6 +240,24 @@ public class UserService {
                 // 회원 수가 1 이면 본인만 속한 조직(별도 회원이 없는 조직) 이므로 Soft Delete 진행
                 organization.softDelete();
             }
+        }
+
+        // User 를 참조하는 OrgMember 제거
+        orgMemberRepository.deleteAll(orgMembers);
+
+        // 소셜 로그인 사용자라면 연결된 AuthProviderAccount 도 제거
+        // 논의점: 해당 회원의 이메일로 연동된 소셜로그인 정보 삭제를 어떻게 처리할지?
+        List<AuthProviderAccount> authProviderAccounts = authProviderAccountRepository.findByUserEmail(user.getEmail());
+        if (!authProviderAccounts.isEmpty()) {
+            authProviderAccountRepository.deleteAll(authProviderAccounts);
+        }
+
+        // 광고 플랫폼 연동(PlatformConnection) 및 함께 연관된 PlatformAccount 제거
+        // 광고 플랫폼 연동 정보 존재 시 예외처리
+        // TODO : 광고 플랫폼 연동 정보 삭제 & 관련된 광고 엔티티 (AdCampaign, AdGroup, AdContent, MetricFact) 삭제 API 추가
+        List<PlatformConnection> platformConnections = platformConnectionRepository.findByUser_Id(userId);
+        if (!platformConnections.isEmpty()) {
+            throw new UserHandler(UserErrorCode.USER_HAS_PLATFORM_CONNECTION);
         }
 
         // 회원 삭제
