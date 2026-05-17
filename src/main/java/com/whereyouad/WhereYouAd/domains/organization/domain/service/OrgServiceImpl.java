@@ -11,9 +11,11 @@ import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandl
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgInvitation;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.ai.persistence.repository.AIInsightReportRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgInvitationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
+import com.whereyouad.WhereYouAd.domains.timeline.persistence.repository.TimelineRepository;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
@@ -40,6 +42,8 @@ public class OrgServiceImpl implements OrgService {
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final OrgInvitationRepository orgInvitationRepository;
+    private final TimelineRepository timelineRepository;
+    private final AIInsightReportRepository aiInsightReportRepository;
     private final UserRepository userRepository;
 
     private final RedisUtil redisUtil;
@@ -266,6 +270,9 @@ public class OrgServiceImpl implements OrgService {
 
         orgMemberRepository.deleteAll(orgMembers);
 
+        // 조직에 종속된 부수 데이터 정리 (OrgInvitation / Timeline / AIInsightReport)
+        cleanupOrganizationRelatedData(orgId);
+
         // 조직 실제 삭제
         orgRepository.delete(organization);
 
@@ -299,8 +306,18 @@ public class OrgServiceImpl implements OrgService {
             }
         }
 
-        // 조직 status 만 DELETED 로 변경 후 종료
+        // 조직 status 만 DELETED 로 변경
         organization.softDelete();
+
+        // 멤버 없이 의미가 사라지는 부수 데이터(OrgInvitation, Timeline, AIInsightReport) 정리
+        cleanupOrganizationRelatedData(orgId);
+    }
+
+    // 조직 삭제 시 함께 제거할 부수 데이터 일괄 정리
+    private void cleanupOrganizationRelatedData(Long orgId) {
+        orgInvitationRepository.deleteByOrganizationId(orgId);
+        timelineRepository.deleteByOrganizationId(orgId);
+        aiInsightReportRepository.deleteByOrganizationId(orgId);
     }
 
     public void removeMemberFromOrg(Long userId, Long orgId, Long memberId) {
