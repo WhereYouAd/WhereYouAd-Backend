@@ -43,7 +43,6 @@ public class UserService {
     private final OrgMemberRepository orgMemberRepository;
     private final AuthProviderAccountRepository authProviderAccountRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
-    private final PlatformAccountRepository platformAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
     private final S3UploadService s3UploadService;
