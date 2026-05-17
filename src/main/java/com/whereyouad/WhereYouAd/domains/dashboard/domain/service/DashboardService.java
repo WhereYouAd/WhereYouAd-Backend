@@ -16,4 +16,8 @@ public interface DashboardService {
     // 지정된 날짜(startDate ~ endDate)동안의 진행 중(ON_GOING) 상태인 광고 개수를 찾는 메서드
     DashboardResponse.OngoingPlatformAdCountResponse getOngoingAdCountByProvider(
             Long userId, Long orgId, LocalDate startDate, LocalDate endDate);
+
+    // 플랫폼 대시보드의 일자별 지표(MetricFact) 조회
+    DashboardResponse.PlatformMetricFactSummaryResponse getPlatformMetricFacts(
+            Long userId, Long orgId, String providerType, Integer days);
 }
