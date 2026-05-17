@@ -125,15 +125,22 @@ public interface UserControllerDocs {
     @Operation(
             summary = "회원 탈퇴 API",
             description = "AccessToken 을 헤더로 받아 현재 로그인한 회원을 탈퇴 처리합니다.\n\n" +
-                    "1. 회원의 프로필 이미지가 S3 에 존재할 경우 함께 삭제됩니다. S3 이미지 삭제에 실패하더라도 회원 탈퇴는 정상적으로 진행되며, 실패한 이미지 URL 은 서버 로그로만 기록됩니다.\n\n" +
-                    "2. 회원이 속한 워크스페이스(Organization) 처리 방식\n\n" +
-                    "- 단순 ADMIN / MEMBER 로만 속해있는 조직 → 해당 가입 정보만 제거됩니다.\n\n" +
-                    "- 회원이 생성자인 조직 → 본인 외 다른 멤버가 없는 경우 조직이 함께 Soft Delete 처리되며, 본인 외 다른 멤버가 존재하는 경우 탈퇴가 차단됩니다. 이 경우 먼저 `PATCH /api/org/{orgId}/changeOwner` API 로 소유권을 위임한 뒤 다시 탈퇴를 시도해야 합니다."
+                    "### 1. 사전 검증 (통과해야 탈퇴 가능)\n" +
+                    "- **광고 플랫폼 연동(PlatformConnection) 존재 여부**: 연동된 광고 플랫폼이 하나라도 남아 있으면 탈퇴가 차단됩니다. 먼저 모든 광고 플랫폼 연동을 해제한 뒤 다시 시도해야 합니다. -> 추후 삭제 API 추가 예정\n\n" +
+                    "- **본인이 소유자인 조직에 다른 멤버 존재**: 본인이 생성자(owner)인 조직에 본인 외 다른 멤버가 남아 있으면 탈퇴가 차단됩니다. `PATCH /api/org/{orgId}/changeOwner` API 로 소유권을 위임한 뒤 재시도해야 합니다.\n\n" +
+                    "### 2. 회원이 속한 워크스페이스(Organization) 처리\n" +
+                    "- **단순 ADMIN / MEMBER 로만 속해있는 조직** → 해당 가입 정보(OrgMember)만 제거됩니다. 조직 자체는 유지됩니다.\n\n" +
+                    "- **회원이 생성자(owner)이고 본인만 속한 조직** → 조직이 Soft Delete 처리되며, 해당 조직의 부수 데이터(보낸 초대장 / 활동 타임라인 / AI 인사이트 리포트)도 함께 정리됩니다. 조직 자체는 복구 가능한 상태(status = DELETED) 로 남습니다.\n\n" +
+                    "### 3. 회원 본인 데이터 정리\n" +
+                    "- 소유자가 아닌채로 속한 조직에서 탈퇴하는 회원 정보가 모두 제거됩니다.\n\n" +
+                    "- 소셜 로그인 사용자의 경우 연결된 소셜계정이 함께 제거됩니다.\n\n" +
+                    "- 회원 본인이 삭제된 후, 프로필 이미지가 S3 에서 삭제됩니다. S3 이미지 삭제 실패는 서버 로그로만 기록됩니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "404_1", description = "USER_404_1 : 해당 사용자 존재하지 않음"),
-            @ApiResponse(responseCode = "400_9", description = "USER_400_9 : 다른 멤버가 속한 조직의 소유자는 탈퇴할 수 없음 (소유권 위임 후 재시도 필요)")
+            @ApiResponse(responseCode = "400_9", description = "USER_400_9 : 다른 멤버가 속한 조직의 소유자는 탈퇴할 수 없음 (소유권 위임 후 재시도 필요)"),
+            @ApiResponse(responseCode = "400_10", description = "USER_400_10 : 연동된 광고 플랫폼이 존재하여 탈퇴할 수 없음 (모든 연동 해제 후 재시도 필요)")
     })
     public ResponseEntity<DataResponse<String>> deleteUser(
             @AuthenticationPrincipal(expression = "userId") Long userId
