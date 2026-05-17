@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.user.domain.service;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformAccountRepository;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
@@ -46,6 +47,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
     private final S3UploadService s3UploadService;
+    private final OrgRepository orgRepository;
 
     //회원가입 메서드
     public SignUpResponse signUpUser(SignUpRequest request) {
@@ -240,8 +242,8 @@ public class UserService {
             }
         }
 
-        // User 를 참조하는 OrgMember 제거
-        orgMemberRepository.deleteAll(orgMembers);
+        // User 를 참조하는 OrgMember 제거 (Soft Delete 된 조직 멤버십까지 포함)
+        orgMemberRepository.deleteAll(orgMemberRepository.findOrgMemberByUser(user));
 
         // 소셜 로그인 사용자라면 연결된 AuthProviderAccount 도 제거
         // 논의점: 해당 회원의 이메일로 연동된 소셜로그인 정보 삭제를 어떻게 처리할지?
