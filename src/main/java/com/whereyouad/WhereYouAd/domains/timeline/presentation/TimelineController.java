@@ -13,12 +13,31 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @RequestMapping("/api/org/{orgId}/timeline")
 public class TimelineController implements TimelineControllerDocs {
 
     private final TimelineService timelineService;
+
+    @GetMapping
+    public ResponseEntity<DataResponse<List<TimelineResponse.TimelineSummaryDTO>>> getTimelines(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    ) {
+        return ResponseEntity.ok(DataResponse.from(timelineService.getTimelines(userId, orgId)));
+    }
+
+    @GetMapping("/{timelineId}")
+    public ResponseEntity<DataResponse<TimelineResponse.TimelineDetailDTO>> getTimelineDetail(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId
+    ) {
+        return ResponseEntity.ok(DataResponse.from(timelineService.getTimelineDetail(userId, orgId, timelineId)));
+    }
 
     @PostMapping
     public ResponseEntity<DataResponse<TimelineResponse.CreateResponseDTO>> createTimeline(
@@ -28,6 +47,16 @@ public class TimelineController implements TimelineControllerDocs {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(DataResponse.created(timelineService.createTimeline(userId, orgId, dto)));
+    }
+
+    @PutMapping("/{timelineId}")
+    public ResponseEntity<DataResponse<TimelineResponse.CreateResponseDTO>> updateTimeline(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId,
+            @Valid @RequestBody TimelineRequest.TimelineCreateDto dto
+    ) {
+        return ResponseEntity.ok(DataResponse.from(timelineService.updateTimeline(userId, orgId, timelineId, dto)));
     }
 
     @DeleteMapping("/{timelineId}")

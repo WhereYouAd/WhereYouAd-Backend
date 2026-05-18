@@ -35,6 +35,43 @@ public class TimelineConverter {
                 .build();
     }
 
+    // Entity List -> DTO List
+    public static List<TimelineResponse.TimelineSummaryDTO> toTimelineSummaryList(List<Timeline> timelines) {
+        return timelines.stream()
+                .map(TimelineConverter::toTimelineSummaryDTO)
+                .toList();
+    }
+
+    // entity -> DTO
+    public static TimelineResponse.TimelineSummaryDTO toTimelineSummaryDTO(Timeline timeline) {
+        return new TimelineResponse.TimelineSummaryDTO(
+                timeline.getId(),
+                timeline.getName(),
+                timeline.getStartDate(),
+                timeline.getEndDate(),
+                timeline.getPerformanceStatus()
+        );
+    }
+
+    public static TimelineResponse.TimelineDetailDTO toTimelineDetailDTO(
+            Timeline timeline,
+            List<MetricType> metrics,
+            List<TimelineResponse.DailyMetricDTO> dailyTrend,
+            List<TimelineResponse.PlatformContributionDTO> platformContributions
+    ) {
+        return new TimelineResponse.TimelineDetailDTO(
+                timeline.getId(),
+                timeline.getName(),
+                timeline.getStartDate(),
+                timeline.getEndDate(),
+                timeline.getPerformanceStatus(),
+                metrics,
+                timeline.getSummary(),
+                dailyTrend,
+                platformContributions
+        );
+    }
+
     // entity -> dto
     public static TimelineResponse.CreateResponseDTO toCreateResponse(Timeline timeline) {
         List<MetricType> metrics = new ArrayList<>();

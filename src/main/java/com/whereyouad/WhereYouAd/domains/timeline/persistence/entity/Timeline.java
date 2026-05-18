@@ -60,6 +60,9 @@ public class Timeline extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 
+    @Column(name = "summary", columnDefinition = "TEXT")
+    private String summary;
+
     // 연관 관계
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id", nullable = false)
@@ -67,5 +70,30 @@ public class Timeline extends BaseEntity {
 
     public void updatePerformanceStatus(PerformanceStatus status) {
         this.performanceStatus = status;
+    }
+
+    public void updateSummary(String summary) {
+        this.summary = summary;
+    }
+
+    public void update(String name,
+                       LocalDate startDate,
+                       LocalDate endDate,
+                       boolean useClick,
+                       boolean useConversion,
+                       boolean useImpression,
+                       boolean useRoas,
+                       LocalDate comparisonStartDate,
+                       LocalDate comparisonEndDate
+    ) {
+        this.name = name;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.useClick = useClick;
+        this.useConversion = useConversion;
+        this.useImpression = useImpression;
+        this.useRoas = useRoas;
+        this.comparisonStartDate = comparisonStartDate;
+        this.comparisonEndDate = comparisonEndDate;
     }
 }
