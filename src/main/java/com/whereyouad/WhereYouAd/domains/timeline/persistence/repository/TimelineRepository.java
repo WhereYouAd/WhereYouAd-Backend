@@ -6,7 +6,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface TimelineRepository extends JpaRepository<Timeline, Long> {
+    List<Timeline> findByOrganizationIdOrderByEndDateDesc(Long orgId);
 
     // 조직 ID 기준 일괄 삭제 (회원 탈퇴 정리용)
     @Modifying
