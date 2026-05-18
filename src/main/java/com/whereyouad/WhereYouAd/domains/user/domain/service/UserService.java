@@ -252,7 +252,7 @@ public class UserService {
                 continue;
             }
 
-            long memberCount = orgMemberRepository.countByOrganizationId(organization.getId());
+            int memberCount = orgMemberRepository.countByOrganizationIdAndUserStatus(organization.getId(), UserStatus.ACTIVE);
             if (memberCount > 1) {
                 // 다른 멤버가 남아있으면 소유권 양도부터 진행해야 함
                 throw new UserHandler(UserErrorCode.USER_OWNS_ORGANIZATION);
