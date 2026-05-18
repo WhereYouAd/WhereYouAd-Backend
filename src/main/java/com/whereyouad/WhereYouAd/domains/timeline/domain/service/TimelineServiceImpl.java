@@ -1,6 +1,8 @@
 package com.whereyouad.WhereYouAd.domains.timeline.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
@@ -18,6 +20,7 @@ import com.whereyouad.WhereYouAd.domains.timeline.exception.TimelineException;
 import com.whereyouad.WhereYouAd.domains.timeline.exception.code.TimelineErrorCode;
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.entity.Timeline;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.repository.TimelineRepository;
@@ -72,15 +75,33 @@ public class TimelineServiceImpl implements TimelineService {
                 comparisonDates.end().atTime(LocalTime.MAX),
                 orgId
         );
+
         if (!hasComparisonData) {
             throw new TimelineException(TimelineErrorCode.TIMELINE_NO_COMPARISON_DATA);
         }
 
+        // 현재 기간 및 비교 기간 성과 합계 조회 (Projection 사용)
+        MetricSumProjection currentFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
+                orgId,
+                dto.startDate().atStartOfDay(),
+                dto.endDate().plusDays(1).atStartOfDay(),
+                OrgStatus.ACTIVE,
+                Status.ON_GOING
+        );
+
+        MetricSumProjection pastFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
+                orgId,
+                comparisonDates.start().atStartOfDay(),
+                comparisonDates.end().plusDays(1).atStartOfDay(),
+                OrgStatus.ACTIVE,
+                Status.ON_GOING
+        );
+
         // 입력받은 DTO를 타임라인 엔티티로 변환
         Timeline timeline = TimelineConverter.toTimeline(dto, organization, userId, comparisonDates.start(), comparisonDates.end());
 
-        // PerformanceStatus 계산 및 판별 로직 호출 및 저장
-        PerformanceStatus status = timelineUtil.calculatePerformanceStatus(timeline);
+        // 성과 상태 - PerformanceStatus 계산 및 판별 로직 호출 및 저장 (초안)
+        PerformanceStatus status = timelineUtil.calculatePerformanceStatus(timeline, currentFacts, pastFacts);
         timeline.updatePerformanceStatus(status);
 
         // 엔티티 저장 및 반환
@@ -127,6 +148,23 @@ public class TimelineServiceImpl implements TimelineService {
             throw new TimelineException(TimelineErrorCode.TIMELINE_NO_COMPARISON_DATA);
         }
 
+        // 현재 기간 및 비교 기간 성과 합계 조회 (Projection 사용)
+        MetricSumProjection currentFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
+                orgId,
+                dto.startDate().atStartOfDay(),
+                dto.endDate().plusDays(1).atStartOfDay(),
+                OrgStatus.ACTIVE,
+                Status.ON_GOING
+        );
+
+        MetricSumProjection pastFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
+                orgId,
+                comparisonDates.start().atStartOfDay(),
+                comparisonDates.end().plusDays(1).atStartOfDay(),
+                OrgStatus.ACTIVE,
+                Status.ON_GOING
+        );
+
         // 8. 성과 리스트 -> boolean 플래그 변환
         boolean useClick = dto.metrics().contains(MetricType.CLICK);
         boolean useConversion = dto.metrics().contains(MetricType.CONVERSION);
@@ -141,7 +179,7 @@ public class TimelineServiceImpl implements TimelineService {
         timeline.updateSummary(null);
 
         // 10. PerformanceStatus 재계산
-        PerformanceStatus status = timelineUtil.calculatePerformanceStatus(timeline);
+        PerformanceStatus status = timelineUtil.calculatePerformanceStatus(timeline, currentFacts, pastFacts);
         timeline.updatePerformanceStatus(status);
 
         // 11. 변환 후 반환
