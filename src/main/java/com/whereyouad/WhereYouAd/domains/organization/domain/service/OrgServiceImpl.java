@@ -498,17 +498,17 @@ public class OrgServiceImpl implements OrgService {
     // 조직 생성자(ownerUserId) 양도 메서드
     public void changeOwner(Long userId, Long orgId, OrgRequest.ChangeOwner request) {
 
-        // 생성자 양도를 요청한 기존 조직 생성자(userId)와, 새로운 생성자(request.newOwnerUserId()) 가 동일할 경우 오류
-        if (Objects.equals(userId, request.newOwnerUserId())) {
-            throw new OrgHandler(OrgErrorCode.ORG_OWNER_SAME_AS_BEFORE);
-        }
-
         Organization organization = orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         // 만약 생성자 양도를 요청한 회원이 해당 조직의 생성자 아닐 경우 오류
         if (!Objects.equals(organization.getOwnerUserId(), userId)) {
             throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN);
+        }
+
+        // 생성자 양도를 요청한 기존 조직 생성자(userId)와, 새로운 생성자(request.newOwnerUserId()) 가 동일할 경우 오류
+        if (Objects.equals(userId, request.newOwnerUserId())) {
+            throw new OrgHandler(OrgErrorCode.ORG_OWNER_SAME_AS_BEFORE);
         }
 
         // 새로운 생성자가 될 회원의 OrgMember 조회
