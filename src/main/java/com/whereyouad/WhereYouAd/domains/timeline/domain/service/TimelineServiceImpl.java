@@ -69,30 +69,25 @@ public class TimelineServiceImpl implements TimelineService {
         // 비교 기준 날짜(지난 주, 지난 달, 지난 년도와 비교)
         ComparisonDateRange comparisonDates = calculateComparisonDates(dto.startDate(), dto.endDate(), dto.comparisonPeriodType());
 
-        // 비교 기간에 성과 데이터가 없으면 타임라인 생성 불가
-        boolean hasComparisonData = metricFactRepository.existsByTimeBucketBetweenAndOrg(
-                comparisonDates.start().atStartOfDay(),
-                comparisonDates.end().atTime(LocalTime.MAX),
-                orgId
-        );
-
-        if (!hasComparisonData) {
-            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_COMPARISON_DATA);
-        }
-
-        // 현재 기간 및 비교 기간 성과 합계 조회 (Projection 사용)
-        MetricSumProjection currentFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
-                orgId,
-                dto.startDate().atStartOfDay(),
-                dto.endDate().plusDays(1).atStartOfDay(),
-                OrgStatus.ACTIVE,
-                Status.ON_GOING
-        );
-
+        // 비교 기간 성과 합계 조회 (Projection 사용)
         MetricSumProjection pastFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
                 orgId,
                 comparisonDates.start().atStartOfDay(),
                 comparisonDates.end().plusDays(1).atStartOfDay(),
+                OrgStatus.ACTIVE,
+                Status.ON_GOING
+        );
+
+        // 비교 기간에 성과 데이터가 없거나 모두 0이면 타임라인 생성 불가
+        if (isProjectionEmpty(pastFacts)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_COMPARISON_DATA);
+        }
+
+        // 현재 기간 성과 합계 조회 (Projection 사용)
+        MetricSumProjection currentFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
+                orgId,
+                dto.startDate().atStartOfDay(),
+                dto.endDate().plusDays(1).atStartOfDay(),
                 OrgStatus.ACTIVE,
                 Status.ON_GOING
         );
@@ -138,29 +133,25 @@ public class TimelineServiceImpl implements TimelineService {
         // 6. 비교 기준 날짜 재계산
         ComparisonDateRange comparisonDates = calculateComparisonDates(dto.startDate(), dto.endDate(), dto.comparisonPeriodType());
 
-        // 7. 비교 기간 성과 데이터 존재 검증
-        boolean hasComparisonData = metricFactRepository.existsByTimeBucketBetweenAndOrg(
-                comparisonDates.start().atStartOfDay(),
-                comparisonDates.end().atTime(LocalTime.MAX),
-                orgId
-        );
-        if (!hasComparisonData) {
-            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_COMPARISON_DATA);
-        }
-
-        // 현재 기간 및 비교 기간 성과 합계 조회 (Projection 사용)
-        MetricSumProjection currentFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
-                orgId,
-                dto.startDate().atStartOfDay(),
-                dto.endDate().plusDays(1).atStartOfDay(),
-                OrgStatus.ACTIVE,
-                Status.ON_GOING
-        );
-
+        // 7. 비교 기간 성과 합계 조회 (Projection 사용)
         MetricSumProjection pastFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
                 orgId,
                 comparisonDates.start().atStartOfDay(),
                 comparisonDates.end().plusDays(1).atStartOfDay(),
+                OrgStatus.ACTIVE,
+                Status.ON_GOING
+        );
+
+        // 비교 기간에 성과 데이터가 없거나 모두 0이면 예외 처리
+        if (isProjectionEmpty(pastFacts)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_COMPARISON_DATA);
+        }
+
+        // 현재 기간 성과 합계 조회
+        MetricSumProjection currentFacts = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
+                orgId,
+                dto.startDate().atStartOfDay(),
+                dto.endDate().plusDays(1).atStartOfDay(),
                 OrgStatus.ACTIVE,
                 Status.ON_GOING
         );
@@ -388,5 +379,15 @@ public class TimelineServiceImpl implements TimelineService {
             }
             case LAST_YEAR -> new ComparisonDateRange(startDate.minusYears(1), endDate.minusYears(1));
         };
+    }
+
+    // Projection 결과가 비어있는지(또는 모든 수치가 0인지) 확인하는 헬퍼 메서드
+    private boolean isProjectionEmpty(MetricSumProjection projection) {
+        if (projection == null) return true;
+        return (projection.getTotalImpressions() == null || projection.getTotalImpressions() == 0L) &&
+               (projection.getTotalClicks() == null || projection.getTotalClicks() == 0L) &&
+               (projection.getTotalConversions() == null || projection.getTotalConversions() == 0L) &&
+               (projection.getTotalSpend() == null || projection.getTotalSpend().compareTo(BigDecimal.ZERO) == 0) &&
+               (projection.getTotalRevenue() == null || projection.getTotalRevenue().compareTo(BigDecimal.ZERO) == 0);
     }
 }
