@@ -28,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -281,10 +283,17 @@ public class UserService {
         if (profileImageUrl == null) {
             return;
         }
-        try {
-            s3UploadService.deleteImageFromUrl(profileImageUrl);
-        } catch (Exception e) {
-            log.error("회원 탈퇴 과정에서 S3 이미지 삭제 오류 발생", e);
-        }
+        
+        // S3 이미지 삭제를 afterCommit 에 수행하도록 수정
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    s3UploadService.deleteImageFromUrl(profileImageUrl);
+                } catch (Exception e) {
+                    log.error("회원 탈퇴 과정에서 S3 이미지 삭제 오류 발생", e);
+                }
+            }
+        });
     }
 }
