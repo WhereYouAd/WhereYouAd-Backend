@@ -74,8 +74,7 @@ public class TimelineServiceImpl implements TimelineService {
                 orgId,
                 comparisonDates.start().atStartOfDay(),
                 comparisonDates.end().plusDays(1).atStartOfDay(),
-                OrgStatus.ACTIVE,
-                Status.ON_GOING
+                OrgStatus.ACTIVE
         );
 
         // 비교 기간에 성과 데이터가 없거나 모두 0이면 타임라인 생성 불가
@@ -138,8 +137,7 @@ public class TimelineServiceImpl implements TimelineService {
                 orgId,
                 comparisonDates.start().atStartOfDay(),
                 comparisonDates.end().plusDays(1).atStartOfDay(),
-                OrgStatus.ACTIVE,
-                Status.ON_GOING
+                OrgStatus.ACTIVE
         );
 
         // 비교 기간에 성과 데이터가 없거나 모두 0이면 예외 처리

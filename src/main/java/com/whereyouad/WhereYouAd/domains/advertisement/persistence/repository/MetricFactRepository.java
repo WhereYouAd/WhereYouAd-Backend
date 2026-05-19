@@ -60,6 +60,26 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("status") Status status
             );
 
+    // orgId에 속한 모든 프로젝트의 지표중 해당 MetricFact 가 속한 AdCampaign 지표를 지정된 기간 범위 합산 (status 고려 x)
+    @Query("SELECT " +
+            "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
+            "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
+            "COALESCE(SUM(m.conversions), 0) AS totalConversions, " +
+            "COALESCE(SUM(m.spend), 0) AS totalSpend, " +
+            "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
+            "FROM MetricFact m " +
+            "JOIN m.project p " +
+            "WHERE p.organization.id = :orgId " +
+            "AND p.organization.status = :orgStatus " +
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate "
+    )
+    MetricSumProjection findMetricsSumByOrgIdAndDateRange(
+            @Param("orgId") Long orgId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("orgStatus") OrgStatus orgStatus
+    );
+
     //orgId 와 provider 가 일치하고 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표에 대해 지정된 기간 범위 합산
     @Query("SELECT " +
             "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
