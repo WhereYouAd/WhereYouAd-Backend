@@ -343,6 +343,7 @@ public class OrgServiceImpl implements OrgService {
 
             timelineRepository.deleteByOrganizationId(orgId);
             aiInsightReportRepository.deleteByOrganizationId(orgId);
+            orgInvitationRepository.deleteByOrganizationId(orgId);
 
             // 조직 Hard Delete
             orgRepository.delete(organization);
