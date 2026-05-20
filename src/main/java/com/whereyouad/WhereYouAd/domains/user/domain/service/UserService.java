@@ -18,9 +18,7 @@ import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.domains.user.application.mapper.UserConverter;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
-import com.whereyouad.WhereYouAd.domains.user.persistence.entity.AuthProviderAccount;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
-import com.whereyouad.WhereYouAd.domains.user.persistence.repository.AuthProviderAccountRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.RefreshTokenRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
@@ -30,8 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -46,7 +42,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final OrgInvitationRepository orgInvitationRepository;
-    private final AuthProviderAccountRepository authProviderAccountRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
     private final OrgService orgService;
