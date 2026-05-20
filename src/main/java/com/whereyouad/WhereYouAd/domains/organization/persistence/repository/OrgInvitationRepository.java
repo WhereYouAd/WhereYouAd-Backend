@@ -28,4 +28,9 @@ public interface OrgInvitationRepository extends JpaRepository<OrgInvitation, Lo
     @Modifying
     @Query("DELETE FROM OrgInvitation ov WHERE ov.organization.id = :orgId")
     void deleteByOrganizationId(@Param("orgId") Long orgId);
+
+    // 이메일 기준 일괄 삭제 (탈퇴 회원 앞으로 발송된 pending 초대 정리용)
+    @Modifying
+    @Query("DELETE FROM OrgInvitation ov WHERE ov.email = :email")
+    void deleteByEmail(@Param("email") String email);
 }

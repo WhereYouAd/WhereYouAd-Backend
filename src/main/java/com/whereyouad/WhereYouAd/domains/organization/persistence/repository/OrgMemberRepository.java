@@ -8,6 +8,7 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,6 +19,11 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, Long> {
 
     //User 가 가진 OrgMember 모두 추출하는 메서드
     List<OrgMember> findOrgMemberByUser(User user);
+
+    // userId 기준 OrgMember 일괄 Hard Delete (User Hard Delete 정리용)
+    @Modifying
+    @Query("DELETE FROM OrgMember om WHERE om.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
     
     //userId 를 통해 OrgMember 추출 -> Organization 의 status 가 ACTIVE 인 경우에만 조회
     @Query(value = "select om from OrgMember om join fetch om.organization o where om.user.id = :userId and o.status = 'ACTIVE'")
