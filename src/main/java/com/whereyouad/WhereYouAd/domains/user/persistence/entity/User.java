@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -43,6 +45,9 @@ public class User extends BaseEntity {
     @ColumnDefault("'ACTIVE'")  //기본값 ACTIVE
     private UserStatus status;  //ACTIVE, SUSPENDED, DELETED
 
+    @Column(nullable = true, name = "deleted_at")
+    private LocalDate deletedAt;
+
     @Column(name = "current_org_id")
     private Long currentOrgId;
 
@@ -63,5 +68,10 @@ public class User extends BaseEntity {
 
     public void setCurrentOrgId(Long currentOrgId) {
         this.currentOrgId = currentOrgId;
+    }
+
+    public void softDeleteUser() {
+        this.status = UserStatus.DELETED;
+        this.deletedAt = LocalDate.now();
     }
 }
