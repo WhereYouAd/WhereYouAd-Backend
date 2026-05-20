@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.organization.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.ai.persistence.repository.AIInsightReportRepository;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgConverter;
@@ -11,10 +12,10 @@ import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandl
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgInvitation;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
-import com.whereyouad.WhereYouAd.domains.ai.persistence.repository.AIInsightReportRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgInvitationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.repository.TimelineRepository;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.EmailService;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
@@ -45,10 +46,12 @@ public class OrgServiceImpl implements OrgService {
     private final TimelineRepository timelineRepository;
     private final AIInsightReportRepository aiInsightReportRepository;
     private final UserRepository userRepository;
+    private final PlatformConnectionRepository platformConnectionRepository;
 
     private final RedisUtil redisUtil;
     private final EmailService emailService;
     private final S3UploadService s3UploadService;
+
 
     // 조직(워크스페이스) 생성 메서드
     public OrgResponse.Create createOrganization(Long userId, OrgRequest.Create request, MultipartFile imageFile) {
@@ -256,6 +259,15 @@ public class OrgServiceImpl implements OrgService {
             throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN); // 예외처리
         }
 
+        // 조직에 연동된 플랫폼 계정이 존재할 경우 오류
+        // 별도 API 를 통해 사용자가 명시적 삭제 진행해야함
+        if (!platformConnectionRepository.findByUserIdAndOrgId(userId, orgId).isEmpty()) {
+            throw new OrgHandler(OrgErrorCode.ORG_PLATFORM_CONNECTED);
+        }
+
+        timelineRepository.deleteByOrganizationId(orgId);
+        aiInsightReportRepository.deleteByOrganizationId(orgId);
+
         String logoUrl = organization.getLogoUrl();
 
         // 해당 조직에 가입된 모든 회원들의 가입 정보 삭제
@@ -269,9 +281,6 @@ public class OrgServiceImpl implements OrgService {
         }
 
         orgMemberRepository.deleteAll(orgMembers);
-
-        // 조직에 종속된 부수 데이터 정리 (OrgInvitation / Timeline / AIInsightReport)
-        cleanupOrganizationRelatedData(orgId);
 
         // 조직 실제 삭제
         orgRepository.delete(organization);
@@ -298,6 +307,14 @@ public class OrgServiceImpl implements OrgService {
             throw new OrgHandler(OrgErrorCode.ORG_FORBIDDEN);
         }
 
+        // 조직에 연동된 플랫폼 계정이 존재할 경우 오류
+        // 별도 API 를 통해 사용자가 명시적 삭제 진행해야함
+        if (!platformConnectionRepository.findByUserIdAndOrgId(userId, orgId).isEmpty()) {
+            throw new OrgHandler(OrgErrorCode.ORG_PLATFORM_CONNECTED);
+        }
+
+        timelineRepository.deleteByOrganizationId(orgId);
+
         // 현재 워크스페이스가 삭제되는 조직인 멤버들의 currentOrgId를 null로 초기화
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
         for (OrgMember member : orgMembers) {
@@ -308,16 +325,38 @@ public class OrgServiceImpl implements OrgService {
 
         // 조직 status 만 DELETED 로 변경
         organization.softDelete();
-
-        // 멤버 없이 의미가 사라지는 부수 데이터(OrgInvitation, Timeline, AIInsightReport) 정리
-        cleanupOrganizationRelatedData(orgId);
     }
 
-    // 조직 삭제 시 함께 제거할 부수 데이터 일괄 정리
-    private void cleanupOrganizationRelatedData(Long orgId) {
-        orgInvitationRepository.deleteByOrganizationId(orgId);
-        timelineRepository.deleteByOrganizationId(orgId);
-        aiInsightReportRepository.deleteByOrganizationId(orgId);
+    // User Hard Delete 정리용 - 해당 User 가 owner 인 Soft Deleted Organization 들을 Hard Delete
+    // (Soft Delete 시 'owner + 다른 멤버 존재' 케이스는 차단되므로, 여기서는 본인 1명만 속한 조직만 존재)
+    @Override
+    public void removeOrganizationsOwnedBySoftDeletedUser(Long userId) {
+        List<Organization> targetOrganizations =
+                orgRepository.findAllByOwnerUserIdAndStatus(userId, OrgStatus.DELETED);
+
+        for (Organization organization : targetOrganizations) {
+            Long orgId = organization.getId();
+            String logoUrl = organization.getLogoUrl();
+
+            // 조직 소속 OrgMember 전부 Hard Delete (탈퇴 회원 본인의 OrgMember 포함)
+            List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
+            orgMemberRepository.deleteAll(orgMembers);
+
+            timelineRepository.deleteByOrganizationId(orgId);
+            aiInsightReportRepository.deleteByOrganizationId(orgId);
+
+            // 조직 Hard Delete
+            orgRepository.delete(organization);
+
+            // 로고 이미지 S3 삭제 (실패 시 로그만 남기고 진행)
+            if (logoUrl != null) {
+                try {
+                    s3UploadService.deleteImageFromUrl(logoUrl);
+                } catch (Exception e) {
+                    log.warn("탈퇴 회원 조직 Hard Delete - S3 로고 이미지 삭제 실패: {}", logoUrl, e);
+                }
+            }
+        }
     }
 
     public void removeMemberFromOrg(Long userId, Long orgId, Long memberId) {
