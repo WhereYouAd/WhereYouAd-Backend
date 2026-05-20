@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.user.domain.service;
 import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgInvitationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
@@ -20,6 +21,7 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpRes
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.AuthProviderAccount;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.AuthProviderAccountRepository;
+import com.whereyouad.WhereYouAd.domains.user.persistence.repository.RefreshTokenRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import com.whereyouad.WhereYouAd.infrastructure.client.aws.s3.S3UploadService;
@@ -43,7 +45,9 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final OrgMemberRepository orgMemberRepository;
+    private final OrgInvitationRepository orgInvitationRepository;
     private final AuthProviderAccountRepository authProviderAccountRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
     private final OrgService orgService;
     private final PasswordEncoder passwordEncoder;
@@ -217,26 +221,24 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
-        // 회원 프로필 이미지 S3 URL 추출
-        String profileImageUrl = user.getProfileImageUrl();
-
         // 1) 검증 단계
         // PlatformConnection 이 연결되어있는가? -> 연결되어 있으면 오류
         // 속한 Organization 중에 "해당 회원이 owner 인데 다른 회원이 멤버로 속한 Organization" 이 존재하는가? -> 존재 시 오류
         validateNoPlatformConnections(userId);
         handleOrganizationsOwnedByUser(userId);
 
-        // 2) 정리 단계 - User 를 참조하는 자식 엔티티 제거
-        removeAllOrgMembers(user);
-        removeAuthProviderAccounts(user);
+        // 2) 즉시 정리 단계
+        // 해당 회원 이메일로 발송된 pending OrgInvitation 정리
+        orgInvitationRepository.deleteByEmail(user.getEmail());
+        // JWT RefreshToken 삭제
+        refreshTokenRepository.deleteById(user.getEmail());
 
-        // 3) 본인 삭제 + 프로필 이미지 삭제
-        userRepository.deleteById(userId);
-        deleteProfileImage(profileImageUrl);
+        // 3) 회원 삭제 -> Soft Delete 상태로 변경, 30일 지날 시 스케줄러에서 Hard Delete
+        user.softDeleteUser();
     }
 
     // 광고 플랫폼 연동 정보 존재 시 탈퇴 불가
-    // TODO : 광고 플랫폼 연동 정보 삭제 & 관련된 광고 엔티티 (Project ,AdCampaign, AdGroup, AdContent, MetricFact) 삭제 로직 추가 필요
+    // TODO : 광고 플랫폼 연동 정보 삭제 & 관련된 광고 엔티티 (Project ,AdCampaign, AdGroup, AdContent, MetricFact, ClickLog) 삭제 API 추가 필요
     private void validateNoPlatformConnections(Long userId) {
         List<PlatformConnection> platformConnections = platformConnectionRepository.findByUser_Id(userId);
         if (!platformConnections.isEmpty()) {
@@ -260,40 +262,10 @@ public class UserService {
                 throw new UserHandler(UserErrorCode.USER_OWNS_ORGANIZATION);
             }
 
-            // 본인만 속한 조직은 OrgService 의 Soft Delete 로직 호출 (조직 연관된 엔티티 정리 포함)
+            // 본인만 속한 조직은 OrgService 의 Soft Delete 로직 호출
+            // 추후 Scheduler 에서 해당 Organization 과 연관 엔티티 한번에 정리
             orgService.removeOrganizationSoft(userId, organization.getId());
         }
     }
 
-    // User 를 참조하는 모든 OrgMember 제거 (Soft Delete 된 조직의 멤버십까지 포함)
-    private void removeAllOrgMembers(User user) {
-        orgMemberRepository.deleteAll(orgMemberRepository.findOrgMemberByUser(user));
-    }
-
-    // 소셜 로그인 연동 계정 제거
-    private void removeAuthProviderAccounts(User user) {
-        List<AuthProviderAccount> authProviderAccounts = authProviderAccountRepository.findByUserEmail(user.getEmail());
-        if (!authProviderAccounts.isEmpty()) {
-            authProviderAccountRepository.deleteAll(authProviderAccounts);
-        }
-    }
-
-    // S3 프로필 이미지 삭제 실패해도 탈퇴 트랜잭션은 정상 종료
-    private void deleteProfileImage(String profileImageUrl) {
-        if (profileImageUrl == null) {
-            return;
-        }
-        
-        // S3 이미지 삭제를 afterCommit 에 수행하도록 수정
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                try {
-                    s3UploadService.deleteImageFromUrl(profileImageUrl);
-                } catch (Exception e) {
-                    log.error("회원 탈퇴 과정에서 S3 이미지 삭제 오류 발생", e);
-                }
-            }
-        });
-    }
 }
