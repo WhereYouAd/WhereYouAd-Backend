@@ -267,6 +267,7 @@ public class OrgServiceImpl implements OrgService {
 
         timelineRepository.deleteByOrganizationId(orgId);
         aiInsightReportRepository.deleteByOrganizationId(orgId);
+        orgInvitationRepository.deleteByOrganizationId(orgId);
 
         String logoUrl = organization.getLogoUrl();
 
@@ -312,8 +313,6 @@ public class OrgServiceImpl implements OrgService {
         if (!platformConnectionRepository.findByUserIdAndOrgId(userId, orgId).isEmpty()) {
             throw new OrgHandler(OrgErrorCode.ORG_PLATFORM_CONNECTED);
         }
-
-        timelineRepository.deleteByOrganizationId(orgId);
 
         // 현재 워크스페이스가 삭제되는 조직인 멤버들의 currentOrgId를 null로 초기화
         List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
