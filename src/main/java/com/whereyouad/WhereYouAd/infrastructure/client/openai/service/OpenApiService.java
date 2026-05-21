@@ -84,9 +84,9 @@ public class OpenApiService {
         return AIConverter.toAnalysisResponse(aiContent);
     }
 
-    public String generateTimelineSummary(Timeline timeline, List<MetricFact> facts) {
+    public String generateTimelineSummary(Timeline timeline, List<MetricFact> facts, List<MetricFact> comparisonFacts) {
         String systemPrompt = promptBuilder.buildTimelineSystemPrompt();
-        String userPrompt = promptBuilder.buildTimelineUserPrompt(timeline, facts);
+        String userPrompt = promptBuilder.buildTimelineUserPrompt(timeline, facts, comparisonFacts);
         OpenAIRequest.Request request = AIConverter.toOpenAiRequest(model, systemPrompt, userPrompt);
 
         // openai 응답

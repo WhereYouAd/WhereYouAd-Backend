@@ -32,7 +32,7 @@ public class TimelineAsyncServiceImpl implements TimelineAsyncService {
         Timeline timeline = timelineRepository.findById(timelineId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND));
 
-        // 타임라인에 해당하는 Metric_fact 데이터 불러오기
+        // 분석 기간 Metric_fact 데이터 불러오기
         List<MetricFact> facts = metricFactRepository.findByOrgAndPeriodAndGrain(
                 orgId,
                 timeline.getStartDate().atStartOfDay(),
@@ -40,9 +40,17 @@ public class TimelineAsyncServiceImpl implements TimelineAsyncService {
                 Grain.DAILY
         );
 
+        // 비교 기간 Metric_fact 데이터 불러오기
+        List<MetricFact> comparisonFacts = metricFactRepository.findByOrgAndPeriodAndGrain(
+                orgId,
+                timeline.getComparisonStartDate().atStartOfDay(),
+                timeline.getComparisonEndDate().plusDays(1).atStartOfDay(),
+                Grain.DAILY
+        );
+
         try {
             // 타임라인 AI요약 생성 요청
-            String summary = openApiService.generateTimelineSummary(timeline, facts);
+            String summary = openApiService.generateTimelineSummary(timeline, facts, comparisonFacts);
             timeline.updateSummary(summary);
         } catch (Exception e) {
             log.error("[Timeline AI 요약 실패] timelineId={}, error={}", timelineId, e.getMessage());

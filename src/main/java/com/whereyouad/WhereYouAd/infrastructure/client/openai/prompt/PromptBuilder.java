@@ -128,7 +128,7 @@ public class PromptBuilder {
                """;
     }
 
-    public String buildTimelineUserPrompt(Timeline timeline, List<MetricFact> facts) {
+    public String buildTimelineUserPrompt(Timeline timeline, List<MetricFact> facts, List<MetricFact> comparisonFacts) {
         StringBuilder sb = new StringBuilder();
 
         List<String> activeMetricNames = new ArrayList<>();
@@ -150,8 +150,18 @@ public class PromptBuilder {
         }
         sb.append(String.format("활성화된 지표: %s\n\n", String.join(", ", activeMetricNames)));
 
-        // 헤더 - 활성화된 지표만 컬럼 포함
-        sb.append("일별 성과 데이터:\n");
+        // 분석 기간 일별 데이터
+        sb.append("분석 기간 일별 성과 데이터:\n");
+        appendDailyMetrics(sb, timeline, facts, timeline.getStartDate(), timeline.getEndDate());
+
+        // 비교 기간 일별 데이터
+        sb.append("\n비교 기간 일별 성과 데이터:\n");
+        appendDailyMetrics(sb, timeline, comparisonFacts, timeline.getComparisonStartDate(), timeline.getComparisonEndDate());
+
+        return sb.toString();
+    }
+
+    private void appendDailyMetrics(StringBuilder sb, Timeline timeline, List<MetricFact> facts, LocalDate from, LocalDate to) {
         sb.append("Date");
         if (timeline.isUseClick()) sb.append(",Clk");
         if (timeline.isUseConversion()) sb.append(",Conv");
@@ -159,11 +169,10 @@ public class PromptBuilder {
         if (timeline.isUseRoas()) sb.append(",ROAS");
         sb.append("\n");
 
-        // 날짜별 집계
         Map<LocalDate, List<MetricFact>> byDate = facts.stream()
                 .collect(Collectors.groupingBy(f -> f.getTimeBucket().toLocalDate()));
 
-        timeline.getStartDate().datesUntil(timeline.getEndDate().plusDays(1)).forEach(date -> {
+        from.datesUntil(to.plusDays(1)).forEach(date -> {
             List<MetricFact> dayFacts = byDate.getOrDefault(date, List.of());
             sb.append(date);
 
@@ -193,8 +202,6 @@ public class PromptBuilder {
             }
             sb.append("\n");
         });
-
-        return sb.toString();
     }
 
     // 캠페인별 예산 집계용 클래스
