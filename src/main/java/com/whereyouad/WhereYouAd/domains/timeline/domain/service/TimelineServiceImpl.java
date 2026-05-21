@@ -26,6 +26,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.DayOfWeek;
 import java.math.BigDecimal;
@@ -47,6 +49,7 @@ public class TimelineServiceImpl implements TimelineService {
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final TimelineUtil timelineUtil;
+    private final TimelineAsyncService timelineAsyncService;
 
     @Override
     public TimelineResponse.CreateResponseDTO createTimeline(Long userId, Long orgId, TimelineRequest.TimelineCreateDto dto) {
@@ -252,6 +255,42 @@ public class TimelineServiceImpl implements TimelineService {
         List<TimelineResponse.PlatformContributionDTO> platformContributions = buildPlatformContributions(facts, timeline);
 
         return TimelineConverter.toTimelineDetailDTO(timeline, metrics, dailyTrend, platformContributions);
+    }
+
+    @Override
+    public void requestTimelineSummary(Long userId, Long orgId, Long timelineId) {
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_READ_FORBIDDEN));
+
+        Timeline timeline = timelineRepository.findById(timelineId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND));
+
+        // 해당 조직의 타임라인이 아닌 경우
+        if (!timeline.getOrganization().getId().equals(orgId)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND);
+        }
+
+        // 생성 이후 MetricFact 변동 or 광고 상태 변경을 대비한 재검증
+        boolean hasData = metricFactRepository.existsByTimeBucketBetweenAndOrg(
+                timeline.getStartDate().atStartOfDay(),
+                timeline.getEndDate().plusDays(1).atStartOfDay(),
+                orgId
+        );
+        if (!hasData) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_METRIC_DATA);
+        }
+
+        // 트랜잭션 훅 등록
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            // 트랜잭션이 성공적으로 커밋된 시점 이후에 호출
+            public void afterCommit() {
+                timelineAsyncService.summarizeAsync(timelineId, orgId);
+            }
+        });
     }
 
     // 선택된 지표를 리스트로 변환해주는 메서드

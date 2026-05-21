@@ -11,4 +11,5 @@ public interface TimelineService {
     void deleteTimeline(Long userId, Long orgId, Long timelineId);
     List<TimelineResponse.TimelineSummaryDTO> getTimelines(Long userId, Long orgId);
     TimelineResponse.TimelineDetailDTO getTimelineDetail(Long userId, Long orgId, Long timelineId);
+    void requestTimelineSummary(Long userId, Long orgId, Long timelineId);
 }
