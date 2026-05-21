@@ -1,11 +1,9 @@
 package com.whereyouad.WhereYouAd.domains.timeline.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
-import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
-import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
@@ -33,7 +31,6 @@ import java.time.DayOfWeek;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -117,12 +114,9 @@ public class TimelineServiceImpl implements TimelineService {
             throw new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND);
         }
 
-        // 4. ADMIN 권한 검증
-        OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+        // 4. 조직 멤버 검증
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_UPDATE_FORBIDDEN));
-        if (member.getRole() != OrgRole.ADMIN) {
-            throw new TimelineException(TimelineErrorCode.TIMELINE_UPDATE_FORBIDDEN);
-        }
 
         // 5. 날짜 검증
         if (dto.endDate().isBefore(dto.startDate())) {
@@ -188,13 +182,8 @@ public class TimelineServiceImpl implements TimelineService {
         }
 
         // 조직 맴버가 아닌 경우
-        OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_DELETE_FORBIDDEN));
-
-        // ADMIN 권한이 없는 경우
-        if (member.getRole() != OrgRole.ADMIN) {
-            throw new TimelineException(TimelineErrorCode.TIMELINE_DELETE_FORBIDDEN);
-        }
 
         // 삭제
         timelineRepository.delete(timeline);
