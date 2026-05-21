@@ -2,13 +2,17 @@ package com.whereyouad.WhereYouAd.infrastructure.client.openai.prompt;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
+import com.whereyouad.WhereYouAd.domains.timeline.persistence.entity.Timeline;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class PromptBuilder {
@@ -107,6 +111,88 @@ public class PromptBuilder {
                   4. 주요 지표(CTR, CVR, ROAS) 추이 변화 분석
                   5. 예산 대비 소진율 및 프로젝트 목표를 고려한 실무적인 광고 운영 전략 제안
                   """);
+
+        return sb.toString();
+    }
+
+    public String buildTimelineSystemPrompt() {
+        return """
+               당신은 디지털 광고 성과 타임라인 분석 전문가입니다.
+               사용자가 제공하는 타임라인 기간의 일별 성과 데이터를 바탕으로 2~3문장의 자연스러운 한국어 요약문을 작성하세요.
+
+               반드시 지켜야 할 규칙:
+               - '활성화된 지표'에 명시된 지표만 분석하세요. 목록에 없는 지표는 절대 언급하지 마세요.
+               - 데이터 부족, 추가 수집 필요, 알 수 없음 등의 표현은 절대 사용하지 마세요. 제공된 데이터만으로 분석하세요.
+               - 전체적인 흐름, 특이점(최고/최저 날짜), 지표 간 변화를 포함하세요.
+               - JSON, 마크다운, 불릿 포인트 없이 순수 텍스트로만 응답하세요.
+               """;
+    }
+
+    public String buildTimelineUserPrompt(Timeline timeline, List<MetricFact> facts) {
+        StringBuilder sb = new StringBuilder();
+
+        List<String> activeMetricNames = new ArrayList<>();
+        if (timeline.isUseClick()) activeMetricNames.add("클릭수");
+        if (timeline.isUseConversion()) activeMetricNames.add("전환수");
+        if (timeline.isUseImpression()) activeMetricNames.add("노출수");
+        if (timeline.isUseRoas()) activeMetricNames.add("ROAS");
+
+        sb.append(String.format("타임라인 이름: %s\n", timeline.getName()));
+        sb.append(String.format("분석 기간: %s ~ %s\n", timeline.getStartDate(), timeline.getEndDate()));
+        sb.append(String.format("비교 기간: %s ~ %s\n", timeline.getComparisonStartDate(), timeline.getComparisonEndDate()));
+        if (timeline.getPerformanceStatus() != null) {
+            String statusLabel = switch (timeline.getPerformanceStatus()) {
+                case ABOVE_AVG -> "평균 이상";
+                case ON_TRACK -> "보통 (목표 수준 유지)";
+                case UNDERPERFORM -> "평균 이하";
+            };
+            sb.append(String.format("성과 상태: %s\n", statusLabel));
+        }
+        sb.append(String.format("활성화된 지표: %s\n\n", String.join(", ", activeMetricNames)));
+
+        // 헤더 - 활성화된 지표만 컬럼 포함
+        sb.append("일별 성과 데이터:\n");
+        sb.append("Date");
+        if (timeline.isUseClick()) sb.append(",Clk");
+        if (timeline.isUseConversion()) sb.append(",Conv");
+        if (timeline.isUseImpression()) sb.append(",Imp");
+        if (timeline.isUseRoas()) sb.append(",ROAS");
+        sb.append("\n");
+
+        // 날짜별 집계
+        Map<LocalDate, List<MetricFact>> byDate = facts.stream()
+                .collect(Collectors.groupingBy(f -> f.getTimeBucket().toLocalDate()));
+
+        timeline.getStartDate().datesUntil(timeline.getEndDate().plusDays(1)).forEach(date -> {
+            List<MetricFact> dayFacts = byDate.getOrDefault(date, List.of());
+            sb.append(date);
+
+            if (timeline.isUseClick()) {
+                long clk = dayFacts.stream().mapToLong(f -> f.getClicks() != null ? f.getClicks() : 0L).sum();
+                sb.append(",").append(clk);
+            }
+            if (timeline.isUseConversion()) {
+                long conv = dayFacts.stream().mapToLong(f -> f.getConversions() != null ? f.getConversions() : 0L).sum();
+                sb.append(",").append(conv);
+            }
+            if (timeline.isUseImpression()) {
+                long imp = dayFacts.stream().mapToLong(f -> f.getImpressions() != null ? f.getImpressions() : 0L).sum();
+                sb.append(",").append(imp);
+            }
+            if (timeline.isUseRoas()) {
+                BigDecimal spend = dayFacts.stream()
+                        .map(f -> f.getSpend() != null ? f.getSpend() : BigDecimal.ZERO)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal revenue = dayFacts.stream()
+                        .map(f -> f.getRevenue() != null ? f.getRevenue() : BigDecimal.ZERO)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                String roasStr = spend.compareTo(BigDecimal.ZERO) > 0
+                        ? revenue.divide(spend, 2, RoundingMode.HALF_UP).toPlainString()
+                        : "0";
+                sb.append(",").append(roasStr);
+            }
+            sb.append("\n");
+        });
 
         return sb.toString();
     }
