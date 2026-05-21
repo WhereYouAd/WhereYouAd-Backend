@@ -88,6 +88,11 @@ public class TimelineServiceImpl implements TimelineService {
                 Status.ON_GOING
         );
 
+        // 현재 기간에 성과 데이터가 없거나 모두 0이면 타임라인 생성 불가
+        if (isProjectionEmpty(currentFacts)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_CURRENT_DATA);
+        }
+
         // 입력받은 DTO를 타임라인 엔티티로 변환
         Timeline timeline = TimelineConverter.toTimeline(dto, organization, userId, comparisonDates.start(), comparisonDates.end());
 
@@ -147,6 +152,11 @@ public class TimelineServiceImpl implements TimelineService {
                 OrgStatus.ACTIVE,
                 Status.ON_GOING
         );
+
+        // 현재 기간에 성과 데이터가 없거나 모두 0이면 수정 불가
+        if (isProjectionEmpty(currentFacts)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_CURRENT_DATA);
+        }
 
         // 8. 성과 리스트 -> boolean 플래그 변환
         boolean useClick = dto.metrics().contains(MetricType.CLICK);
