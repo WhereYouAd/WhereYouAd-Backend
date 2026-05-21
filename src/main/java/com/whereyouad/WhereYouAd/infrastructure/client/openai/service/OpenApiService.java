@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.infrastructure.client.openai.service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.AIResponse;
+import com.whereyouad.WhereYouAd.domains.timeline.persistence.entity.Timeline;
 import com.whereyouad.WhereYouAd.domains.ai.application.mapper.AIConverter;
 import com.whereyouad.WhereYouAd.domains.ai.exception.AIHandler;
 import com.whereyouad.WhereYouAd.domains.ai.exception.code.AIErrorCode;
@@ -81,6 +82,46 @@ public class OpenApiService {
 
         // 5. AIConverter 로 JSON -> AnalysisResponse 파싱
         return AIConverter.toAnalysisResponse(aiContent);
+    }
+
+    public String generateTimelineSummary(Timeline timeline, List<MetricFact> facts) {
+        String systemPrompt = promptBuilder.buildTimelineSystemPrompt();
+        String userPrompt = promptBuilder.buildTimelineUserPrompt(timeline, facts);
+        OpenAIRequest.Request request = AIConverter.toOpenAiRequest(model, systemPrompt, userPrompt);
+
+        // openai 응답
+        OpenAIResponse.Response response;
+        try {
+            log.info("[generateTimelineSummary] OpenAI 호출 시작. timelineId={}, 레코드 수={}", timeline.getId(), facts.size());
+            response = openAiClient.chatCompletions(request);
+            log.info("[generateTimelineSummary] OpenAI 응답 수신 완료.");
+
+        } catch (FeignException.BadRequest e) {
+            log.error("[generateTimelineSummary] OpenAI 400 Bad Request: {}", extractFeignMessage(e));
+            throw new AIHandler(AIErrorCode.INVALID_OPENAI_REQUEST);
+
+        } catch (FeignException.Unauthorized e) {
+            log.error("[generateTimelineSummary] OpenAI 401 Unauthorized: {}", extractFeignMessage(e));
+            throw new AIHandler(AIErrorCode.INVALID_OPENAI_API_KEY);
+
+        } catch (FeignException.TooManyRequests e) {
+            log.error("[generateTimelineSummary] OpenAI 429 Rate Limit: {}", extractFeignMessage(e));
+            throw new AIHandler(AIErrorCode.OPENAI_RATE_LIMIT);
+
+        } catch (FeignException e) {
+            log.error("[generateTimelineSummary] OpenAI Feign 오류 (status={}): {}", e.status(), extractFeignMessage(e));
+            throw new AIHandler(AIErrorCode.AI_CALL_FAILED);
+        }
+
+        // 본문 추출
+        String content = response.getFirstContent();
+        if (content == null || content.isBlank()) {
+            log.error("[generateTimelineSummary] OpenAI 응답 content가 비어있습니다.");
+            throw new AIHandler(AIErrorCode.AI_CALL_FAILED);
+        }
+
+        // 공백 제거 및 반환
+        return content.trim();
     }
 
     // 에러 메시지 추출
