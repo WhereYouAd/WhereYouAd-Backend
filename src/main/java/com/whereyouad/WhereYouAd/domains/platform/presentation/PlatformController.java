@@ -60,4 +60,16 @@ public class PlatformController implements PlatformControllerDocs {
         );
     }
 
+    @DeleteMapping("/{orgId}/accounts/{accountId}")
+    public ResponseEntity<DataResponse<String>> disconnectPlatform(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(value = "orgId") Long orgId,
+            @PathVariable(value = "accountId") Long accountId
+    )
+    {
+        platformService.disconnectPlatform(userId, orgId, accountId);
+
+        return ResponseEntity.ok(DataResponse.from("광고 플랫폼 연동 정보와 연관된 광고 정보가 정상적으로 삭제되었습니다."));
+    }
+
 }
