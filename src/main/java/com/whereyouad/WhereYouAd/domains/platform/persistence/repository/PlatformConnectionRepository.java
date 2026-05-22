@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.platform.persistence.repository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.Optional;
@@ -40,4 +41,9 @@ public interface PlatformConnectionRepository extends JpaRepository<PlatformConn
             "JOIN FETCH c.platformAccount pa " +
             "WHERE c.user.id = :userId AND pa.organization.id = :orgId")
     List<PlatformConnection> findByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
+
+    // PlatformAccount 연동 해제 시 해당 계정에 연결된 모든 connection 일괄 정리
+    @Modifying
+    @Query("DELETE FROM PlatformConnection pc WHERE pc.platformAccount.id = :platformAccountId")
+    void deleteByPlatformAccount_Id(@Param("platformAccountId") Long platformAccountId);
 }
