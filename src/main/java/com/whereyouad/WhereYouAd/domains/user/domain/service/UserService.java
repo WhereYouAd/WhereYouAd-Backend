@@ -233,7 +233,6 @@ public class UserService {
     }
 
     // 광고 플랫폼 연동 정보 존재 시 탈퇴 불가
-    // TODO : 광고 플랫폼 연동 정보 삭제 & 관련된 광고 엔티티 (Project ,AdCampaign, AdGroup, AdContent, MetricFact, ClickLog) 삭제 API 추가 필요
     private void validateNoPlatformConnections(Long userId) {
         List<PlatformConnection> platformConnections = platformConnectionRepository.findByUser_Id(userId);
         if (!platformConnections.isEmpty()) {
