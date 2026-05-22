@@ -9,4 +9,6 @@ public interface PlatformService {
     PlatformResponse.PlatformAccountListResponse getPlatformSyncInfos(Long userId, Long orgId);
 
     PlatformResponse.PlatformAccount updateNaverAdAccount(Long userId, Long orgId, PlatformRequest.PlatformAccount request);
+
+    void disconnectPlatform(Long userId, Long orgId, Long accountId);
 }

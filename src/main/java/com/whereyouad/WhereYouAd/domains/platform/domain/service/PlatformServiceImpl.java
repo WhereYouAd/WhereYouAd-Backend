@@ -5,6 +5,8 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMemb
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.platform.application.dto.request.PlatformRequest;
 import com.whereyouad.WhereYouAd.domains.platform.application.dto.response.PlatformResponse;
 import com.whereyouad.WhereYouAd.domains.platform.application.mapper.PlatformConverter;
@@ -14,6 +16,7 @@ import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAcc
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformAccountRepository;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
+import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectRepository;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
@@ -42,6 +45,9 @@ public class PlatformServiceImpl implements PlatformService {
     private final OrgMemberRepository orgMemberRepository;
     private final PlatformAccountRepository platformAccountRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
+    private final AdCampaignRepository adCampaignRepository;
+    private final ProjectRepository projectRepository;
+    private final PlatformDataCleanupExecutor platformDataCleanupExecutor;
     private final NaverClient naverClient;
     private final NaverAdAuthStrategy naverAdAuthStrategy;
 
@@ -142,6 +148,73 @@ public class PlatformServiceImpl implements PlatformService {
         connection.renewApiKey(request.apiKey(), request.secretKey());
 
         return PlatformConverter.toPlatformAccountResponse(platformAccount);
+    }
+
+    @Override
+    public void disconnectPlatform(Long userId, Long orgId, Long accountId) {
+        // 권한 검증: 회원 + ADMIN 권한 + PlatformAccount 가 해당 조직 소속인지 확인
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ORG_MEMBER_NOT_FOUND));
+
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
+        }
+
+        PlatformAccount platformAccount = platformAccountRepository.findById(accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
+
+        if (!platformAccount.getOrganization().getId().equals(orgId)) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_BELONG_TO_ORG);
+        }
+
+        // Owner 검증: 본인이 등록한 PlatformAccount 만 disconnect 가능
+        // PlatformConnection (user_id + platform_account_id) 존재 여부로 판별
+        platformConnectionRepository.findByUserIdAndPlatformAccountId(userId, accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_NOT_ACCOUNT_OWNER));
+
+        // 영향받는 Project ID 수집 (AdCampaign 삭제 전에 미리 확보 — 삭제 후엔 못 찾음)
+        List<Long> affectedProjectIds = adCampaignRepository.findDistinctProjectIdsByPlatformAccountId(accountId);
+
+        int chunkDeleted; // 하나의 청크 당 삭제 갯수
+        long totalClickLogDeleted = 0L; // ClickLog 전체 삭제 갯수
+        long totalMetricFactDeleted = 0L; // MetricFact 전체 삭제 갯수
+
+        // ClickLog 청크 정리 (REQUIRES_NEW)
+        do {
+            chunkDeleted = platformDataCleanupExecutor.deleteClickLogChunk(accountId);
+            totalClickLogDeleted += chunkDeleted;
+        } while (chunkDeleted > 0);
+        log.info("ClickLog 삭제 완료 - platformAccountId={}, totalCount={}", accountId, totalClickLogDeleted);
+
+        // MetricFact 청크 정리 (REQUIRES_NEW) — Project 삭제 단계에서 FK 위반 방지
+        do {
+            chunkDeleted = platformDataCleanupExecutor.deleteMetricFactChunk(accountId);
+            totalMetricFactDeleted += chunkDeleted;
+        } while (chunkDeleted > 0);
+        log.info("MetricFact 삭제 완료 - platformAccountId={}, totalCount={}", accountId, totalMetricFactDeleted);
+
+        // AdCampaign 삭제 (Cascade ALL → AdGroup → AdContent 자동 정리)
+        List<AdCampaign> campaigns = adCampaignRepository.findByPlatformAccount(platformAccount);
+        if (!campaigns.isEmpty()) {
+            adCampaignRepository.deleteAll(campaigns);
+            adCampaignRepository.flush();
+        }
+
+        // PlatformConnection 정리
+        platformConnectionRepository.deleteByPlatformAccount_Id(accountId);
+
+        // PlatformAccount 정리
+        platformAccountRepository.delete(platformAccount);
+
+        // AdCampaign 이 0이 된 Project 자동 정리
+        for (Long projectId : affectedProjectIds) {
+            if (adCampaignRepository.countByProject_Id(projectId) == 0) {
+                projectRepository.deleteById(projectId);
+            }
+        }
     }
 
     private void validateNaverCredentials(String customerId, String encryptedApiKey, String encryptedSecretKey) {
