@@ -5,6 +5,7 @@ import com.whereyouad.WhereYouAd.domains.platform.application.dto.response.Platf
 import com.whereyouad.WhereYouAd.domains.platform.domain.service.PlatformService;
 import com.whereyouad.WhereYouAd.domains.platform.presentation.docs.PlatformControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -61,6 +62,7 @@ public class PlatformController implements PlatformControllerDocs {
     }
 
 
+    @Hidden
     @DeleteMapping("/{orgId}/accounts/{accountId}")
     public ResponseEntity<DataResponse<String>> disconnectPlatform(
             @AuthenticationPrincipal(expression = "userId") Long userId,
