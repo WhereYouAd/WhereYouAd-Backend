@@ -94,4 +94,20 @@ public interface TimelineControllerDocs {
             @PathVariable Long orgId,
             @PathVariable Long timelineId
     );
+
+    @Operation(
+            summary = "타임라인 AI 요약 요청 API",
+            description = "타임라인 기간의 성과 데이터를 바탕으로 AI 요약문을 생성합니다. 비동기로 처리되며, 완료 후 타임라인 상세 조회(summary 필드)에서 확인할 수 있습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "202", description = "요약 요청 수락됨"),
+            @ApiResponse(responseCode = "400_3", description = "해당 기간의 광고 데이터가 없는 경우"),
+            @ApiResponse(responseCode = "403_2", description = "조직 멤버가 아닌 경우"),
+            @ApiResponse(responseCode = "404_1", description = "타임라인 또는 조직을 찾을 수 없는 경우")
+    })
+    ResponseEntity<DataResponse<Void>> requestTimelineSummary(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId
+    );
 }

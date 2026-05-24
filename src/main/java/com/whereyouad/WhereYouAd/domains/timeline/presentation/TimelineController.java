@@ -68,4 +68,14 @@ public class TimelineController implements TimelineControllerDocs {
         timelineService.deleteTimeline(userId, orgId, timelineId);
         return ResponseEntity.ok(DataResponse.ok());
     }
+
+    @PostMapping("/{timelineId}/summary")
+    public ResponseEntity<DataResponse<Void>> requestTimelineSummary(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long timelineId
+    ) {
+        timelineService.requestTimelineSummary(userId, orgId, timelineId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(DataResponse.ok());
+    }
 }
