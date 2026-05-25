@@ -31,16 +31,16 @@ public class UserDeleteScheduler {
                 userRepository.findAllByStatusAndDeletedAtBefore(UserStatus.DELETED, threshold);
 
         int successCount = 0;
-        for (User user : targetUsers) {
+        for (Long userId : targetUserIds) {
             try {
-                userDeleteExecutor.hardDeleteSingleUser(user);
+                userDeleteExecutor.hardDeleteSingleUser(userId);
                 successCount++;
             } catch (Exception e) {
-                log.error("회원 Hard Delete 실패 - userId: {}", user.getId(), e);
+                log.error("회원 Hard Delete 실패 - userId: {}", userId, e);
             }
         }
 
         log.info("Soft Delete 회원 Hard Delete 완료 - 대상: {}, 성공: {}",
-                targetUsers.size(), successCount);
+                targetUserIds.size(), successCount);
     }
 }

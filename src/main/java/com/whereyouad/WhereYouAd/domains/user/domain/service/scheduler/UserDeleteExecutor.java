@@ -2,6 +2,8 @@ package com.whereyouad.WhereYouAd.domains.user.domain.service.scheduler;
 
 import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
+import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.AuthProviderAccountRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
@@ -29,8 +31,11 @@ public class UserDeleteExecutor {
     // (3) profileImageUrl S3 이미지 삭제
     // (4) User Hard Delete
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void hardDeleteSingleUser(User user) {
-        // 기존 hardDeleteSingleUser 로직 이동
+    public void hardDeleteSingleUser(Long userId) {
+        // 개선 : User 객체의 JPA 지연로딩 오류 방지를 위한 userId param 사용 & 메서드 내부에서 User 객체 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
         orgService.removeOrganizationsOwnedBySoftDeletedUser(user.getId());
         orgMemberRepository.deleteByUserId(user.getId());
         authProviderAccountRepository.deleteByUserId(user.getId());

@@ -22,8 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 이메일 중복 예외 처리를 위한 이메일로 조회 메서드
     boolean existsByEmail(String email);
 
-    // Soft Delete 후 일정 기간이 지난 회원 조회 (Hard Delete 대상)
-    @Query("SELECT u FROM User u WHERE u.status = :status AND u.deletedAt <= :threshold")
-    List<User> findAllByStatusAndDeletedAtBefore(@Param("status") UserStatus status,
-                                                 @Param("threshold") LocalDate threshold);
+    // Soft Delete 후 일정 기간이 지난 회원의 userId 리스트 조회 (Hard Delete 대상)
+    @Query("SELECT u.id FROM User u WHERE u.status = :status AND u.deletedAt <= :threshold")
+    List<Long> findIdsByStatusAndDeletedAtBefore(@Param("status") UserStatus status, @Param("threshold") LocalDate threshold);
 }
