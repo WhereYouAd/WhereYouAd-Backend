@@ -1,7 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service.scheduler;
 
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
-import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +26,9 @@ public class UserDeleteScheduler {
         LocalDate threshold = LocalDate.now().minusDays(SOFT_DELETE_RETENTION_DAYS);
         log.info("Soft Delete 회원 Hard Delete 스케줄러 실행 - threshold: {}", threshold);
 
-        List<User> targetUsers =
-                userRepository.findAllByStatusAndDeletedAtBefore(UserStatus.DELETED, threshold);
+        // 삭제 대상 User 엔티티의 Id 를 리스트 조회
+        List<Long> targetUserIds =
+                userRepository.findIdsByStatusAndDeletedAtBefore(UserStatus.DELETED, threshold);
 
         int successCount = 0;
         for (Long userId : targetUserIds) {
