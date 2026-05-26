@@ -20,8 +20,8 @@ public class UserDeleteScheduler {
     private final UserRepository userRepository;
     private final UserDeleteExecutor userDeleteExecutor;
 
-    // 매주 토요일 → 일요일로 넘어가는 새벽 3시 (일요일 03:00)
-    @Scheduled(cron = "0 0 3 * * SUN")
+    // 매일 새벽 3시
+    @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul")
     public void hardDeleteUsers() {
         LocalDate threshold = LocalDate.now().minusDays(SOFT_DELETE_RETENTION_DAYS);
         log.info("Soft Delete 회원 Hard Delete 스케줄러 실행 - threshold: {}", threshold);
