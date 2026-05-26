@@ -24,6 +24,9 @@ public interface OrgService {
 
     void removeOrganizationSoft(Long userId, Long orgId);
 
+    // User Hard Delete 정리용 - 특정 User 가 owner 인 Soft Deleted Organization 들을 관련 엔티티와 함께 Hard Delete
+    void removeOrganizationsOwnedBySoftDeletedUser(Long userId);
+
     OrgResponse.Delete restoreOrganization(Long userId, Long orgId);
 
     // orgId 조직에서 memberId에 해당하는 맴버 제거
@@ -35,4 +38,6 @@ public interface OrgService {
     OrgResponse.OrgInvitationResponse sendOrgInvitation(Long userId, Long orgId, String email);
 
     OrgResponse.OrgInvitationResponse acceptOrgInvitation(Long userId, String token);
+
+    void changeOwner(Long userId, Long orgId, OrgRequest.ChangeOwner request);
 }

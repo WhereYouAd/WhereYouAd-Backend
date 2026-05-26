@@ -109,4 +109,14 @@ public class UserController implements UserControllerDocs {
                 DataResponse.from(response)
         );
     }
+
+    @DeleteMapping("/my")
+    public ResponseEntity<DataResponse<String>> deleteUser(
+            @AuthenticationPrincipal(expression = "userId") Long userId
+    )
+    {
+        userService.deleteUser(userId);
+
+        return ResponseEntity.ok(DataResponse.from("탈퇴가 정상적으로 처리되었습니다"));
+    }
 }

@@ -1,11 +1,9 @@
 package com.whereyouad.WhereYouAd.domains.timeline.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
-import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
-import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
@@ -28,12 +26,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.DayOfWeek;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -50,6 +49,7 @@ public class TimelineServiceImpl implements TimelineService {
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final TimelineUtil timelineUtil;
+    private final TimelineAsyncService timelineAsyncService;
 
     @Override
     public TimelineResponse.CreateResponseDTO createTimeline(Long userId, Long orgId, TimelineRequest.TimelineCreateDto dto) {
@@ -91,6 +91,11 @@ public class TimelineServiceImpl implements TimelineService {
                 Status.ON_GOING
         );
 
+        // 현재 기간에 성과 데이터가 없거나 모두 0이면 타임라인 생성 불가
+        if (isProjectionEmpty(currentFacts)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_CURRENT_DATA);
+        }
+
         // 입력받은 DTO를 타임라인 엔티티로 변환
         Timeline timeline = TimelineConverter.toTimeline(dto, organization, userId, comparisonDates.start(), comparisonDates.end());
 
@@ -117,12 +122,9 @@ public class TimelineServiceImpl implements TimelineService {
             throw new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND);
         }
 
-        // 4. ADMIN 권한 검증
-        OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+        // 4. 조직 멤버 검증
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_UPDATE_FORBIDDEN));
-        if (member.getRole() != OrgRole.ADMIN) {
-            throw new TimelineException(TimelineErrorCode.TIMELINE_UPDATE_FORBIDDEN);
-        }
 
         // 5. 날짜 검증
         if (dto.endDate().isBefore(dto.startDate())) {
@@ -153,6 +155,11 @@ public class TimelineServiceImpl implements TimelineService {
                 OrgStatus.ACTIVE,
                 Status.ON_GOING
         );
+
+        // 현재 기간에 성과 데이터가 없거나 모두 0이면 수정 불가
+        if (isProjectionEmpty(currentFacts)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_CURRENT_DATA);
+        }
 
         // 8. 성과 리스트 -> boolean 플래그 변환
         boolean useClick = dto.metrics().contains(MetricType.CLICK);
@@ -188,13 +195,8 @@ public class TimelineServiceImpl implements TimelineService {
         }
 
         // 조직 맴버가 아닌 경우
-        OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_DELETE_FORBIDDEN));
-
-        // ADMIN 권한이 없는 경우
-        if (member.getRole() != OrgRole.ADMIN) {
-            throw new TimelineException(TimelineErrorCode.TIMELINE_DELETE_FORBIDDEN);
-        }
 
         // 삭제
         timelineRepository.delete(timeline);
@@ -253,6 +255,42 @@ public class TimelineServiceImpl implements TimelineService {
         List<TimelineResponse.PlatformContributionDTO> platformContributions = buildPlatformContributions(facts, timeline);
 
         return TimelineConverter.toTimelineDetailDTO(timeline, metrics, dailyTrend, platformContributions);
+    }
+
+    @Override
+    public void requestTimelineSummary(Long userId, Long orgId, Long timelineId) {
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_READ_FORBIDDEN));
+
+        Timeline timeline = timelineRepository.findById(timelineId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND));
+
+        // 해당 조직의 타임라인이 아닌 경우
+        if (!timeline.getOrganization().getId().equals(orgId)) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND);
+        }
+
+        // 생성 이후 MetricFact 변동 or 광고 상태 변경을 대비한 재검증
+        boolean hasData = metricFactRepository.existsByTimeBucketBetweenAndOrg(
+                timeline.getStartDate().atStartOfDay(),
+                timeline.getEndDate().plusDays(1).atStartOfDay(),
+                orgId
+        );
+        if (!hasData) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_NO_METRIC_DATA);
+        }
+
+        // 트랜잭션 훅 등록
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            // 트랜잭션이 성공적으로 커밋된 시점 이후에 호출
+            public void afterCommit() {
+                timelineAsyncService.summarizeAsync(timelineId, orgId);
+            }
+        });
     }
 
     // 선택된 지표를 리스트로 변환해주는 메서드

@@ -53,4 +53,8 @@ public class Organization extends BaseEntity {
     public void restoreDelete() {
         this.status = OrgStatus.ACTIVE;
     }
+
+    public void changeOwner(Long newOwnerUserId) {
+        this.ownerUserId = newOwnerUserId;
+    }
 }

@@ -1,7 +1,12 @@
 package com.whereyouad.WhereYouAd.domains.user.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.organization.domain.service.OrgService;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgInvitationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.UserInfoModifyRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyOrgResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
@@ -14,17 +19,21 @@ import com.whereyouad.WhereYouAd.domains.user.application.mapper.UserConverter;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.SignUpRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.SignUpResponse;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
+import com.whereyouad.WhereYouAd.domains.user.persistence.repository.RefreshTokenRepository;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import com.whereyouad.WhereYouAd.infrastructure.client.aws.s3.S3UploadService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Objects;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -32,6 +41,10 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final OrgMemberRepository orgMemberRepository;
+    private final OrgInvitationRepository orgInvitationRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final PlatformConnectionRepository platformConnectionRepository;
+    private final OrgService orgService;
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
     private final S3UploadService s3UploadService;
@@ -195,4 +208,58 @@ public class UserService {
 
         return UserConverter.toUserInfoResponse(user.getId(), user.getName(), user.getProfileImageUrl());
     }
+
+    // 회원 탈퇴
+    // 만약 탈퇴하려는 회원이 Organization 의 owner (organization.getOwnerUserId()) 면 탈퇴 불가 -> 양도 먼저 진행 필요
+    public void deleteUser(Long userId) {
+        // 회원 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        // 1) 검증 단계
+        // PlatformConnection 이 연결되어있는가? -> 연결되어 있으면 오류
+        // 속한 Organization 중에 "해당 회원이 owner 인데 다른 회원이 멤버로 속한 Organization" 이 존재하는가? -> 존재 시 오류
+        validateNoPlatformConnections(userId);
+        handleOrganizationsOwnedByUser(userId);
+
+        // 2) 즉시 정리 단계
+        // 해당 회원 이메일로 발송된 pending OrgInvitation 정리
+        orgInvitationRepository.deleteByEmail(user.getEmail());
+        // JWT RefreshToken 삭제
+        refreshTokenRepository.deleteById(user.getEmail());
+
+        // 3) 회원 삭제 -> Soft Delete 상태로 변경, 30일 지날 시 스케줄러에서 Hard Delete
+        user.softDeleteUser();
+    }
+
+    // 광고 플랫폼 연동 정보 존재 시 탈퇴 불가
+    private void validateNoPlatformConnections(Long userId) {
+        List<PlatformConnection> platformConnections = platformConnectionRepository.findByUser_Id(userId);
+        if (!platformConnections.isEmpty()) {
+            throw new UserHandler(UserErrorCode.USER_HAS_PLATFORM_CONNECTION);
+        }
+    }
+
+    // 회원이 owner 인 조직 처리 - 다른 멤버가 있으면 탈퇴 거부, 본인만 있으면 Soft Delete
+    private void handleOrganizationsOwnedByUser(Long userId) {
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByUserId(userId);
+
+        for (OrgMember orgMember : orgMembers) {
+            Organization organization = orgMember.getOrganization();
+            if (!Objects.equals(organization.getOwnerUserId(), userId)) {
+                continue;
+            }
+
+            int memberCount = orgMemberRepository.countByOrganizationIdAndUserStatus(organization.getId(), UserStatus.ACTIVE);
+            if (memberCount > 1) {
+                // 다른 멤버가 남아있으면 소유권 양도부터 진행해야 함
+                throw new UserHandler(UserErrorCode.USER_OWNS_ORGANIZATION);
+            }
+
+            // 본인만 속한 조직은 OrgService 의 Soft Delete 로직 호출
+            // 추후 Scheduler 에서 해당 Organization 과 연관 엔티티 한번에 정리
+            orgService.removeOrganizationSoft(userId, organization.getId());
+        }
+    }
+
 }
