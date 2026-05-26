@@ -124,17 +124,23 @@ public interface UserControllerDocs {
 
     @Operation(
             summary = "회원 탈퇴 API",
-            description = "AccessToken 을 헤더로 받아 현재 로그인한 회원을 탈퇴 처리합니다.\n\n" +
+            description = "AccessToken 을 헤더로 받아 현재 로그인한 회원을 탈퇴 처리합니다. " +
+                    "Soft Delete 방식이며, 30일 유예 기간 이후 스케줄러가 Hard Delete 를 수행합니다.\n\n" +
                     "### 1. 사전 검증 (통과해야 탈퇴 가능)\n" +
                     "- **광고 플랫폼 연동(PlatformConnection) 존재 여부**: 연동된 광고 플랫폼이 하나라도 남아 있으면 탈퇴가 차단됩니다. 먼저 모든 광고 플랫폼 연동을 해제한 뒤 다시 시도해야 합니다. -> 추후 삭제 API 추가 예정\n\n" +
-                    "- **본인이 소유자인 조직에 다른 멤버 존재**: 본인이 생성자(owner)인 조직에 본인 외 다른 멤버가 남아 있으면 탈퇴가 차단됩니다. `PATCH /api/org/{orgId}/changeOwner` API 로 소유권을 위임한 뒤 재시도해야 합니다.\n\n" +
+                    "- **본인이 소유자인 조직에 다른 ACTIVE 멤버 존재**: 본인이 생성자(owner)인 조직에 본인 외 다른 ACTIVE 멤버가 남아 있으면 탈퇴가 차단됩니다. `PATCH /api/org/{orgId}/changeOwner` API 로 소유권을 위임한 뒤 재시도해야 합니다.\n\n" +
                     "### 2. 회원이 속한 워크스페이스(Organization) 처리\n" +
-                    "- **단순 ADMIN / MEMBER 로만 속해있는 조직** → 해당 가입 정보(OrgMember)만 제거됩니다. 조직 자체는 유지됩니다.\n\n" +
-                    "- **회원이 생성자(owner)이고 본인만 속한 조직** → 조직이 Soft Delete 처리되며, 해당 조직의 부수 데이터(보낸 초대장 / 활동 타임라인 / AI 인사이트 리포트)도 함께 정리됩니다. 조직 자체는 복구 가능한 상태(status = DELETED) 로 남습니다.\n\n" +
-                    "### 3. 회원 본인 데이터 정리\n" +
-                    "- 소유자가 아닌채로 속한 조직에서 탈퇴하는 회원 정보가 모두 제거됩니다.\n\n" +
-                    "- 소셜 로그인 사용자의 경우 연결된 소셜계정이 함께 제거됩니다.\n\n" +
-                    "- 회원 본인이 삭제된 후, 프로필 이미지가 S3 에서 삭제됩니다. S3 이미지 삭제 실패는 서버 로그로만 기록됩니다."
+                    "- **단순 ADMIN / MEMBER 로만 속해있는 조직** → 탈퇴 시점에는 별도 처리 없이 유지됩니다. 이후 Hard Delete 단계에서 일괄 삭제됩니다.\n\n" +
+                    "- **회원이 생성자(owner)이고 본인만 속한 조직** → 조직 status 가 DELETED 로 변경됩니다(Soft Delete). 조직 부수 데이터(보낸 초대장 / 활동 타임라인 / AI 인사이트 리포트 / 조직 로고 S3 이미지) 정리는 회원 Hard Delete 시점에 함께 진행됩니다.\n\n" +
+                    "### 3. 탈퇴 시점 즉시 정리 (Soft Delete)\n" +
+                    "- 회원 본인 이메일로 발송된 Pending 상태 조직 초대장 즉시 삭제.\n\n" +
+                    "- 회원 JWT RefreshToken 즉시 삭제.\n\n" +
+                    "- 회원 status : ACTIVE → DELETED 변경, deletedAt 기록 (Soft Delete).\n\n" +
+                    "### 4. 30일 후 Hard Delete (스케줄러 자동 실행, 매일 3:00 AM KST)\n" +
+                    "- deletedAt 으로부터 30일 경과한 Soft Deleted 회원이 대상입니다.\n\n" +
+                    "- 회원이 owner 인 Soft Deleted 조직과 관련 데이터(워크스페이스 소속 정보 / 활동 타임라인 / AI 인사이트 리포트 / 보낸 초대장 / 조직 로고 S3 이미지) Hard Delete.\n\n" +
+                    "- 회원이 속한 모든 워크스페이스에서 회원이 제외됨.\n\n" +
+                    "- 회원 본인 Hard Delete 후 프로필 이미지 S3 삭제. S3 이미지 삭제 실패는 서버 로그로만 기록됩니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
