@@ -35,4 +35,10 @@ public class OrgRequest {
             @Email(message = "이메일 형식이 올바르지 않습니다.")
             String email
     ) {}
+
+    public record ChangeOwner(
+            @Schema(description = "워크스페이스 새 소유자로 지정할 사용자의 DB Id", example = "1")
+            @NotNull(message = "새 소유자 Id 는 필수입니다.")
+            Long newOwnerUserId
+    ) {}
 }

@@ -241,4 +241,26 @@ public interface OrgControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable String token
     );
+
+    @Operation(
+            summary = "조직 소유자(생성자) 양도 API",
+            description = "현재 조직 생성자(owner)가 새로운 생성자로 지정할 회원의 userId 를 RequestBody 로 전달하여 소유권을 양도하는 API.\n\n" +
+                    "- 요청자(로그인한 회원)는 해당 조직의 현재 생성자여야 합니다.\n\n" +
+                    "- 새로운 생성자로 지정할 회원은 해당 조직의 멤버여야 하며, 역할이 ADMIN 이어야 합니다.\n\n" +
+                    "- 본인에게 소유권을 위임할 수 없습니다.\n\n" +
+                    "회원 탈퇴 시점에 본인이 소유자인 조직이 남아있고 해당 조직에 다른 멤버가 존재할 경우 탈퇴가 차단되므로, 그 전에 이 API 로 소유권을 위임해야 합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "400_6", description = "ORG_400_6 : 자기 자신으로 조직 소유자를 변경할 수 없음"),
+            @ApiResponse(responseCode = "403_1", description = "ORG_403_1 : 허가되지 않은 회원의 요청 (조직 생성자 X)"),
+            @ApiResponse(responseCode = "403_2", description = "ORG_403_2 : 새로운 생성자로 지정한 회원이 ADMIN 권한을 가지고 있지 않음"),
+            @ApiResponse(responseCode = "404_1", description = "ORG_404_1 : 해당 id 조직 존재 X"),
+            @ApiResponse(responseCode = "404_2", description = "ORG_404_2 : 새로운 생성자로 지정한 회원이 해당 조직에 속해있지 않음")
+    })
+    ResponseEntity<DataResponse<String>> changeOrgOwner(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody @Valid OrgRequest.ChangeOwner request
+    );
 }

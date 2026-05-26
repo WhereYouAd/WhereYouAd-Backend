@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.user.persistence.repository;
 
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.AuthProviderAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -12,4 +13,9 @@ public interface AuthProviderAccountRepository extends JpaRepository<AuthProvide
 
     @Query("select apa from AuthProviderAccount apa where apa.user.email = :email")
     List<AuthProviderAccount> findByUserEmail(@Param(value = "email") String email);
+
+    // userId 기준 AuthProviderAccount 일괄 Hard Delete (User Hard Delete 정리용)
+    @Modifying
+    @Query("DELETE FROM AuthProviderAccount apa WHERE apa.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 }

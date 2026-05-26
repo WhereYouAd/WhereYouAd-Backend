@@ -144,6 +144,12 @@ public class PlatformServiceImpl implements PlatformService {
         return PlatformConverter.toPlatformAccountResponse(platformAccount);
     }
 
+    @Override
+    public void disconnectPlatform(Long userId, Long orgId, Long accountId) {
+        // TODO: 관련된 PlatformConnection, PlatformAccount, 광고 도메인 엔티티 제거 로직 개발
+        return;
+    }
+
     private void validateNaverCredentials(String customerId, String encryptedApiKey, String encryptedSecretKey) {
         try {
             PlatformConnection tempConnection = PlatformConverter.toTempPlatformConnection(customerId, encryptedApiKey, encryptedSecretKey);
