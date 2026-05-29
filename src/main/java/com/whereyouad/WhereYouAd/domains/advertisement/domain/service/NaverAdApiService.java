@@ -176,7 +176,7 @@ public class NaverAdApiService {
     // 캠페인 예산 수정
     public NaverDTO.CampaignResponse updateCampaignBudget(Long userId, Long connectionId, String campaignId, NaverDTO.UpdateCampaignBudgetRequest request) {
         validateAdminOwnership(userId, connectionId);
-        if (request.dailyBudget() != null && request.dailyBudget() % 10 != 0) {
+        if (request.dailyBudget() != null && (request.dailyBudget() <= 0 || request.dailyBudget() % 10 != 0)) {
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
         }
         try {
@@ -194,10 +194,10 @@ public class NaverAdApiService {
     // 광고그룹 예산 수정
     public NaverDTO.AdGroupResponse updateAdGroupBudget(Long userId, Long connectionId, String adgroupId, NaverDTO.UpdateAdGroupBudgetRequest request) {
         validateAdminOwnership(userId, connectionId);
-        if (request.dailyBudget() != null && request.dailyBudget() % 10 != 0) {
+        if (request.dailyBudget() != null && (request.dailyBudget() <= 0 || request.dailyBudget() % 10 != 0)) {
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
         }
-        if (request.bidAmt() != null && request.bidAmt() % 10 != 0) {
+        if (request.bidAmt() != null && (request.bidAmt() <= 0 || request.bidAmt() % 10 != 0)) {
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
         }
         try {
