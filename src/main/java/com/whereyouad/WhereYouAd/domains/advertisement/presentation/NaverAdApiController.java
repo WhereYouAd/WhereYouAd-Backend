@@ -139,4 +139,26 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     ) {
         return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncConversionReports(connectionId, statDate)));
     }
+
+    // 캠페인 예산 수정
+    @PutMapping("/campaigns/{campaignId}/budget")
+    public ResponseEntity<DataResponse<NaverDTO.CampaignResponse>> updateCampaignBudget(
+            @PathVariable Long connectionId,
+            @PathVariable String campaignId,
+            @RequestBody NaverDTO.UpdateCampaignBudgetRequest request
+    ) {
+        return ResponseEntity.ok(DataResponse.from(
+                naverAdApiService.updateCampaignBudget(connectionId, campaignId, request)));
+    }
+
+    // 광고그룹 예산 수정
+    @PutMapping("/adgroups/{adgroupId}/budget")
+    public ResponseEntity<DataResponse<NaverDTO.AdGroupResponse>> updateAdGroupBudget(
+            @PathVariable Long connectionId,
+            @PathVariable String adgroupId,
+            @RequestBody NaverDTO.UpdateAdGroupBudgetRequest request
+    ) {
+        return ResponseEntity.ok(DataResponse.from(
+                naverAdApiService.updateAdGroupBudget(connectionId, adgroupId, request)));
+    }
 }

@@ -178,4 +178,30 @@ public interface NaverAdApiControllerDocs {
             @Parameter(description = "통계 대상 날짜 (yyyy-MM-dd, 예: 2026-04-08)", required = true)
             @RequestParam("statDate") String statDate
     );
+
+    @Operation(summary = "네이버 캠페인 예산 수정", description = "캠페인의 일일 예산 및 예산 사용 여부를 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정된 캠페인 정보 반환"),
+            @ApiResponse(responseCode = "500", description = "네이버 API 호출 실패")
+    })
+    ResponseEntity<DataResponse<NaverDTO.CampaignResponse>> updateCampaignBudget(
+            @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
+            @PathVariable Long connectionId,
+            @Parameter(description = "수정할 캠페인 ID", required = true)
+            @PathVariable String campaignId,
+            @RequestBody NaverDTO.UpdateCampaignBudgetRequest request
+    );
+
+    @Operation(summary = "네이버 광고그룹 예산 수정", description = "광고그룹의 일일 예산, 예산 사용 여부, 입찰가를 수정합니다. bidAmt가 null이면 입찰가는 수정하지 않습니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정된 광고그룹 정보 반환"),
+            @ApiResponse(responseCode = "500", description = "네이버 API 호출 실패")
+    })
+    ResponseEntity<DataResponse<NaverDTO.AdGroupResponse>> updateAdGroupBudget(
+            @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
+            @PathVariable Long connectionId,
+            @Parameter(description = "수정할 광고그룹 ID", required = true)
+            @PathVariable String adgroupId,
+            @RequestBody NaverDTO.UpdateAdGroupBudgetRequest request
+    );
 }
