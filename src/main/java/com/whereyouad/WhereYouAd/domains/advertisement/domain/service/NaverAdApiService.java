@@ -233,12 +233,17 @@ public class NaverAdApiService {
             // 헤더 제작
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/adgroups/" + adgroupId));
-            String fields = request.bidAmt() != null ? "budget,bidAmt" : "budget";
-            // 요청 body 제작
-            NaverDTO.UpdateAdGroupBudgetBody body =
-                    new NaverDTO.UpdateAdGroupBudgetBody(adgroupId, request.useDailyBudget(), request.dailyBudget(), request.bidAmt());
-            // API 호출
-            return naverClient.updateAdGroupBudget(headers, adgroupId, fields, body);
+            // 네이버 API 제약: budget과 bidAmt는 fields에 함께 넣어도 bidAmt가 무시됨 → 각각 별도 호출 필요
+            NaverDTO.AdGroupResponse result = null;
+            if (request.dailyBudget() != null || request.useDailyBudget() != null) {
+                result = naverClient.updateAdGroupBudget(headers, adgroupId, "budget",
+                        new NaverDTO.UpdateAdGroupBudgetBody(adgroupId, request.useDailyBudget(), request.dailyBudget(), null));
+            }
+            if (request.bidAmt() != null) {
+                result = naverClient.updateAdGroupBudget(headers, adgroupId, "bidAmt",
+                        new NaverDTO.UpdateAdGroupBudgetBody(adgroupId, null, null, request.bidAmt()));
+            }
+            return result;
         } catch (Exception e) {
             log.error("[NAVER] 광고그룹 예산 수정 실패 - connectionId={}, adgroupId={}", connectionId, adgroupId, e);
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_GROUP_BUDGET_UPDATE_FAILED);
