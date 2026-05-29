@@ -166,6 +166,58 @@ public class NaverAdApiService {
         }
     }
 
+    // 캠페인 예산 수정
+    @Transactional
+    public NaverDTO.CampaignResponse updateCampaignBudget(Long connectionId, String campaignId, NaverDTO.UpdateCampaignBudgetRequest request) {
+
+        // 예산이 10의 배수가 아닌 경우 오류(네이버 광고 예산 요청 값 검증)
+        if (request.dailyBudget() != null && request.dailyBudget() % 10 != 0) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+        }
+        // API 호출
+        try {
+            // 헤더 제작
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/campaigns/" + campaignId));
+            // 요청 body 제작
+            NaverDTO.UpdateCampaignBudgetBody body =
+                    new NaverDTO.UpdateCampaignBudgetBody(campaignId, request.useDailyBudget(), request.dailyBudget());
+            // API 호출
+            return naverClient.updateCampaignBudget(headers, campaignId, "budget", body);
+        } catch (Exception e) {
+            log.error("[NAVER] 캠페인 예산 수정 실패 - connectionId={}, campaignId={}", connectionId, campaignId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_CAMPAIGN_BUDGET_UPDATE_FAILED);
+        }
+    }
+
+    // 광고그룹 예산 수정
+    @Transactional
+    public NaverDTO.AdGroupResponse updateAdGroupBudget(Long connectionId, String adgroupId, NaverDTO.UpdateAdGroupBudgetRequest request) {
+
+        // 예산이 10의 배수가 아닌 경우 오류(네이버 광고 예산 요청 값 검증)
+        if (request.dailyBudget() != null && request.dailyBudget() % 10 != 0) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+        }
+        if (request.bidAmt() != null && request.bidAmt() % 10 != 0) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+        }
+        // API 호출
+        try {
+            // 헤더 제작
+            Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                    connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/adgroups/" + adgroupId));
+            String fields = request.bidAmt() != null ? "budget,bidAmt" : "budget";
+            // 요청 body 제작
+            NaverDTO.UpdateAdGroupBudgetBody body =
+                    new NaverDTO.UpdateAdGroupBudgetBody(adgroupId, request.useDailyBudget(), request.dailyBudget(), request.bidAmt());
+            // API 호출
+            return naverClient.updateAdGroupBudget(headers, adgroupId, fields, body);
+        } catch (Exception e) {
+            log.error("[NAVER] 광고그룹 예산 수정 실패 - connectionId={}, adgroupId={}", connectionId, adgroupId, e);
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_GROUP_BUDGET_UPDATE_FAILED);
+        }
+    }
+
     // 일별 기본 지표 조회 (/stats, 기본 일 단위)
     @Transactional(readOnly = true)
     public List<NaverDTO.StatResponse> getDailyStats(Long connectionId, String id, String since, String until) {
