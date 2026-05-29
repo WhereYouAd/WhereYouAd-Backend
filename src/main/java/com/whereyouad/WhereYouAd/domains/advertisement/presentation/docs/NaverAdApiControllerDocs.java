@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.A
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.AdvertisementResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.infrastructure.client.naver.dto.NaverDTO;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +18,7 @@ import java.util.List;
 
 public interface NaverAdApiControllerDocs {
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 광고 캠페인 목록 조회", description = "연동된 네이버 광고 계정의 캠페인 목록을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "캠페인 목록 반환"),
@@ -28,6 +30,7 @@ public interface NaverAdApiControllerDocs {
             @PathVariable Long connectionId
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 광고 그룹 목록 조회", description = "특정 캠페인의 광고 그룹 목록을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "광고 그룹 목록 반환"),
@@ -41,6 +44,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("nccCampaignId") String nccCampaignId
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 광고 소재 목록 조회", description = "특정 광고 그룹의 광고 소재 목록을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "광고 소재 목록 반환"),
@@ -54,6 +58,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("nccAdgroupId") String nccAdgroupId
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 키워드 원문 조회", description = "광고 그룹에 설정된 키워드 목록을 원문으로 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "키워드 목록 반환"),
@@ -66,6 +71,8 @@ public interface NaverAdApiControllerDocs {
             @Parameter(description = "네이버 광고 그룹 ID", required = true)
             @RequestParam("nccAdgroupId") String nccAdgroupId
     );
+
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 AD 리포트 생성 요청", description = "특정 일자의 AD 리포트 생성을 네이버에 요청합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "리포트 생성 요청됨(상태 확인 필요)"),
@@ -78,6 +85,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("statDt") String statDt
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 AD_CONVERSION 리포트 생성 요청", description = "특정 일자의 AD_CONVERSION 리포트 생성을 네이버에 요청합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "리포트 생성 요청됨(상태 확인 필요)"),
@@ -90,6 +98,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("statDt") String statDt
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 대용량 보고서 상태 조회", description = "생성 요청한 보고서의 상태를 확인합니다. (BUILT 상태가 되면 다운로드 가능)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "상태 및 다운로드 URL 반환"),
@@ -102,6 +111,7 @@ public interface NaverAdApiControllerDocs {
             @PathVariable String reportJobId
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 대용량 보고서 다운로드", description = "보고서 다운로드 URL을 통해 원문(TSV 등) 데이터를 가져옵니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "보고서 데이터 원문 반환"),
@@ -114,6 +124,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("url") String downloadUrl
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 일별 통계 직접 조회", description = "/stats API를 이용하여 특정 대상의 일별 기본 지표를 가져옵니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "일별 통계 반환"),
@@ -130,6 +141,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("until") String until
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 메타데이터 동기화", description = "연동된 네이버 계정의 캠페인/광고그룹/광고소재를 가져와 DB에 upsert합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 캠페인/그룹/소재 수 반환"),
@@ -153,6 +165,7 @@ public interface NaverAdApiControllerDocs {
             @RequestBody AdvertisementRequest.ManualSyncRequest request
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 전체 통계 동기화", description = "일별(DAILY) 기본 지표와 전환 리포트를 동기화합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 광고소재 수 반환"),
@@ -166,6 +179,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("statDate") String statDate
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 전환 리포트만 동기화", description = "전환 데이터만 단독으로 동기화합니다. (기본 Stats 동기화 없이)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 전환 행 수 반환"),
