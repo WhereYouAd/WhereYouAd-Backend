@@ -5,6 +5,7 @@ import feign.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -76,5 +77,23 @@ public interface NaverClient {
     @GetMapping
     Response downloadStatReport(
             @RequestHeader Map<String, String> headers, URI baseUri
+    );
+
+    // 캠페인 예산 수정
+    @PutMapping("/ncc/campaigns/{campaignId}")
+    NaverDTO.CampaignResponse updateCampaignBudget(
+            @RequestHeader Map<String, String> headers,
+            @PathVariable("campaignId") String campaignId,
+            @RequestParam("fields") String fields,
+            @RequestBody NaverDTO.UpdateCampaignBudgetBody body
+    );
+
+    // 광고그룹 예산 수정
+    @PutMapping("/ncc/adgroups/{adgroupId}")
+    NaverDTO.AdGroupResponse updateAdGroupBudget(
+            @RequestHeader Map<String, String> headers,
+            @PathVariable("adgroupId") String adgroupId,
+            @RequestParam("fields") String fields,
+            @RequestBody NaverDTO.UpdateAdGroupBudgetBody body
     );
 }
