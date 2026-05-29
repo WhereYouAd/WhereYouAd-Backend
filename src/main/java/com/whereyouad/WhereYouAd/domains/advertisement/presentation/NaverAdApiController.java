@@ -10,6 +10,7 @@ import com.whereyouad.WhereYouAd.infrastructure.client.naver.dto.NaverDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -143,22 +144,24 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     // 캠페인 예산 수정
     @PutMapping("/campaigns/{campaignId}/budget")
     public ResponseEntity<DataResponse<NaverDTO.CampaignResponse>> updateCampaignBudget(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long connectionId,
             @PathVariable String campaignId,
             @RequestBody NaverDTO.UpdateCampaignBudgetRequest request
     ) {
         return ResponseEntity.ok(DataResponse.from(
-                naverAdApiService.updateCampaignBudget(connectionId, campaignId, request)));
+                naverAdApiService.updateCampaignBudget(userId, connectionId, campaignId, request)));
     }
 
     // 광고그룹 예산 수정
     @PutMapping("/adgroups/{adgroupId}/budget")
     public ResponseEntity<DataResponse<NaverDTO.AdGroupResponse>> updateAdGroupBudget(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long connectionId,
             @PathVariable String adgroupId,
             @RequestBody NaverDTO.UpdateAdGroupBudgetRequest request
     ) {
         return ResponseEntity.ok(DataResponse.from(
-                naverAdApiService.updateAdGroupBudget(connectionId, adgroupId, request)));
+                naverAdApiService.updateAdGroupBudget(userId, connectionId, adgroupId, request)));
     }
 }

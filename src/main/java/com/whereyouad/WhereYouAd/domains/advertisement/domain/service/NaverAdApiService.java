@@ -1,5 +1,11 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
+import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
+import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.global.utils.AdApiAuthUtil;
 import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;
@@ -25,6 +31,7 @@ import java.util.Map;
 public class NaverAdApiService {
 
     private final PlatformConnectionRepository connectionRepository;
+    private final OrgMemberRepository orgMemberRepository;
     private final AdApiAuthUtil adApiAuthUtil;
     private final NaverClient naverClient;
 
@@ -168,7 +175,17 @@ public class NaverAdApiService {
 
     // 캠페인 예산 수정
     @Transactional
-    public NaverDTO.CampaignResponse updateCampaignBudget(Long connectionId, String campaignId, NaverDTO.UpdateCampaignBudgetRequest request) {
+    public NaverDTO.CampaignResponse updateCampaignBudget(Long userId, Long connectionId, String campaignId, NaverDTO.UpdateCampaignBudgetRequest request) {
+
+        // 조직원 및 ADMIN 권한 검증
+        PlatformConnection connection = connectionRepository.findWithAccountAndOrgById(connectionId)
+                .orElseThrow(() -> new AdvertisementHandler(NaverAdErrorCode.NAVER_CAMPAIGN_BUDGET_UPDATE_FAILED));
+        Long orgId = connection.getPlatformAccount().getOrganization().getId();
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
+        }
 
         // 예산이 10의 배수가 아닌 경우 오류(네이버 광고 예산 요청 값 검증)
         if (request.dailyBudget() != null && request.dailyBudget() % 10 != 0) {
@@ -192,7 +209,17 @@ public class NaverAdApiService {
 
     // 광고그룹 예산 수정
     @Transactional
-    public NaverDTO.AdGroupResponse updateAdGroupBudget(Long connectionId, String adgroupId, NaverDTO.UpdateAdGroupBudgetRequest request) {
+    public NaverDTO.AdGroupResponse updateAdGroupBudget(Long userId, Long connectionId, String adgroupId, NaverDTO.UpdateAdGroupBudgetRequest request) {
+
+        // 조직원 및 ADMIN 권한 검증
+        PlatformConnection connection = connectionRepository.findWithAccountAndOrgById(connectionId)
+                .orElseThrow(() -> new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_GROUP_BUDGET_UPDATE_FAILED));
+        Long orgId = connection.getPlatformAccount().getOrganization().getId();
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
+        }
 
         // 예산이 10의 배수가 아닌 경우 오류(네이버 광고 예산 요청 값 검증)
         if (request.dailyBudget() != null && request.dailyBudget() % 10 != 0) {
