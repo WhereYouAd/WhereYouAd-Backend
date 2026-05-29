@@ -13,6 +13,9 @@ public enum NaverAdErrorCode implements BaseErrorCode {
     NAVER_INVALID_DOWNLOAD_URL(HttpStatus.BAD_REQUEST, "NAVER_400_1", "유효하지 않은 다운로드 URL입니다."),
     NAVER_INVALID_BUDGET_VALUE(HttpStatus.BAD_REQUEST, "NAVER_400_2", "예산 및 입찰가는 10의 배수여야 합니다."),
 
+    // 404
+    NAVER_CONNECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "NAVER_404_1", "플랫폼 연결 정보를 찾을 수 없습니다."),
+
     // 500
     NAVER_CAMPAIGN_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "NAVER_500_1", "네이버 캠페인 목록 조회에 실패했습니다."),
     NAVER_AD_GROUP_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "NAVER_500_2", "네이버 광고 그룹 목록 조회에 실패했습니다."),

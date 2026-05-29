@@ -174,32 +174,16 @@ public class NaverAdApiService {
     }
 
     // 캠페인 예산 수정
-    @Transactional
     public NaverDTO.CampaignResponse updateCampaignBudget(Long userId, Long connectionId, String campaignId, NaverDTO.UpdateCampaignBudgetRequest request) {
-
-        // 조직원 및 ADMIN 권한 검증
-        PlatformConnection connection = connectionRepository.findWithAccountAndOrgById(connectionId)
-                .orElseThrow(() -> new AdvertisementHandler(NaverAdErrorCode.NAVER_CAMPAIGN_BUDGET_UPDATE_FAILED));
-        Long orgId = connection.getPlatformAccount().getOrganization().getId();
-        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
-        if (orgMember.getRole() != OrgRole.ADMIN) {
-            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
-        }
-
-        // 예산이 10의 배수가 아닌 경우 오류(네이버 광고 예산 요청 값 검증)
+        validateAdminOwnership(userId, connectionId);
         if (request.dailyBudget() != null && request.dailyBudget() % 10 != 0) {
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
         }
-        // API 호출
         try {
-            // 헤더 제작
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/campaigns/" + campaignId));
-            // 요청 body 제작
             NaverDTO.UpdateCampaignBudgetBody body =
                     new NaverDTO.UpdateCampaignBudgetBody(campaignId, request.useDailyBudget(), request.dailyBudget());
-            // API 호출
             return naverClient.updateCampaignBudget(headers, campaignId, "budget", body);
         } catch (Exception e) {
             log.error("[NAVER] 캠페인 예산 수정 실패 - connectionId={}, campaignId={}", connectionId, campaignId, e);
@@ -208,29 +192,15 @@ public class NaverAdApiService {
     }
 
     // 광고그룹 예산 수정
-    @Transactional
     public NaverDTO.AdGroupResponse updateAdGroupBudget(Long userId, Long connectionId, String adgroupId, NaverDTO.UpdateAdGroupBudgetRequest request) {
-
-        // 조직원 및 ADMIN 권한 검증
-        PlatformConnection connection = connectionRepository.findWithAccountAndOrgById(connectionId)
-                .orElseThrow(() -> new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_GROUP_BUDGET_UPDATE_FAILED));
-        Long orgId = connection.getPlatformAccount().getOrganization().getId();
-        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
-        if (orgMember.getRole() != OrgRole.ADMIN) {
-            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
-        }
-
-        // 예산이 10의 배수가 아닌 경우 오류(네이버 광고 예산 요청 값 검증)
+        validateAdminOwnership(userId, connectionId);
         if (request.dailyBudget() != null && request.dailyBudget() % 10 != 0) {
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
         }
         if (request.bidAmt() != null && request.bidAmt() % 10 != 0) {
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
         }
-        // API 호출
         try {
-            // 헤더 제작
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/adgroups/" + adgroupId));
             // 네이버 API 제약: budget과 bidAmt는 fields에 함께 넣어도 bidAmt가 무시됨 → 각각 별도 호출 필요
@@ -247,6 +217,18 @@ public class NaverAdApiService {
         } catch (Exception e) {
             log.error("[NAVER] 광고그룹 예산 수정 실패 - connectionId={}, adgroupId={}", connectionId, adgroupId, e);
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_AD_GROUP_BUDGET_UPDATE_FAILED);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    private void validateAdminOwnership(Long userId, Long connectionId) {
+        PlatformConnection connection = connectionRepository.findWithAccountAndOrgById(connectionId)
+                .orElseThrow(() -> new AdvertisementHandler(NaverAdErrorCode.NAVER_CONNECTION_NOT_FOUND));
+        Long orgId = connection.getPlatformAccount().getOrganization().getId();
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
         }
     }
 

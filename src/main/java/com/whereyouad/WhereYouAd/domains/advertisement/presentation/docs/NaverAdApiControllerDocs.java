@@ -198,6 +198,7 @@ public interface NaverAdApiControllerDocs {
             @ApiResponse(responseCode = "200", description = "수정된 캠페인 정보 반환"),
             @ApiResponse(responseCode = "400", description = "예산이 10의 배수가 아님"),
             @ApiResponse(responseCode = "403", description = "조직 미가입 또는 ADMIN 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "플랫폼 연결 정보 없음"),
             @ApiResponse(responseCode = "500", description = "네이버 API 호출 실패")
     })
     ResponseEntity<DataResponse<NaverDTO.CampaignResponse>> updateCampaignBudget(
@@ -214,6 +215,7 @@ public interface NaverAdApiControllerDocs {
             @ApiResponse(responseCode = "200", description = "수정된 광고그룹 정보 반환"),
             @ApiResponse(responseCode = "400", description = "예산 또는 입찰가가 10의 배수가 아님"),
             @ApiResponse(responseCode = "403", description = "조직 미가입 또는 ADMIN 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "플랫폼 연결 정보 없음"),
             @ApiResponse(responseCode = "500", description = "네이버 API 호출 실패")
     })
     ResponseEntity<DataResponse<NaverDTO.AdGroupResponse>> updateAdGroupBudget(
