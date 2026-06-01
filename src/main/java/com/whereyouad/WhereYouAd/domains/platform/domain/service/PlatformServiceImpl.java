@@ -147,6 +147,7 @@ public class PlatformServiceImpl implements PlatformService {
     }
 
     // 광고 플랫폼 연동 해제
+    // 대규모 엔티티 삭제를 위해 별도 처리 클래스 (PlatformDataCleanupExecutor) 에서 Chunk 단위 삭제 처리
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void disconnectPlatform(Long userId, Long orgId, Long accountId) {
@@ -175,6 +176,7 @@ public class PlatformServiceImpl implements PlatformService {
         platformDataCleanupExecutor.deleteAccountAndRelations(accountId);
 
         // 비어있는 Project 엔티티 삭제
+        // -> AdCampaign, AdGroup, AdContent 삭제로 인해 연관된 광고 객체가 없는 Project 엔티티 삭제
         for (Long projectId : projectIds) {
             platformDataCleanupExecutor.deleteEmptyProject(projectId);
         }

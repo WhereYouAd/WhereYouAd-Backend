@@ -98,6 +98,7 @@ public class PlatformDataCleanupExecutor {
         if (!campaigns.isEmpty()) {
             adCampaignRepository.deleteAll(campaigns);
             adCampaignRepository.flush();
+            //AdCampaign 삭제 시 CascadeType.ALL 로 인해 연관된 AdGroup, AdContent 도 함꼐 제거됨
         }
 
         List<PlatformConnection> connections = platformConnectionRepository.findAllByPlatformAccount_Id(accountId);
