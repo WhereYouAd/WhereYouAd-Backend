@@ -15,11 +15,11 @@ public enum ErrorCode implements BaseErrorCode{
     INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 잘못되었습니다.", "COMMON_400_2"),
     JSON_PARSE_FAIL(HttpStatus.BAD_REQUEST, "JSON 파싱에 실패했습니다. Request body를 확인해주세요", "COMMON_400_3"),
     PARAMETER_MISMATCH(HttpStatus.BAD_REQUEST, "쿼리 파라미터 타입이 맞지 않습니다.", "COMMON_400_4"),
+    NOT_FOUND_REQUEST_BODY(HttpStatus.BAD_REQUEST, "Request body가 없습니다.", "COMMON_400_5"),
 
     // 404
     NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다.", "COMMON_404_1"),
-    NOT_FOUND_REQUEST_BODY(HttpStatus.NOT_FOUND, "Request body가 없습니다.", "COMMON_404_2"),
-    NOT_FOUND_URI(HttpStatus.NOT_FOUND, "존재하지 않는 URI입니다.", "COMMON_404_3"),
+    NOT_FOUND_URI(HttpStatus.NOT_FOUND, "존재하지 않는 URI입니다.", "COMMON_404_2"),
 
     // 405
     NOT_SUPPORT_HTTP_METHOD(HttpStatus.METHOD_NOT_ALLOWED, "잘못된 HTTP 메서드 입니다.", "COMMON_405_1"),
