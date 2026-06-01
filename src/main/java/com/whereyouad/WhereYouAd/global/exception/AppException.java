@@ -17,6 +17,7 @@ public class AppException extends RuntimeException {
     }
 
     public AppException(BaseErrorCode errorCode, Map<String, String> bind) {
+        super(errorCode.getMessage());
         this.errorCode = errorCode;
         this.bind = bind;
     }
