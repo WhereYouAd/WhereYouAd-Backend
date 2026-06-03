@@ -13,13 +13,15 @@ public class ErrorResponse extends BaseResponse {
     private final String message;
     private final String method;
     private final String requestURI;
+    private final Object errors;
 
-    private ErrorResponse(String code, String message, String method, String requestURI, HttpStatus httpStatus) {
+    private ErrorResponse(String code, String message, String method, String requestURI, HttpStatus httpStatus, Object errors) {
         super(httpStatus);
         this.code = code;
         this.message = message;
         this.method = method;
         this.requestURI = requestURI;
+        this.errors = errors;
     }
 
     public static ErrorResponse of(BaseErrorCode errorCode, HttpServletRequest request) {
@@ -28,7 +30,19 @@ public class ErrorResponse extends BaseResponse {
                 errorCode.getMessage(),
                 request.getMethod(),
                 request.getRequestURI(),
-                errorCode.getHttpStatus()
+                errorCode.getHttpStatus(),
+                null
+        );
+    }
+
+    public static ErrorResponse of(BaseErrorCode errorCode, HttpServletRequest request, Object errors) {
+        return new ErrorResponse(
+                errorCode.getCode(),
+                errorCode.getMessage(),
+                request.getMethod(),
+                request.getRequestURI(),
+                errorCode.getHttpStatus(),
+                errors
         );
     }
 }
