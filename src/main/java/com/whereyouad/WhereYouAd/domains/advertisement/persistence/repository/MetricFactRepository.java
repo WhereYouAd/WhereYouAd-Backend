@@ -239,4 +239,6 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("platformAccountId") Long platformAccountId,
             @Param("batchSize") int batchSize
     );
+
+    long countByProject_Id(Long projectId);
 }

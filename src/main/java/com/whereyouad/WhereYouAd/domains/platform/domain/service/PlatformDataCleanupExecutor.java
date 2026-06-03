@@ -114,7 +114,8 @@ public class PlatformDataCleanupExecutor {
     //빈 Project 1개 삭제
     @Transactional
     public void deleteEmptyProject(Long projectId) {
-        if (adCampaignRepository.countByProject_Id(projectId) == 0) {
+        // 연관된 AdCampaign, MetricFact 가 없을 경우에만 Project 삭제 진행
+        if (adCampaignRepository.countByProject_Id(projectId) == 0 && metricFactRepository.countByProject_Id(projectId) == 0) {
             projectRepository.deleteById(projectId);
         }
     }
