@@ -61,4 +61,9 @@ public class AdGroup extends BaseEntity {
             this.targetingInfo = targetingInfo;
         }
     }
+
+    public void updateBudget(Long budget, Long bidAmount) {
+        if (budget != null) this.budget = budget;
+        if (bidAmount != null) this.bidAmount = bidAmount;
+    }
 }
