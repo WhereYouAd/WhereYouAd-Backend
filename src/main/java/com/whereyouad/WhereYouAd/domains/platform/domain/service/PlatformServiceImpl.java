@@ -153,7 +153,22 @@ public class PlatformServiceImpl implements PlatformService {
     public void disconnectPlatform(Long userId, Long orgId, Long accountId) {
         // 권한 검증 & 영향받는 projectId 수집 (짧은 read-only 트랜잭션)
         List<Long> projectIds = platformDataCleanupExecutor.verifyAndCollectProjectIds(userId, orgId, accountId);
+        cleanupAccount(accountId, projectIds);
+    }
 
+    // 회원 탈퇴 스케줄러 등 시스템 내부 호출용 플랫폼 연동 해제
+    // 권한 검증 없이 계정 단위 정리
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void disconnectAccountBySystem(Long accountId) {
+        List<Long> projectIds = platformDataCleanupExecutor.collectProjectIds(accountId);
+        cleanupAccount(accountId, projectIds);
+    }
+
+    // 계정 단위 데이터 정리 메서드화
+    // ClickLog / MetricFact 청크 삭제 → AdCampaign + PlatformConnection + PlatformAccount 삭제 → 빈 Project 삭제
+    // 대규모 엔티티 삭제를 위해 별도 처리 클래스 (PlatformDataCleanupExecutor) 에서 Chunk 단위 삭제 처리
+    private void cleanupAccount(Long accountId, List<Long> projectIds) {
         int chunkDeleted; // 하나의 청크 당 삭제 갯수
         long totalClickLogDeleted = 0L; // ClickLog 전체 삭제 갯수
         long totalMetricFactDeleted = 0L; // MetricFact 전체 삭제 갯수

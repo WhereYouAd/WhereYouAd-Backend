@@ -67,6 +67,12 @@ public class PlatformDataCleanupExecutor {
         return adCampaignRepository.findDistinctProjectIdsByPlatformAccountId(accountId);
     }
 
+    // 요청자 권한 검증 없이 삭제에 영향받는 projectId 만 수집 (회원 탈퇴 스케줄러 등 시스템 내부 호출용)
+    @Transactional(readOnly = true)
+    public List<Long> collectProjectIds(Long accountId) {
+        return adCampaignRepository.findDistinctProjectIdsByPlatformAccountId(accountId);
+    }
+
     // 청크 단위로 ClickLog 삭제 — 메인 트랜잭션과 분리
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int deleteClickLogChunk(Long platformAccountId) {
