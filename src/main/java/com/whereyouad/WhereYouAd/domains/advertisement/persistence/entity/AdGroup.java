@@ -43,6 +43,12 @@ public class AdGroup extends BaseEntity {
     @OneToMany(mappedBy = "adGroup", cascade = CascadeType.ALL)
     private List<AdContent> adContents = new ArrayList<>();
 
+    @Column(name = "budget")
+    private Long budget;
+
+    @Column(name = "bid_amount")
+    private Long bidAmount;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_campaign_id")
     private AdCampaign adCampaign;
