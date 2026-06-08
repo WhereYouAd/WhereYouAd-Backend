@@ -1,5 +1,9 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
@@ -34,6 +38,8 @@ public class NaverAdApiService {
     private final OrgMemberRepository orgMemberRepository;
     private final AdApiAuthUtil adApiAuthUtil;
     private final NaverClient naverClient;
+    private final AdGroupRepository adGroupRepository;
+    private final AdCampaignRepository adCampaignRepository;
 
     // 캠페인 목록 조회
     @Transactional(readOnly = true)
@@ -174,8 +180,9 @@ public class NaverAdApiService {
     }
 
     // 캠페인 예산 수정
+    @Transactional
     public NaverDTO.CampaignResponse updateCampaignBudget(Long userId, Long connectionId, String campaignId, NaverDTO.UpdateCampaignBudgetRequest request) {
-        validateAdminOwnership(userId, connectionId);
+        PlatformConnection connection = validateAdminOwnership(userId, connectionId);
         if (request.dailyBudget() != null && (request.dailyBudget() <= 0 || request.dailyBudget() % 10 != 0)) {
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
         }
@@ -184,7 +191,13 @@ public class NaverAdApiService {
                     connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/campaigns/" + campaignId));
             NaverDTO.UpdateCampaignBudgetBody body =
                     new NaverDTO.UpdateCampaignBudgetBody(campaignId, request.useDailyBudget(), request.dailyBudget());
-            return naverClient.updateCampaignBudget(headers, campaignId, "budget", body);
+            NaverDTO.CampaignResponse result = naverClient.updateCampaignBudget(headers, campaignId, "budget", body);
+
+            adCampaignRepository
+                    .findByPlatformAccountAndExternalCampaignId(connection.getPlatformAccount(), campaignId)
+                    .ifPresent(campaign -> campaign.updateBudget(request.dailyBudget()));
+
+            return result;
         } catch (Exception e) {
             log.error("[NAVER] 캠페인 예산 수정 실패 - connectionId={}, campaignId={}", connectionId, campaignId, e);
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_CAMPAIGN_BUDGET_UPDATE_FAILED);
@@ -192,8 +205,9 @@ public class NaverAdApiService {
     }
 
     // 광고그룹 예산 수정
+    @Transactional
     public NaverDTO.AdGroupResponse updateAdGroupBudget(Long userId, Long connectionId, String adgroupId, NaverDTO.UpdateAdGroupBudgetRequest request) {
-        validateAdminOwnership(userId, connectionId);
+        PlatformConnection connection = validateAdminOwnership(userId, connectionId);
         if (request.dailyBudget() != null && (request.dailyBudget() <= 0 || request.dailyBudget() % 10 != 0)) {
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
         }
@@ -213,6 +227,11 @@ public class NaverAdApiService {
                 result = naverClient.updateAdGroupBudget(headers, adgroupId, "bidAmt",
                         new NaverDTO.UpdateAdGroupBudgetBody(adgroupId, null, null, request.bidAmt()));
             }
+
+            adGroupRepository
+                    .findByAdCampaign_PlatformAccountAndExternalGroupId(connection.getPlatformAccount(), adgroupId)
+                    .ifPresent(adGroup -> adGroup.updateBudget(request.dailyBudget(), request.bidAmt()));
+
             return result;
         } catch (Exception e) {
             log.error("[NAVER] 광고그룹 예산 수정 실패 - connectionId={}, adgroupId={}", connectionId, adgroupId, e);
@@ -221,7 +240,7 @@ public class NaverAdApiService {
     }
 
     @Transactional(readOnly = true)
-    private void validateAdminOwnership(Long userId, Long connectionId) {
+    private PlatformConnection validateAdminOwnership(Long userId, Long connectionId) {
         PlatformConnection connection = connectionRepository.findWithAccountAndOrgById(connectionId)
                 .orElseThrow(() -> new AdvertisementHandler(NaverAdErrorCode.NAVER_CONNECTION_NOT_FOUND));
         Long orgId = connection.getPlatformAccount().getOrganization().getId();
@@ -230,6 +249,7 @@ public class NaverAdApiService {
         if (orgMember.getRole() != OrgRole.ADMIN) {
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_FORBIDDEN);
         }
+        return connection;
     }
 
     // 일별 기본 지표 조회 (/stats, 기본 일 단위)
