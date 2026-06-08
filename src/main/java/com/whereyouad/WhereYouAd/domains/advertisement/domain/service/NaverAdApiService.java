@@ -183,8 +183,13 @@ public class NaverAdApiService {
     @Transactional
     public NaverDTO.CampaignResponse updateCampaignBudget(Long userId, Long connectionId, String campaignId, NaverDTO.UpdateCampaignBudgetRequest request) {
         PlatformConnection connection = validateAdminOwnership(userId, connectionId);
-        if (request.dailyBudget() != null && (request.dailyBudget() <= 0 || request.dailyBudget() % 10 != 0)) {
-            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+        if (request.dailyBudget() != null) {
+            if (request.dailyBudget() % 10 != 0) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+            }
+            if (request.dailyBudget() < 50 || request.dailyBudget() > 1_000_000_000) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_RANGE);
+            }
         }
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
@@ -208,11 +213,21 @@ public class NaverAdApiService {
     @Transactional
     public NaverDTO.AdGroupResponse updateAdGroupBudget(Long userId, Long connectionId, String adgroupId, NaverDTO.UpdateAdGroupBudgetRequest request) {
         PlatformConnection connection = validateAdminOwnership(userId, connectionId);
-        if (request.dailyBudget() != null && (request.dailyBudget() <= 0 || request.dailyBudget() % 10 != 0)) {
-            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+        if (request.dailyBudget() != null) {
+            if (request.dailyBudget() % 10 != 0) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+            }
+            if (request.dailyBudget() < 50 || request.dailyBudget() > 1_000_000_000) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_RANGE);
+            }
         }
-        if (request.bidAmt() != null && (request.bidAmt() <= 0 || request.bidAmt() % 10 != 0)) {
-            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+        if (request.bidAmt() != null) {
+            if (request.bidAmt() % 10 != 0) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_VALUE);
+            }
+            if (request.bidAmt() < 70 || request.bidAmt() > 100_000) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BID_AMOUNT_RANGE);
+            }
         }
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
