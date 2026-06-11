@@ -3,8 +3,11 @@ package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetFieldType;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.BudgetHistory;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.BudgetHistoryRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.MetricSumProjection;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.RoasProjection;
@@ -41,6 +44,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final AdCampaignRepository adCampaignRepository;
     private final MetricFactRepository metricFactRepository;
+    private final BudgetHistoryRepository budgetHistoryRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final OrgRepository orgRepository;
     private final BudgetCalculator budgetCalculator;
@@ -403,5 +407,26 @@ public class DashboardServiceImpl implements DashboardService {
                 totalMetric,
                 dailyMetrics
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardResponse.BudgetHistoryListResponse getBudgetHistory(
+            Long userId, Long orgId, LocalDate startDate, LocalDate endDate) {
+
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new DashboardException(OrgErrorCode.ORG_NOT_FOUND));
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new DashboardException(DashboardErrorCode.ACCESS_FORBIDDEN));
+
+        List<BudgetHistory> histories = budgetHistoryRepository.findByOrgAndPeriod(
+                orgId,
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay()
+        );
+
+        List<DashboardResponse.BudgetHistoryItem> items = DashboardConverter.toBudgetHistoryItems(histories);
+
+        return new DashboardResponse.BudgetHistoryListResponse(startDate, endDate, items);
     }
 }
