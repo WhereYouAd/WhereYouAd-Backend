@@ -2,6 +2,8 @@ package com.whereyouad.WhereYouAd.domains.advertisement.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.application.mapper.AdvertisementConverter;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.BudgetHistoryRepository;
@@ -29,6 +31,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -193,6 +196,13 @@ public class NaverAdApiService {
                 throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_RANGE);
             }
         }
+        Optional<AdCampaign> campaignOpt = adCampaignRepository
+                .findByPlatformAccountAndExternalCampaignId(connection.getPlatformAccount(), campaignId);
+        campaignOpt.ifPresent(campaign -> {
+            if (request.dailyBudget() != null && request.dailyBudget().equals(campaign.getBudget())) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_SAME_BUDGET_VALUE);
+            }
+        });
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/campaigns/" + campaignId));
@@ -200,14 +210,12 @@ public class NaverAdApiService {
                     new NaverDTO.UpdateCampaignBudgetBody(campaignId, request.useDailyBudget(), request.dailyBudget());
             NaverDTO.CampaignResponse result = naverClient.updateCampaignBudget(headers, campaignId, "budget", body);
 
-            adCampaignRepository
-                    .findByPlatformAccountAndExternalCampaignId(connection.getPlatformAccount(), campaignId)
-                    .ifPresent(campaign -> {
-                        Long previousBudget = campaign.getBudget();
-                        campaign.updateBudget(request.dailyBudget());
-                        budgetHistoryRepository.save(AdvertisementConverter.toCampaignBudgetHistory(
-                                campaign, previousBudget, request.dailyBudget(), userId, Provider.NAVER));
-                    });
+            campaignOpt.ifPresent(campaign -> {
+                Long previousBudget = campaign.getBudget();
+                campaign.updateBudget(request.dailyBudget());
+                budgetHistoryRepository.save(AdvertisementConverter.toCampaignBudgetHistory(
+                        campaign, previousBudget, request.dailyBudget(), userId, Provider.NAVER));
+            });
 
             return result;
         } catch (Exception e) {
@@ -236,6 +244,16 @@ public class NaverAdApiService {
                 throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BID_AMOUNT_RANGE);
             }
         }
+        Optional<AdGroup> adGroupOpt = adGroupRepository
+                .findByAdCampaign_PlatformAccountAndExternalGroupId(connection.getPlatformAccount(), adgroupId);
+        adGroupOpt.ifPresent(adGroup -> {
+            if (request.dailyBudget() != null && request.dailyBudget().equals(adGroup.getBudget())) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_SAME_BUDGET_VALUE);
+            }
+            if (request.bidAmt() != null && request.bidAmt().equals(adGroup.getBidAmount())) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_SAME_BUDGET_VALUE);
+            }
+        });
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/adgroups/" + adgroupId));
@@ -250,9 +268,7 @@ public class NaverAdApiService {
                         new NaverDTO.UpdateAdGroupBudgetBody(adgroupId, null, null, request.bidAmt()));
             }
 
-            adGroupRepository
-                    .findByAdCampaign_PlatformAccountAndExternalGroupId(connection.getPlatformAccount(), adgroupId)
-                    .ifPresent(adGroup -> {
+            adGroupOpt.ifPresent(adGroup -> {
                         if (request.dailyBudget() != null) {
                             Long previousBudget = adGroup.getBudget();
                             budgetHistoryRepository.save(AdvertisementConverter.toAdGroupBudgetHistory(
