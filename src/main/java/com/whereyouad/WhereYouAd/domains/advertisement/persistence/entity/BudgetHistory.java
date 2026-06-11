@@ -5,6 +5,8 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "budget_history")
@@ -39,9 +41,11 @@ public class BudgetHistory extends BaseEntity {
     // 연관 관계 (nullable로 2개 중에 1개만 연결 가능)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_campaign_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private AdCampaign adCampaign;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ad_group_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private AdGroup adGroup;
 }
