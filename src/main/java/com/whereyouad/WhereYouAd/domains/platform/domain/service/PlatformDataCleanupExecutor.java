@@ -99,6 +99,11 @@ public class PlatformDataCleanupExecutor {
         PlatformAccount platformAccount = platformAccountRepository.findById(accountId)
                 .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
 
+        if (platformAccount == null) {
+            log.info("이미 삭제된 PlatformAccount - accountId={}, 정리 skip", accountId);
+            return;
+        }
+
         List<AdCampaign> campaigns = adCampaignRepository.findByPlatformAccount(platformAccount);
 
         if (!campaigns.isEmpty()) {
