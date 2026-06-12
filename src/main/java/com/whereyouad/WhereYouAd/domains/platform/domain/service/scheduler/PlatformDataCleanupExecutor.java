@@ -1,4 +1,4 @@
-package com.whereyouad.WhereYouAd.domains.platform.domain.service;
+package com.whereyouad.WhereYouAd.domains.platform.domain.service.scheduler;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;

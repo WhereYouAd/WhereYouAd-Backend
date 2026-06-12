@@ -9,6 +9,7 @@ import com.whereyouad.WhereYouAd.domains.platform.application.dto.request.Platfo
 import com.whereyouad.WhereYouAd.domains.platform.application.dto.response.PlatformResponse;
 import com.whereyouad.WhereYouAd.domains.platform.application.mapper.PlatformConverter;
 import com.whereyouad.WhereYouAd.domains.platform.domain.constant.PlatformStatus;
+import com.whereyouad.WhereYouAd.domains.platform.domain.service.scheduler.PlatformDataCleanupExecutor;
 import com.whereyouad.WhereYouAd.domains.platform.exception.PlatformHandler;
 import com.whereyouad.WhereYouAd.domains.platform.exception.code.PlatformErrorCode;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
