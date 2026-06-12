@@ -4,8 +4,6 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCamp
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickLogRepository;
-import com.whereyouad.WhereYouAd.domains.platform.exception.PlatformHandler;
-import com.whereyouad.WhereYouAd.domains.platform.exception.code.PlatformErrorCode;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformAccountRepository;
@@ -59,41 +57,42 @@ public class PlatformDataCleanupExecutor {
         return deleted;
     }
 
-    // AdCampaign + PlatformConnection + PlatformAccount 원자적 삭제
+    // AdCampaign + PlatformConnection + PlatformAccount + 비어있는 Project 원자적 삭제
     @Transactional
-    public void deleteAccountAndRelations(Long accountId) {
+    public void deleteAccountAndRelations(Long accountId, List<Long> projectIds) {
         PlatformAccount platformAccount = platformAccountRepository.findById(accountId)
-                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
+                .orElse(null);
 
         if (platformAccount == null) {
             log.info("이미 삭제된 PlatformAccount - accountId={}, 정리 skip", accountId);
             return;
         }
 
+        // AdCampaign 제거
         List<AdCampaign> campaigns = adCampaignRepository.findByPlatformAccount(platformAccount);
-
         if (!campaigns.isEmpty()) {
             adCampaignRepository.deleteAll(campaigns);
             adCampaignRepository.flush();
-            //AdCampaign 삭제 시 CascadeType.ALL 로 인해 연관된 AdGroup, AdContent 도 함꼐 제거됨
+            // AdCampaign 삭제 시 CascadeType.ALL 로 인해 연관된 AdGroup, AdContent 도 함께 제거됨
         }
 
+        // PlatformConnection 제거
         List<PlatformConnection> connections = platformConnectionRepository.findAllByPlatformAccount_Id(accountId);
-
         if (!connections.isEmpty()) {
             platformConnectionRepository.deleteAll(connections);
             platformConnectionRepository.flush();
         }
 
-        platformAccountRepository.delete(platformAccount);
-    }
-
-    //빈 Project 1개 삭제
-    @Transactional
-    public void deleteEmptyProject(Long projectId) {
-        // 연관된 AdCampaign, MetricFact 가 없을 경우에만 Project 삭제 진행
-        if (adCampaignRepository.countByProject_Id(projectId) == 0 && metricFactRepository.countByProject_Id(projectId) == 0) {
-            projectRepository.deleteById(projectId);
+        // 빈 Project 제거
+        for (Long projectId : projectIds) {
+            if (adCampaignRepository.countByProject_Id(projectId) == 0 &&
+                    metricFactRepository.countByProject_Id(projectId) == 0)
+            {
+                projectRepository.deleteById(projectId);
+            }
         }
+
+        // PlatformAccount 제거
+        platformAccountRepository.delete(platformAccount);
     }
 }

@@ -216,14 +216,9 @@ public class PlatformServiceImpl implements PlatformService {
         } while (chunkDeleted > 0);
         log.info("MetricFact 삭제 완료 - platformAccountId={}, totalCount={}", accountId, totalMetricFactDeleted);
 
-        // AdCampaign + PlatformConnection + PlatformAccount 삭제 진행
-        platformDataCleanupExecutor.deleteAccountAndRelations(accountId);
-
-        // 비어있는 Project 엔티티 삭제
-        // -> AdCampaign, AdGroup, AdContent 삭제로 인해 연관된 광고 객체가 없는 Project 엔티티 삭제
-        for (Long projectId : projectIds) {
-            platformDataCleanupExecutor.deleteEmptyProject(projectId);
-        }
+        // AdCampaign + PlatformConnection + PlatformAccount + 비어있는 Project 삭제 진행
+        // PlatformAccount 가 가장 마지막에 삭제됨 & 삭제 실패 시 전체 롤백되어 다음 회차에 재시도
+        platformDataCleanupExecutor.deleteAccountAndRelations(accountId, projectIds);
     }
 
     private void validateNaverCredentials(String customerId, String encryptedApiKey, String encryptedSecretKey) {
