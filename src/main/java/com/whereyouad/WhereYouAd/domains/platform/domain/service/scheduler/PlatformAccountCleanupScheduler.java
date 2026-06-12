@@ -40,6 +40,6 @@ public class PlatformAccountCleanupScheduler {
             }
         }
 
-        log.info("연동 해제(DISCONNECTED) 계정 정리 완료 - 대상: {}, 성공: {}", accountIds.size(), successCount);
+        log.info("연동 해제(DISCONNECTED) 계정 정리 완료 - 대상 갯수: {}, 성공 갯수: {}", accountIds.size(), successCount);
     }
 }
