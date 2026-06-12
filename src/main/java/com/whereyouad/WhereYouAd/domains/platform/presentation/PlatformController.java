@@ -69,7 +69,7 @@ public class PlatformController implements PlatformControllerDocs {
     {
         platformService.disconnectPlatform(userId, orgId, accountId);
 
-        return ResponseEntity.ok(DataResponse.from("광고 플랫폼 연동 정보와 연관된 광고 정보가 정상적으로 삭제되었습니다."));
+        return ResponseEntity.ok(DataResponse.from("광고 플랫폼 연동 해제 요청이 접수되었습니다. 연관된 광고 데이터는 잠시 후 자동으로 정리됩니다."));
     }
 
 }
