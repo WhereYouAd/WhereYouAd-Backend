@@ -4,9 +4,6 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCamp
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickLogRepository;
-import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
-import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
-import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.platform.exception.PlatformHandler;
 import com.whereyouad.WhereYouAd.domains.platform.exception.code.PlatformErrorCode;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
@@ -14,9 +11,6 @@ import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformCon
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformAccountRepository;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.domains.project.persistence.repository.ProjectRepository;
-import com.whereyouad.WhereYouAd.domains.user.exception.code.UserErrorCode;
-import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
-import com.whereyouad.WhereYouAd.domains.user.persistence.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,8 +26,6 @@ public class PlatformDataCleanupExecutor {
 
     private static final int BATCH_SIZE = 1000;
 
-    private final UserRepository userRepository;
-    private final OrgMemberRepository orgMemberRepository;
     private final PlatformAccountRepository platformAccountRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
     private final AdCampaignRepository adCampaignRepository;
@@ -41,33 +33,7 @@ public class PlatformDataCleanupExecutor {
     private final ClickLogRepository clickLogRepository;
     private final MetricFactRepository metricFactRepository;
 
-    // 권한 & 소유자 검증 + 삭제에 영향받는 projectId 반환 (read-only & 짧은 트랜잭션)
-    @Transactional(readOnly = true)
-    public List<Long> verifyAndCollectProjectIds(Long userId, Long orgId, Long accountId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
-
-        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
-                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ORG_MEMBER_NOT_FOUND));
-
-        if (orgMember.getRole() != OrgRole.ADMIN) {
-            throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
-        }
-
-        PlatformAccount platformAccount = platformAccountRepository.findById(accountId)
-                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
-
-        if (!platformAccount.getOrganization().getId().equals(orgId)) {
-            throw new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_BELONG_TO_ORG);
-        }
-
-        platformConnectionRepository.findByUserIdAndPlatformAccountId(userId, accountId)
-                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_NOT_ACCOUNT_OWNER));
-
-        return adCampaignRepository.findDistinctProjectIdsByPlatformAccountId(accountId);
-    }
-
-    // 요청자 권한 검증 없이 삭제에 영향받는 projectId 만 수집 (회원 탈퇴 스케줄러 등 시스템 내부 호출용)
+    // 삭제에 영향받는 projectId 수집 (수동 연동 해제 정리 / 회원 탈퇴 스케줄러 등 시스템 내부 호출용)
     @Transactional(readOnly = true)
     public List<Long> collectProjectIds(Long accountId) {
         return adCampaignRepository.findDistinctProjectIdsByPlatformAccountId(accountId);
