@@ -19,8 +19,9 @@ public class PlatformAccountCleanupScheduler {
     private final PlatformService platformService;
 
     // 수동 연동 해제(DISCONNECTED 마킹)된 PlatformAccount 의 실제 데이터 정리
-    // (cleanupAccount 는 ClickLog/MetricFact/AdCampaign/Connection 먼저 삭제, PlatformAccount는 맨 마지막에 삭제)
-    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    // cleanupAccount 는 ClickLog/MetricFact/AdCampaign/Connection 먼저 삭제, PlatformAccount는 맨 마지막에 삭제
+    // TODO : 스케줄러 주기를 어떻게 할지? (현재는 새벽 4시에 실행)
+    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
     public void cleanupDeletedAccounts() {
         List<Long> accountIds = platformAccountRepository.findIdsByStatus(PlatformStatus.DISCONNECTED);
         if (accountIds.isEmpty()) {
