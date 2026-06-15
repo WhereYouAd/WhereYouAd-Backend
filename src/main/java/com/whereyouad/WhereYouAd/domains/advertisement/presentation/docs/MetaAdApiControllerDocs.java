@@ -88,4 +88,48 @@ public interface MetaAdApiControllerDocs {
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId
     );
+
+    @Operation(
+            summary = "메타 캠페인 예산 변경",
+            description = "메타 캠페인의 예산을 변경합니다. 일일 예산(dailyBudget)과 총 예산(lifetimeBudget) 중 정확히 하나만 입력해야 하며, "
+                    + "캠페인에 기존에 설정된 예산 유형과 동일한 유형으로만 변경할 수 있습니다.\n\n"
+                    + "해당 광고 계정을 연동한 사용자(소유자)만 변경할 수 있습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "예산 변경 성공"),
+            @ApiResponse(responseCode = "400", description = "COMMON_400_2 : 요청 본문 검증 실패(일일/총 예산 중 정확히 하나만 입력)\n\n "
+                    + "ADAPI_400_2 : 메타 캠페인이 아닌 대상에 대한 요청\n\n ADAPI_400_6 : 예산이 Meta 최소 기준 미만\n\n"
+                    + "ADAPI_400_8 : 기존과 다른 예산 유형으로 변경 요청"),
+            @ApiResponse(responseCode = "401", description = "ADAPI_401_1 : 연동 인증 정보(토큰)가 유효하지 않거나 만료됨"),
+            @ApiResponse(responseCode = "403", description = "ADAPI_403_2 : 해당 광고 계정을 연동한 사용자가 아닌 회원의 요청"),
+            @ApiResponse(responseCode = "404", description = "AD_404_1 : 존재하지 않는 캠페인 ID"),
+            @ApiResponse(responseCode = "502", description = "ADAPI_502_3 : Meta 예산 변경 요청 실패")
+    })
+    ResponseEntity<DataResponse<MetaResponse.BudgetUpdateResponse>> updateCampaignBudget(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long adCampaignId,
+            @RequestBody @Valid AdvertisementRequest.MetaBudgetUpdateRequest request
+    );
+
+    @Operation(
+            summary = "메타 광고그룹 예산 변경",
+            description = "메타 광고그룹(AdSet)의 예산을 변경합니다. 광고그룹은 일일 예산(dailyBudget)만 변경할 수 있으며, "
+                    + "총 예산(lifetimeBudget)은 캠페인에서 설정해야 합니다.\n\n"
+                    + "해당 광고 계정을 연동한 사용자(소유자)만 변경할 수 있습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "예산 변경 성공"),
+            @ApiResponse(responseCode = "400", description = "COMMON_400_2 : 요청 본문 검증 실패(일일/총 예산 중 정확히 하나만 입력), "
+                    + "ADAPI_400_2 : 메타 광고그룹이 아닌 대상에 대한 요청, ADAPI_400_6 : 예산이 Meta 최소 기준 미만, "
+                    + "ADAPI_400_7 : 광고그룹(AdSet)에 총 예산 변경 요청, ADAPI_400_8 : 기존과 다른 예산 유형으로 변경 요청"),
+            @ApiResponse(responseCode = "401", description = "ADAPI_401_1 : 연동 인증 정보(토큰)가 유효하지 않거나 만료됨"),
+            @ApiResponse(responseCode = "403", description = "ADAPI_403_2 : 해당 광고 계정을 연동한 사용자가 아닌 회원의 요청"),
+            @ApiResponse(responseCode = "404", description = "AD_404_2 : 존재하지 않는 광고그룹 ID"),
+            @ApiResponse(responseCode = "502", description = "ADAPI_502_3 : Meta 예산 변경 요청 실패")
+    })
+    ResponseEntity<DataResponse<MetaResponse.BudgetUpdateResponse>> updateAdGroupBudget(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long adGroupId,
+            @RequestBody @Valid AdvertisementRequest.MetaBudgetUpdateRequest request
+    );
 }
