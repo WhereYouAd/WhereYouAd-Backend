@@ -15,4 +15,11 @@ public class MetaResponse {
             int metricCount,
             List<String> failedAccountIds
     ) {}
+
+    public record BudgetUpdateResponse(
+            Long targetId,
+            String externalId,
+            Long updatedBudget,
+            String budgetType
+    ) {}
 }

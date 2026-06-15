@@ -150,4 +150,11 @@ public class MetaDTO {
             String before,
             String after
     ) {}
+
+    // 추가 : 예산 변경
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record UpdateResponse(
+            Boolean success,
+            String id
+    ) {}
 }
