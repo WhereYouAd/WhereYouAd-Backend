@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -63,7 +64,14 @@ public class AdGroup extends BaseEntity {
     }
 
     public void updateBudget(Long budget, Long bidAmount) {
-        if (budget != null) this.budget = budget;
-        if (bidAmount != null) this.bidAmount = bidAmount;
+        if (this.adCampaign.getProvider() == Provider.NAVER) {
+            if (budget != null) this.budget = budget;
+            if (bidAmount != null) this.bidAmount = bidAmount;
+        }
+
+        if (this.adCampaign.getProvider() == Provider.META) {
+            this.budget = budget;
+            if (bidAmount != null) this.bidAmount = bidAmount;
+        }
     }
 }
