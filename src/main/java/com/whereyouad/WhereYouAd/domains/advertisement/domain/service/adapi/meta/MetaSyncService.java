@@ -173,7 +173,7 @@ public class MetaSyncService {
 
                 // 페이지 단위 배치 UPSERT — campaignMap을 넘겨 부모 스코프 적용
                 Map<String, AdGroup> pageResult =
-                        metaUpsertService.upsertAdGroups(adSetsResp.data(), campaignMap);
+                        metaUpsertService.upsertAdGroups(adSetsResp.data(), campaignMap, pAccountEntity);
                 adSetMap.putAll(pageResult);
                 adSetCount += pageResult.size();
 

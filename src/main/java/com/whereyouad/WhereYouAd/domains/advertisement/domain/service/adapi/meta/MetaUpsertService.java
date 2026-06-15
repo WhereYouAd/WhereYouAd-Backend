@@ -70,12 +70,12 @@ public class MetaUpsertService {
 
     // Meta AdSet 페이지 -> AdGroup 배치 UPSERT (externalGroupId + 부모 Campaign 스코프)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Map<String, AdGroup> upsertAdGroups(List<MetaDTO.AdSet> adSets, Map<String, AdCampaign> campaignMap) {
+    public Map<String, AdGroup> upsertAdGroups(List<MetaDTO.AdSet> adSets, Map<String, AdCampaign> campaignMap, PlatformAccount platformAccount) {
         Map<String, AdGroup> result = new HashMap<>();
         for (MetaDTO.AdSet src : adSets) {
             AdCampaign parentCampaign = campaignMap.get(src.campaignId());
             if (parentCampaign == null) continue;
-            AdGroup newData = MetaConverter.toAdGroup(src, parentCampaign);
+            AdGroup newData = MetaConverter.toAdGroup(src, parentCampaign, platformAccount);
             AdGroup saved = adGroupRepository
                     .findByExternalGroupIdAndAdCampaign(src.id(), parentCampaign)
                     .map(existing -> {
@@ -83,6 +83,7 @@ public class MetaUpsertService {
                                 newData.getName(),
                                 newData.getStatus(),
                                 newData.getTargetingInfo());
+                        existing.updateBudget(newData.getBudget(), null);
                         return adGroupRepository.save(existing);
                     })
                     .orElseGet(() -> adGroupRepository.save(newData));
