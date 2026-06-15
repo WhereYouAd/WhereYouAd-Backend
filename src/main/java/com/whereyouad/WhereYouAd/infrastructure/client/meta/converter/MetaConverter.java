@@ -9,6 +9,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCont
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.platform.domain.constant.Currency;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaDTO;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaResponse;
@@ -62,16 +63,25 @@ public class MetaConverter {
     }
 
     // Meta AdSet -> AdGroup
-    public static AdGroup toAdGroup(MetaDTO.AdSet src, AdCampaign campaign) {
+    public static AdGroup toAdGroup(MetaDTO.AdSet src, AdCampaign campaign, PlatformAccount platformAccount) {
         String targetingInfo = null;
         if (src.targeting() != null) {
             targetingInfo = buildTargetingInfo(src.targeting());
         }
+
+        Long budget = null;
+        if (src.dailyBudget() != null && !src.dailyBudget().isEmpty()) {
+            budget = parseLong(src.dailyBudget());
+            Currency currency = (platformAccount != null) ? platformAccount.getCurrency() : null;
+            budget = fromMetaBudget(budget, currency);
+        }
+
         return AdGroup.builder()
                 .externalGroupId(src.id())
                 .name(src.name())
                 .status(mapStatus(src.status()))
                 .targetingInfo(targetingInfo)
+                .budget(budget)
                 .adCampaign(campaign)
                 .build();
     }
@@ -244,4 +254,33 @@ public class MetaConverter {
                                                              java.util.List<String> failedAccountIds) {
         return new MetaResponse.MetaSyncSummary(campaignCount, adGroupCount, adContentCount, metricCount, failedAccountIds);
     }
+
+    // 로컬 budget(원 단위) → Meta 의 통화 단위로 변환
+    // Meta 는 금액을 최소 단위로 받는다 ex) USD 10$ -> 1000(센트) , KRW 1000 -> 1000
+    public static Long toMetaBudget(Long budget, Currency currency) {
+        if (budget == null) {
+            return null;
+        }
+
+        if (currency == null || currency.name().equalsIgnoreCase("KRW")) {
+            return budget;
+
+        }
+
+        return budget * 100;   // USD 등 소수점 통화는 센트 단위로 전송
+    }
+
+    // Meta 통화 단위 → 로컬 budget 단위 변환
+    private static Long fromMetaBudget(Long minorBudget, Currency currency) {
+        if (minorBudget == null) {
+            return null;
+        }
+
+        if (currency == null || currency.name().equalsIgnoreCase("KRW")) {
+            return minorBudget;
+        }
+
+        return minorBudget / 100;
+    }
+
 }
