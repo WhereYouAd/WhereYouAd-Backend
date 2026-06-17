@@ -262,7 +262,7 @@ public class MetaConverter {
             return null;
         }
 
-        if (currency == null || currency.name().equalsIgnoreCase("KRW")) {
+        if (currency == null || currency == Currency.KRW) {
             return budget;
 
         }
@@ -276,7 +276,7 @@ public class MetaConverter {
             return null;
         }
 
-        if (currency == null || currency.name().equalsIgnoreCase("KRW")) {
+        if (currency == null || currency == Currency.KRW) {
             return minorBudget;
         }
 
