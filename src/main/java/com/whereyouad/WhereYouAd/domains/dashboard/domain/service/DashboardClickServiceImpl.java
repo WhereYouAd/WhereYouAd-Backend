@@ -2,12 +2,13 @@ package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
+import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashboardErrorCode;
 import com.whereyouad.WhereYouAd.global.sse.repository.SseEmitterRepository;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.mapper.DashboardConverter;
-import com.whereyouad.WhereYouAd.domains.dashboard.exception.DashboardException;
-import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashboardErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
@@ -31,6 +32,9 @@ import java.util.*;
 public class DashboardClickServiceImpl implements DashboardClickService {
 
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 30; // SseEmitter 생명주기 30분 = 연결 30분 유지
+    private static final String ALL = "ALL";
+    private static final Set<Provider> SUPPORTED_PROVIDERS =
+            EnumSet.of(Provider.GOOGLE, Provider.NAVER, Provider.META);
 
     private final SseEmitterRepository emitterRepository;
     private final RedisUtil redisUtil;
@@ -41,7 +45,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
 
 
     // 구독 (클라이언트 연결)
-    public SseEmitter subscribe(Long userId, Long orgId, String mode) {
+    public SseEmitter subscribe(Long userId, Long orgId, String mode, String providerType) {
 
         orgRepository.findById(orgId).
                 orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
@@ -52,14 +56,21 @@ public class DashboardClickServiceImpl implements DashboardClickService {
 
         // 라우팅 키 및 Emitter ID 생성
         // 라우팅 키 예: "1_real" (1번 조직의 실제 트래픽 채널)
-        String safeMode = Optional.ofNullable(mode)
-                .map(String::toLowerCase)
-                .filter(m -> m.equals("dummy") || m.equals("real"))
-                .orElseThrow(() -> new DashboardException(DashboardErrorCode.INVALID_MODE_PARAM));
+//        String safeMode = Optional.ofNullable(mode)
+//                .map(String::toLowerCase)
+//                .filter(m -> m.equals("dummy") || m.equals("real"))
+//                .orElseThrow(() -> new DashboardException(DashboardErrorCode.INVALID_MODE_PARAM));
 
-        String routingKey = orgId + "_" + safeMode;
-        // 동시 접속한 여러 유저(또는 다중 탭)를 식별하기 위해 UUID 추가
-        String emitterId = userId + "_" + UUID.randomUUID().toString();
+        String safeMode = parseMode(mode);
+        String providerToken = parseProviderToken(providerType); // "ALL" 또는 "NAVER"/"GOOGLE"/"META"
+
+//        String routingKey = orgId + "_" + safeMode;
+//        // 동시 접속한 여러 유저(또는 다중 탭)를 식별하기 위해 UUID 추가
+//        String emitterId = userId + "_" + UUID.randomUUID().toString();
+
+        // routingKey 예: "1_ALL_dummy"(조직 전체), "1_NAVER_real"(네이버 플랫폼)
+        String routingKey = orgId + "_" + providerToken + "_" + safeMode;
+        String emitterId = userId + "_" + UUID.randomUUID();
 
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
 
@@ -71,14 +82,12 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         emitterRepository.save(routingKey, emitterId, emitter);
 
         // 최초 연결 시 즉시 데이터 전송 (프론트엔드 차트 초기 렌더링용)
-        sendToClient(routingKey, emitterId, emitter, DataResponse.from(getOrgGraphData(orgId, safeMode)));
+        sendToClient(routingKey, emitterId, emitter, DataResponse.from(getGraphData(orgId, providerToken, safeMode)));
 
         return emitter;
     }
 
     // 1초마다 백그라운드에서 실행되며, 현재 연결된 모든 클라이언트에게 최신 데이터를 브로드캐스팅하는 스케줄러
-    // TODO : 지금 로직에선 백 서버에서 프론트로 1초마다 SseEmitter 를 통해 클릭 데이터를 전송하고 있음.
-    //        1초마다 전송이 서버 성능에 부하를 많이 줄지?, 만약 부하가 크다면 1초보다 더 길게 주기를 잡아야할지?
     @Scheduled(fixedRate = 1000)
     public void broadcastRealTimeClicks() {
         // 현재 구독자가 있는 채널(라우팅 키) 목록만 가져옴 (구독자가 없으면 Redis 조회를 생략하여 리소스 절약)
@@ -87,12 +96,17 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         //모든 구독자 존재 채널(라우팅 키) 에 대하여,
         for (String routingKey : activeRoutingKeys) {
             //orgId, mode 추출
-            String[] parts = routingKey.split("_");
+//            String[] parts = routingKey.split("_");
+
+            // routingKey 예: "1_NAVER_dummy" → 3토큰
+            // provider/mode 에는 '_' 가 없으므로 split("_", 3) 으로 안전하게 분해
+            String[] parts = routingKey.split("_", 3);
             Long orgId = Long.parseLong(parts[0]);
-            String mode = parts[1];
+            String providerToken = parts[1]; // "ALL" 또는 "NAVER"...
+            String mode = parts[2];
 
             // 이번 턴에 전송할 데이터(60분치 시계열 배열 + 봇 알림)를 Redis에서 조합
-            DashboardResponse.RealTimeGraphResponse payload = getOrgGraphData(orgId, mode);
+            DashboardResponse.RealTimeGraphResponse payload = getGraphData(orgId, providerToken, mode);
             DataResponse<DashboardResponse.RealTimeGraphResponse> responseBody = DataResponse.from(payload);
 
             // 해당 채널(예: 1번 조직_real)을 보고 있는 모든 유저의 Emitter를 꺼내서 전송
@@ -104,7 +118,9 @@ public class DashboardClickServiceImpl implements DashboardClickService {
     }
 
     // 내부 메서드: 조직의 60분 시계열 데이터와 알림 정보를 묶어서 반환
-    private DashboardResponse.RealTimeGraphResponse getOrgGraphData(Long orgId, String mode) {
+    private DashboardResponse.RealTimeGraphResponse getGraphData(Long orgId, String providerToken, String mode) {
+        boolean isOrgWide = ALL.equals(providerToken);
+
         // 시계열 데이터 추출: 최근 60분(59분 전 ~ 현재 분) 동안의 Redis Key를 순회하며 카운트를 읽어옴
         List<ClickResponse.RealtimeClickCount> timeSeriesData = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
@@ -114,39 +130,72 @@ public class DashboardClickServiceImpl implements DashboardClickService {
 
             // Redis Key 포맷
             // 예: click:real:org:1:202603211530
-            String key = String.format("click:%s:org:%s:%s", mode, orgId, minute);
+//            String key = String.format("click:%s:org:%s:%s", mode, orgId, minute);
+
+            // 조직 전체면 기존 키 그대로, 플랫폼이면 provider 차원 추가
+            String key = isOrgWide
+                    ? String.format("click:%s:org:%s:%s", mode, orgId, minute)
+                    : String.format("click:%s:org:%s:provider:%s:%s", mode, orgId, providerToken, minute);
 
             String value = redisUtil.getData(key);
             long count = 0L;
-            try { //Long 타입 파싱에 대한 예외처리
-                count = Long.parseLong(value);
-            } catch (NumberFormatException e) { //invalid 형식 값 존재 시 로그 처리
-                log.warn("Redis 내부 invalid 한 클릭수 count 값 존재. key={}, value={}", key, value);
+            if (value != null) {
+                try {
+                    count = Long.parseLong(value);
+                } catch (NumberFormatException e) { // null 이 아닌데 파싱 실패 → 진짜 invalid 값
+                    log.warn("Redis 내부 invalid 한 클릭수 count 값 존재. key={}, value={}", key, value);
+                }
             }
             timeSeriesData.add(new ClickResponse.RealtimeClickCount(minute, count));
         }
 
-        // 이상 징후(봇) 알림 추출: 해당 조직에서 발생한 부정 클릭 정보가 있는지 확인
-        // 예: click:suspect:alert:org:1
-        String suspectAlertKey = "click:suspect:alert:org:" + orgId;
-        //Redis 에서 값을 추출 후 제거
-        String suspectJson = redisUtil.getData(suspectAlertKey);
 
+        String suspectAlertKey = isOrgWide
+                ? "click:suspect:alert:org:" + orgId
+                : String.format("click:suspect:alert:org:%s:provider:%s", orgId, providerToken);
+
+        String suspectJson = redisUtil.getData(suspectAlertKey);
         boolean hasSuspect = false;
         DashboardResponse.SuspectDetail detail = null;
 
-        // Redis에 알림 데이터가 존재한다면 (봇이 감지되었다면)
         if (suspectJson != null) {
             hasSuspect = true;
             try {
                 detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
                 redisUtil.deleteData(suspectAlertKey);
             } catch (JsonProcessingException e) {
-                log.error("이상 징후 JSON 파싱 실패", e);
+                log.error("이상 징후 JSON 파싱 실패. key={}", suspectAlertKey, e);
             }
         }
 
-        return DashboardConverter.toRealTimeGraphResponse(timeSeriesData, mode, hasSuspect, detail);
+        // 조직 전체면 provider = null, 플랫폼이면 해당 provider 명
+        String providerForResponse = isOrgWide ? null : providerToken;
+        return DashboardConverter.toRealTimeGraphResponse(
+                providerForResponse, timeSeriesData, mode, hasSuspect, detail);
+    }
+
+    ///플랫폼별 클릭수 조회 관련 헬퍼 메서드 추가
+    // provider 미지정 → ALL, 지정 시 NAVER/GOOGLE/META 만 허용
+    private String parseProviderToken(String providerType) {
+        if (providerType == null || providerType.isBlank()) {
+            return ALL;
+        }
+        try {
+            Provider provider = Provider.valueOf(providerType.trim().toUpperCase());
+            if (!SUPPORTED_PROVIDERS.contains(provider)) {
+                throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
+            }
+            return provider.name();
+        } catch (IllegalArgumentException e) {
+            throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
+        }
+    }
+
+    private String parseMode(String mode) {
+        return Optional.ofNullable(mode)
+                .map(String::toLowerCase)
+                .filter(m -> m.equals("dummy") || m.equals("real"))
+                .orElseThrow(() -> new DashboardException(DashboardErrorCode.INVALID_MODE_PARAM));
     }
 
     // 클라이언트로 데이터 전송 및 예외 처리
