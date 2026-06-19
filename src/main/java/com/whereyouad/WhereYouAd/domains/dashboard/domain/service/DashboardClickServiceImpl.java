@@ -54,19 +54,9 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             throw new OrgHandler(OrgErrorCode.ORG_MEMBER_NOT_FOUND);
         }
 
-        // 라우팅 키 및 Emitter ID 생성
-        // 라우팅 키 예: "1_real" (1번 조직의 실제 트래픽 채널)
-//        String safeMode = Optional.ofNullable(mode)
-//                .map(String::toLowerCase)
-//                .filter(m -> m.equals("dummy") || m.equals("real"))
-//                .orElseThrow(() -> new DashboardException(DashboardErrorCode.INVALID_MODE_PARAM));
-
+        // mode 값, provider 값 파싱
         String safeMode = parseMode(mode);
         String providerToken = parseProviderToken(providerType); // "ALL" 또는 "NAVER"/"GOOGLE"/"META"
-
-//        String routingKey = orgId + "_" + safeMode;
-//        // 동시 접속한 여러 유저(또는 다중 탭)를 식별하기 위해 UUID 추가
-//        String emitterId = userId + "_" + UUID.randomUUID().toString();
 
         // routingKey 예: "1_ALL_dummy"(조직 전체), "1_NAVER_real"(네이버 플랫폼)
         String routingKey = orgId + "_" + providerToken + "_" + safeMode;
@@ -95,8 +85,6 @@ public class DashboardClickServiceImpl implements DashboardClickService {
 
         //모든 구독자 존재 채널(라우팅 키) 에 대하여,
         for (String routingKey : activeRoutingKeys) {
-            //orgId, mode 추출
-//            String[] parts = routingKey.split("_");
 
             // routingKey 예: "1_NAVER_dummy" → 3토큰
             // provider/mode 에는 '_' 가 없으므로 split("_", 3) 으로 안전하게 분해
@@ -128,11 +116,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         for (int i = 59; i >= 0; i--) {
             String minute = now.minusMinutes(i).format(MINUTE_FORMATTER);
 
-            // Redis Key 포맷
-            // 예: click:real:org:1:202603211530
-//            String key = String.format("click:%s:org:%s:%s", mode, orgId, minute);
-
-            // 조직 전체면 기존 키 그대로, 플랫폼이면 provider 차원 추가
+            // 조직 전체면 기존 키 그대로, 플랫폼이면 provider 추가
             String key = isOrgWide
                     ? String.format("click:%s:org:%s:%s", mode, orgId, minute)
                     : String.format("click:%s:org:%s:provider:%s:%s", mode, orgId, providerToken, minute);
@@ -142,13 +126,12 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             if (value != null) {
                 try {
                     count = Long.parseLong(value);
-                } catch (NumberFormatException e) { // null 이 아닌데 파싱 실패 → 진짜 invalid 값
+                } catch (NumberFormatException e) { // null 이 아닌데 파싱 실패 → invalid 값
                     log.warn("Redis 내부 invalid 한 클릭수 count 값 존재. key={}, value={}", key, value);
                 }
             }
             timeSeriesData.add(new ClickResponse.RealtimeClickCount(minute, count));
         }
-
 
         String suspectAlertKey = isOrgWide
                 ? "click:suspect:alert:org:" + orgId
@@ -170,6 +153,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
 
         // 조직 전체면 provider = null, 플랫폼이면 해당 provider 명
         String providerForResponse = isOrgWide ? null : providerToken;
+
         return DashboardConverter.toRealTimeGraphResponse(
                 providerForResponse, timeSeriesData, mode, hasSuspect, detail);
     }
@@ -191,6 +175,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
         }
     }
 
+    // mode 값 파싱 : dummy || real
     private String parseMode(String mode) {
         return Optional.ofNullable(mode)
                 .map(String::toLowerCase)
