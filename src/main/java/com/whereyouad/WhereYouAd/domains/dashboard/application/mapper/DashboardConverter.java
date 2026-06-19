@@ -55,8 +55,12 @@ public class DashboardConverter {
 
     //Data -> DTO
     public static DashboardResponse.RealTimeGraphResponse toRealTimeGraphResponse(
-            List<ClickResponse.RealtimeClickCount> timeSeriesData, String mode, Boolean hasSuspect, DashboardResponse.SuspectDetail suspectDetail)
+            String provider,
+            List<ClickResponse.RealtimeClickCount> timeSeriesData,
+            String mode,
+            Boolean hasSuspect,
+            DashboardResponse.SuspectDetail suspectDetail)
     {
-        return new DashboardResponse.RealTimeGraphResponse(timeSeriesData, mode, hasSuspect, suspectDetail);
+        return new DashboardResponse.RealTimeGraphResponse(provider ,timeSeriesData, mode, hasSuspect, suspectDetail);
     }
 }
