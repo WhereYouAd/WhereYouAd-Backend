@@ -44,10 +44,28 @@ public class ClickConsumer {
 
         Long currentClickCount = redisUtil.incrementDataExpire(clickKey, REDIS_TTL_SECONDS);
 
-        // 조직 단위 통합 집계 추가
+//        // 조직 단위 통합 집계 추가
+//        if (event.getOrgId() != null) {
+//            String orgClickKey = String.format("click:%s:org:%s:%s", mode, event.getOrgId(), currentMinute);
+//            redisUtil.incrementDataExpire(orgClickKey, REDIS_TTL_SECONDS);
+//        } else { //orgId 가 null 인 이벤트 들어올 시 로그 처리
+//            log.warn("orgId 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
+//        }
+
+        // 조직 단위 통합 집계
         if (event.getOrgId() != null) {
             String orgClickKey = String.format("click:%s:org:%s:%s", mode, event.getOrgId(), currentMinute);
             redisUtil.incrementDataExpire(orgClickKey, REDIS_TTL_SECONDS);
+
+            // 플랫폼(provider) 차원 집계 추가
+            // click:{mode}:org:{orgId}:provider:{PROVIDER}:{minute}
+            if (event.getProvider() != null) {
+                String providerClickKey = String.format("click:%s:org:%s:provider:%s:%s",
+                        mode, event.getOrgId(), event.getProvider().name(), currentMinute);
+                redisUtil.incrementDataExpire(providerClickKey, REDIS_TTL_SECONDS);
+            } else { // provider 누락 이벤트(구버전 메시지 등) 로그 처리
+                log.warn("provider 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
+            }
         } else { //orgId 가 null 인 이벤트 들어올 시 로그 처리
             log.warn("orgId 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
         }
@@ -108,6 +126,13 @@ public class ClickConsumer {
                 // JSON 변환 후 Redis 저장 (수명 60초)
                 String detailJson = objectMapper.writeValueAsString(suspectDetail);
                 redisUtil.setDataExpire(alertKey, detailJson, 60);
+
+                // 플랫폼 지정 구독용 키 추가 (read 쪽 provider 분기와 정합)
+                if (event.getProvider() != null) {
+                    String providerAlertKey = String.format("click:suspect:alert:org:%s:provider:%s",
+                            event.getOrgId(), event.getProvider().name());
+                    redisUtil.setDataExpire(providerAlertKey, detailJson, 60);
+                }
 
                 log.info(" 봇 감지 : 실제 데이터 매핑 완료 및 Redis 적재: {}", alertKey);
             } catch (Exception e) {

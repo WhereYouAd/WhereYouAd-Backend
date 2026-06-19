@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.click.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
@@ -77,12 +78,29 @@ public class ClickServiceImpl implements ClickService {
         AdContent adContent = adContentRepository.findByTrackingUrl(trackingUrl)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
+//        Long orgId = adContent.getAdGroup().getAdCampaign().getProject().getOrganization().getId();
+//
+//        // 2. 클릭 이벤트 생성 후 Kafka로 발행
+//        ClickDto clickDto = ClickDto.builder()
+//                .adContentId(adContent.getId())
+//                .orgId(orgId)
+//                .ipAddress(ipAddress)
+//                .userAgent(userAgent)
+//                .clickedAt(System.currentTimeMillis())
+//                .isDummy(false)
+//                .build();
+//        clickEventProducer.produce(clickDto);
+
         Long orgId = adContent.getAdGroup().getAdCampaign().getProject().getOrganization().getId();
+
+        // 플랫폼(provider) 추출 — orgId와 동일한 연관관계 체인에서 꺼냄
+        Provider provider = adContent.getAdGroup().getAdCampaign().getProvider();
 
         // 2. 클릭 이벤트 생성 후 Kafka로 발행
         ClickDto clickDto = ClickDto.builder()
                 .adContentId(adContent.getId())
                 .orgId(orgId)
+                .provider(provider)        // 추가
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .clickedAt(System.currentTimeMillis())
