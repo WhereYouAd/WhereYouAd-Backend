@@ -101,10 +101,11 @@ public class DashboardController implements DashboardControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestParam(required = false, defaultValue = "dummy") String mode,
+            @RequestParam(required = false) String providerType,
             HttpServletResponse response
     )
     {
-        SseEmitter emitter = dashboardClickService.subscribe(userId, orgId, mode);
+        SseEmitter emitter = dashboardClickService.subscribe(userId, orgId, mode, providerType);
 
         response.setHeader("X-Accel-Buffering", "no");
         return ResponseEntity.ok(emitter);
