@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum NotificationErrorCode implements BaseErrorCode {
 
-    ,
     ;
 
     private final HttpStatus httpStatus;
