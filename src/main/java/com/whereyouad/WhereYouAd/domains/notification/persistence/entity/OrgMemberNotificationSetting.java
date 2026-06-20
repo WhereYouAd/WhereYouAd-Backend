@@ -34,8 +34,8 @@ public class OrgMemberNotificationSetting extends BaseEntity {
     @Column(name = "is_slack_enabled", nullable = false)
     private boolean isSlackEnabled;
 
-    @Column(name = "slack_webhook_url", length = 255)
-    private String slackWebhookUrl;
+    @Column(name = "is_discord_enabled", nullable = false)
+    private boolean isDiscordEnabled;
 
     @Column(name = "alert_budget_80", nullable = false)
     private boolean alertBudget80;
