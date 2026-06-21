@@ -37,6 +37,9 @@ public class OrgMemberNotificationSetting extends BaseEntity {
     @Column(name = "is_discord_enabled", nullable = false)
     private boolean isDiscordEnabled;
 
+    @Column(name = "alert_budget_50", nullable = false)
+    private boolean alertBudget50;
+
     @Column(name = "alert_budget_80", nullable = false)
     private boolean alertBudget80;
 
