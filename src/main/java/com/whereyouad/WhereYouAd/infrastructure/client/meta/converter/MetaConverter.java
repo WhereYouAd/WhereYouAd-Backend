@@ -286,7 +286,11 @@ public class MetaConverter {
             return minorBudget;
         }
 
-        return minorBudget / 100;
+        if (minorBudget % 100 != 0) {
+            log.warn("[META] 비 KRW 예산 단위가 100 의 배수가 아닙니다. (반올림 처리): {} {}", minorBudget, currency);
+        }
+
+        return Math.round(minorBudget / 100.0);
     }
 
 }
