@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -64,7 +65,7 @@ public class MetaBudgetService {
 
         // 캠페인의 이전 예산 값 추출, 동일 값 검증
         Long previousBudget = campaign.getBudget();
-        if (previousBudget.equals(request.amount())) {
+        if (Objects.equals(previousBudget, request.amount())) {
             throw new AdApiHandler(AdApiErrorCode.SAME_BUDGET_AMOUNT);
         }
 
@@ -118,7 +119,7 @@ public class MetaBudgetService {
 
         // 이전 광고 그룹 예산 값 추출, 동일값 검증
         Long previousBudget = adGroup.getBudget();
-        if (previousBudget.equals(request.dailyBudget())) {
+        if (Objects.equals(previousBudget, request.dailyBudget())) {
             throw new AdApiHandler(AdApiErrorCode.SAME_BUDGET_AMOUNT);
         }
 
