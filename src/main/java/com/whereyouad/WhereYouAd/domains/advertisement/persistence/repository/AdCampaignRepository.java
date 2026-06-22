@@ -69,4 +69,15 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     Optional<AdCampaign> findByExternalCampaignIdAndPlatformAccount(String externalCampaignId, PlatformAccount platformAccount);
 
     Optional<AdCampaign> findByPlatformAccountAndExternalCampaignId(PlatformAccount platformAccount, String externalCampaignId);
+
+    // PlatformAccount 연동 해제 시 사용
+    List<AdCampaign> findByPlatformAccount(PlatformAccount platformAccount);
+
+    // 연동 해제 후 빈 Project 정리 대상 식별용 (project null 인 AdCampaign 은 제외)
+    @Query("SELECT DISTINCT c.project.id FROM AdCampaign c " +
+            "WHERE c.platformAccount.id = :platformAccountId AND c.project IS NOT NULL")
+    List<Long> findDistinctProjectIdsByPlatformAccountId(@Param("platformAccountId") Long platformAccountId);
+
+    // 특정 Project 에 남아있는 AdCampaign 수 (빈 Project 판단용)
+    long countByProject_Id(Long projectId);
 }
