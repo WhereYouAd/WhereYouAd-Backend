@@ -14,6 +14,8 @@ public enum PlatformErrorCode implements BaseErrorCode {
 
     // 403
     PLATFORM_FORBIDDEN(HttpStatus.FORBIDDEN, "PLATFORM_403_1", "API키 등록은 ADMIN 권한이 필요합니다."),
+    PLATFORM_ACCOUNT_NOT_BELONG_TO_ORG(HttpStatus.FORBIDDEN, "PLATFORM_403_2", "해당 광고 계정은 요청한 조직 소속이 아닙니다."),
+    PLATFORM_NOT_ACCOUNT_OWNER(HttpStatus.FORBIDDEN, "PLATFORM_403_3", "본인이 등록한 광고 계정만 연동 해제할 수 있습니다."),
 
     // 404
     PLATFORM_CONNECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PLATFORM_404_1", "조직과 연결된 인증 정보를 찾을 수 없습니다."),

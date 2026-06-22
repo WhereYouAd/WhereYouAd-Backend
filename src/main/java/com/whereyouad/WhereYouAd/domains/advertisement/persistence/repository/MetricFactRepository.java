@@ -10,6 +10,7 @@ import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.RoasProjection;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -227,4 +228,17 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     );
 
     Optional<MetricFact> findByPlatformAccount_IdAndAdContent_IdAndTimeBucket(Long platformAccountId, Long adContentId, LocalDateTime timeBucket);
+
+    // PlatformAccount 연동 해제 시 청크 단위 정리용
+    @Modifying
+    @Query(value = "DELETE FROM metric_fact " +
+            "WHERE platform_account_id = :platformAccountId " +
+            "LIMIT :batchSize",
+            nativeQuery = true)
+    int deleteByPlatformAccountIdInBatch(
+            @Param("platformAccountId") Long platformAccountId,
+            @Param("batchSize") int batchSize
+    );
+
+    long countByProject_Id(Long projectId);
 }

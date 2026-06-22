@@ -5,8 +5,6 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMemb
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgInvitationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
-import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
-import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.UserInfoModifyRequest;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyOrgResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
@@ -43,7 +41,6 @@ public class UserService {
     private final OrgMemberRepository orgMemberRepository;
     private final OrgInvitationRepository orgInvitationRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final PlatformConnectionRepository platformConnectionRepository;
     private final OrgService orgService;
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
@@ -217,9 +214,8 @@ public class UserService {
                 .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
 
         // 1) 검증 단계
-        // PlatformConnection 이 연결되어있는가? -> 연결되어 있으면 오류
         // 속한 Organization 중에 "해당 회원이 owner 인데 다른 회원이 멤버로 속한 Organization" 이 존재하는가? -> 존재 시 오류
-        validateNoPlatformConnections(userId);
+        // 광고 플랫폼 연동 존재 여부가 회원 탈퇴를 막지 않음 -> UserDeleteScheduler 가 Hard Delete 시점에 자동 해제
         handleOrganizationsOwnedByUser(userId);
 
         // 2) 즉시 정리 단계
@@ -230,14 +226,6 @@ public class UserService {
 
         // 3) 회원 삭제 -> Soft Delete 상태로 변경, 30일 지날 시 스케줄러에서 Hard Delete
         user.softDeleteUser();
-    }
-
-    // 광고 플랫폼 연동 정보 존재 시 탈퇴 불가
-    private void validateNoPlatformConnections(Long userId) {
-        List<PlatformConnection> platformConnections = platformConnectionRepository.findByUser_Id(userId);
-        if (!platformConnections.isEmpty()) {
-            throw new UserHandler(UserErrorCode.USER_HAS_PLATFORM_CONNECTION);
-        }
     }
 
     // 회원이 owner 인 조직 처리 - 다른 멤버가 있으면 탈퇴 거부, 본인만 있으면 Soft Delete
@@ -256,9 +244,9 @@ public class UserService {
                 throw new UserHandler(UserErrorCode.USER_OWNS_ORGANIZATION);
             }
 
-            // 본인만 속한 조직은 OrgService 의 Soft Delete 로직 호출
+            // 본인만 속한 조직은 OrgService 의 회원 탈퇴 전용 Soft Delete 로직 호출
             // 추후 Scheduler 에서 해당 Organization 과 연관 엔티티 한번에 정리
-            orgService.removeOrganizationSoft(userId, organization.getId());
+            orgService.removeOrganizationSoftForWithdrawal(organization.getId());
         }
     }
 
