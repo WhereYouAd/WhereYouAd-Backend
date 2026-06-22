@@ -121,7 +121,8 @@ public interface MetaAdApiControllerDocs {
             @ApiResponse(responseCode = "200", description = "예산 변경 성공"),
             @ApiResponse(responseCode = "400", description = "COMMON_400_2 : 요청 본문 검증 실패(일일/총 예산 중 정확히 하나만 입력), "
                     + "ADAPI_400_2 : 메타 광고그룹이 아닌 대상에 대한 요청, ADAPI_400_6 : 예산이 Meta 최소 기준 미만, "
-                    + "ADAPI_400_7 : 광고그룹(AdSet)에 총 예산 변경 요청, ADAPI_400_8 : 기존과 다른 예산 유형으로 변경 요청"),
+                    + "ADAPI_400_7 : 광고그룹(AdSet)에 총 예산 변경 요청, ADAPI_400_8 : 기존과 다른 예산 유형으로 변경 요청, "
+            + "ADAPI_400_9 : 기존 예산 값과 같은 값으로 변경 불가"),
             @ApiResponse(responseCode = "401", description = "ADAPI_401_1 : 연동 인증 정보(토큰)가 유효하지 않거나 만료됨"),
             @ApiResponse(responseCode = "403", description = "ADAPI_403_2 : 해당 광고 계정을 연동한 사용자가 아닌 회원의 요청"),
             @ApiResponse(responseCode = "404", description = "AD_404_2 : 존재하지 않는 광고그룹 ID"),
