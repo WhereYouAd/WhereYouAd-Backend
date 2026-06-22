@@ -63,6 +63,11 @@ public class AdGroup extends BaseEntity {
         }
     }
 
+//    public void updateBudget(Long budget, Long bidAmount) {
+//        if (budget != null) this.budget = budget;
+//        if (bidAmount != null) this.bidAmount = bidAmount;
+//    }
+
     public void updateBudget(Long budget, Long bidAmount) {
         if (this.adCampaign.getProvider() == Provider.NAVER) {
             if (budget != null) this.budget = budget;

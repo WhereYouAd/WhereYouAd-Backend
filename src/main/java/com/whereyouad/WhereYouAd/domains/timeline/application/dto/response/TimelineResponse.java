@@ -1,5 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.timeline.application.dto.response;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetFieldType;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.MetricType;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.PerformanceStatus;
 
@@ -39,7 +41,17 @@ public class TimelineResponse {
             List<MetricType> metrics,
             String summary,
             List<DailyMetricDTO> dailyTrend,
-            List<PlatformContributionDTO> platformContributions
+            List<PlatformContributionDTO> platformContributions,
+            List<BudgetHistoryItem> budgetHistories
+    ) {}
+
+    public record BudgetHistoryItem(
+            BudgetFieldType fieldType,
+            String targetName,
+            Long previousValue,
+            Long newValue,
+            LocalDateTime changedAt,
+            Provider provider
     ) {}
 
     public record DailyMetricDTO(
