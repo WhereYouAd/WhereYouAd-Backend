@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.meta;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.AdvertisementRequest;
+import com.whereyouad.WhereYouAd.domains.advertisement.application.mapper.AdvertisementConverter;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
@@ -8,6 +9,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCamp
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.BudgetHistoryRepository;
 import com.whereyouad.WhereYouAd.domains.platform.domain.constant.Currency;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
@@ -37,6 +39,7 @@ public class MetaBudgetService {
     private final AdCampaignRepository adCampaignRepository;
     private final AdGroupRepository adGroupRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
+    private final BudgetHistoryRepository budgetHistoryRepository;
     private final AdApiAuthUtil adApiAuthUtil;
     private final MetaClient metaClient;
 
@@ -57,6 +60,13 @@ public class MetaBudgetService {
     {
         AdCampaign campaign = adCampaignRepository.findById(campaignId)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCAMPAIGN_NOT_FOUND));
+
+
+        // 캠페인의 이전 예산 값 추출, 동일 값 검증
+        Long previousBudget = campaign.getBudget();
+        if (previousBudget.equals(request.amount())) {
+            throw new AdApiHandler(AdApiErrorCode.SAME_BUDGET_AMOUNT);
+        }
 
         // Meta 의 광고가 맞는지 검증
         if (campaign.getProvider() != Provider.META) {
@@ -82,6 +92,11 @@ public class MetaBudgetService {
         // 엔티티의 예산 값 수정
         campaign.updateBudget(request.amount());
 
+        // 캠페인 예산 변경 이력 추가 (BudgetHistory 엔티티 추가)
+        budgetHistoryRepository.save(AdvertisementConverter.toCampaignBudgetHistory(
+                campaign, previousBudget, request.amount(), userId, Provider.META
+        ));
+
         return new MetaResponse.BudgetUpdateResponse(
                 campaign.getId(), campaign.getExternalCampaignId(), request.amount(), request.budgetType()
         );
@@ -100,6 +115,12 @@ public class MetaBudgetService {
 
         AdGroup adGroup = adGroupRepository.findById(adGroupId)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADGROUP_NOT_FOUND));
+
+        // 이전 광고 그룹 예산 값 추출, 동일값 검증
+        Long previousBudget = adGroup.getBudget();
+        if (previousBudget.equals(request.dailyBudget())) {
+            throw new AdApiHandler(AdApiErrorCode.SAME_BUDGET_AMOUNT);
+        }
 
         AdCampaign campaign = adGroup.getAdCampaign();
 
@@ -125,6 +146,11 @@ public class MetaBudgetService {
 
         // 엔티티의 예산 값 수정
         adGroup.updateBudget(request.dailyBudget(), null);
+
+        // 광고 그룹 예산 변경 이력 추가 (BudgetHistory 엔티티 추가)
+        budgetHistoryRepository.save(AdvertisementConverter.toAdGroupBudgetHistory(
+                adGroup, previousBudget, request.dailyBudget(), userId, Provider.META
+        ));
 
         return new MetaResponse.BudgetUpdateResponse(
                 adGroup.getId(), adGroup.getExternalGroupId(), request.dailyBudget(), request.budgetType()
