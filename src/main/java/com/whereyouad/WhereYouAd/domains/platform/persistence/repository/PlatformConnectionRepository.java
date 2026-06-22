@@ -24,9 +24,6 @@ public interface PlatformConnectionRepository extends JpaRepository<PlatformConn
     // 조직 ID와 플랫폼으로 등록된 연동 정보(Account/Connection) 목록 조회
     List<PlatformConnection> findByPlatformAccount_Organization_IdAndPlatformAccount_Provider(Long orgId, Provider provider);
 
-    // 사용자 ID로 등록된 연동 정보 목록 조회 (회원 탈퇴 시 정리용)
-    List<PlatformConnection> findByUser_Id(Long userId);
-
     // 사용자 ID와 플랫폼으로 등록된 연동 정보 목록 조회
     List<PlatformConnection> findByUser_IdAndPlatformAccount_Provider(Long userId, Provider provider);
 
@@ -43,4 +40,11 @@ public interface PlatformConnectionRepository extends JpaRepository<PlatformConn
             "JOIN FETCH c.platformAccount pa " +
             "WHERE c.user.id = :userId AND pa.organization.id = :orgId")
     List<PlatformConnection> findByUserIdAndOrgId(@Param("userId") Long userId, @Param("orgId") Long orgId);
+
+    // PlatformAccount 연동 해제 시 해당 계정에 연결된 모든 connection 일괄 삭제를 위한 List 조회
+    List<PlatformConnection> findAllByPlatformAccount_Id(Long platformAccountId);
+
+    // 회원 Hard Delete 시 해당 유저가 연동한 PlatformAccount id 목록 조회 (시스템 자동 연동 해제용)
+    @Query("SELECT DISTINCT c.platformAccount.id FROM PlatformConnection c WHERE c.user.id = :userId")
+    List<Long> findDistinctAccountIdsByUserId(@Param("userId") Long userId);
 }

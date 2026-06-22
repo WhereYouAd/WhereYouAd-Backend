@@ -52,4 +52,9 @@ public class PlatformAccount extends BaseEntity {
     @JoinColumn(name = "org_id")
     private Organization organization;
 
+    // 수동 연동 해제 요청 시 상태만 DISCONNECTED 로 변경 (실제 데이터 정리는 스케줄러가 수행)
+    public void softDelete() {
+        this.status = PlatformStatus.DISCONNECTED;
+    }
+
 }
