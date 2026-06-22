@@ -247,10 +247,11 @@ public class NaverAdApiService {
         Optional<AdGroup> adGroupOpt = adGroupRepository
                 .findByAdCampaign_PlatformAccountAndExternalGroupId(connection.getPlatformAccount(), adgroupId);
         adGroupOpt.ifPresent(adGroup -> {
-            if (request.dailyBudget() != null && request.dailyBudget().equals(adGroup.getBudget())) {
-                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_SAME_BUDGET_VALUE);
-            }
-            if (request.bidAmt() != null && request.bidAmt().equals(adGroup.getBidAmount())) {
+            boolean budgetUnchanged = request.dailyBudget() == null
+                    || request.dailyBudget().equals(adGroup.getBudget());
+            boolean bidAmtUnchanged = request.bidAmt() == null
+                    || request.bidAmt().equals(adGroup.getBidAmount());
+            if (budgetUnchanged && bidAmtUnchanged) {
                 throw new AdvertisementHandler(NaverAdErrorCode.NAVER_SAME_BUDGET_VALUE);
             }
         });
