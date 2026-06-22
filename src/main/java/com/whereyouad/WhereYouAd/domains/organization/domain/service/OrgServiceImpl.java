@@ -326,6 +326,26 @@ public class OrgServiceImpl implements OrgService {
         organization.softDelete();
     }
 
+    // 회원 탈퇴 흐름 전용 Soft Delete
+    // UserService.deleteUser 내부에서 본인 단독 소유 조직을 정리할 때 사용
+    // 호출 시점에 소유자 검증은 호출부(handleOrganizationsOwnedByUser)에서 이미 완료
+    @Override
+    public void removeOrganizationSoftForWithdrawal(Long orgId) {
+        Organization organization = orgRepository.findById(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 현재 워크스페이스가 삭제되는 조직인 멤버들의 currentOrgId를 null로 초기화
+        List<OrgMember> orgMembers = orgMemberRepository.findOrgMemberByOrg(organization);
+        for (OrgMember member : orgMembers) {
+            if (Objects.equals(member.getUser().getCurrentOrgId(), orgId)) {
+                member.getUser().setCurrentOrgId(null);
+            }
+        }
+
+        // 조직 status 만 DELETED 로 변경
+        organization.softDelete();
+    }
+
     // User Hard Delete 정리용 - 해당 User 가 owner 인 Soft Deleted Organization 들을 Hard Delete
     // (Soft Delete 시 'owner + 다른 멤버 존재' 케이스는 차단되므로, 여기서는 본인 1명만 속한 조직만 존재)
     @Override
