@@ -1,9 +1,12 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.application.mapper.AdvertisementConverter;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.BudgetHistoryRepository;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.exception.handler.OrgHandler;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
@@ -28,6 +31,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -40,6 +44,7 @@ public class NaverAdApiService {
     private final NaverClient naverClient;
     private final AdGroupRepository adGroupRepository;
     private final AdCampaignRepository adCampaignRepository;
+    private final BudgetHistoryRepository budgetHistoryRepository;
 
     // 캠페인 목록 조회
     @Transactional(readOnly = true)
@@ -191,6 +196,13 @@ public class NaverAdApiService {
                 throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BUDGET_RANGE);
             }
         }
+        Optional<AdCampaign> campaignOpt = adCampaignRepository
+                .findByPlatformAccountAndExternalCampaignId(connection.getPlatformAccount(), campaignId);
+        campaignOpt.ifPresent(campaign -> {
+            if (request.dailyBudget() != null && request.dailyBudget().equals(campaign.getBudget())) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_SAME_BUDGET_VALUE);
+            }
+        });
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/campaigns/" + campaignId));
@@ -198,9 +210,12 @@ public class NaverAdApiService {
                     new NaverDTO.UpdateCampaignBudgetBody(campaignId, request.useDailyBudget(), request.dailyBudget());
             NaverDTO.CampaignResponse result = naverClient.updateCampaignBudget(headers, campaignId, "budget", body);
 
-            adCampaignRepository
-                    .findByPlatformAccountAndExternalCampaignId(connection.getPlatformAccount(), campaignId)
-                    .ifPresent(campaign -> campaign.updateBudget(request.dailyBudget()));
+            campaignOpt.ifPresent(campaign -> {
+                Long previousBudget = campaign.getBudget();
+                campaign.updateBudget(request.dailyBudget());
+                budgetHistoryRepository.save(AdvertisementConverter.toCampaignBudgetHistory(
+                        campaign, previousBudget, request.dailyBudget(), userId, Provider.NAVER));
+            });
 
             return result;
         } catch (Exception e) {
@@ -229,6 +244,17 @@ public class NaverAdApiService {
                 throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_BID_AMOUNT_RANGE);
             }
         }
+        Optional<AdGroup> adGroupOpt = adGroupRepository
+                .findByAdCampaign_PlatformAccountAndExternalGroupId(connection.getPlatformAccount(), adgroupId);
+        adGroupOpt.ifPresent(adGroup -> {
+            boolean budgetUnchanged = request.dailyBudget() == null
+                    || request.dailyBudget().equals(adGroup.getBudget());
+            boolean bidAmtUnchanged = request.bidAmt() == null
+                    || request.bidAmt().equals(adGroup.getBidAmount());
+            if (budgetUnchanged && bidAmtUnchanged) {
+                throw new AdvertisementHandler(NaverAdErrorCode.NAVER_SAME_BUDGET_VALUE);
+            }
+        });
         try {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("PUT", "/ncc/adgroups/" + adgroupId));
@@ -243,9 +269,19 @@ public class NaverAdApiService {
                         new NaverDTO.UpdateAdGroupBudgetBody(adgroupId, null, null, request.bidAmt()));
             }
 
-            adGroupRepository
-                    .findByAdCampaign_PlatformAccountAndExternalGroupId(connection.getPlatformAccount(), adgroupId)
-                    .ifPresent(adGroup -> adGroup.updateBudget(request.dailyBudget(), request.bidAmt()));
+            adGroupOpt.ifPresent(adGroup -> {
+                        if (request.dailyBudget() != null) {
+                            Long previousBudget = adGroup.getBudget();
+                            budgetHistoryRepository.save(AdvertisementConverter.toAdGroupBudgetHistory(
+                                    adGroup, previousBudget, request.dailyBudget(), userId, Provider.NAVER));
+                        }
+                        if (request.bidAmt() != null) {
+                            Long previousBidAmount = adGroup.getBidAmount();
+                            budgetHistoryRepository.save(AdvertisementConverter.toBidAmountHistory(
+                                    adGroup, previousBidAmount, request.bidAmt(), userId, Provider.NAVER));
+                        }
+                        adGroup.updateBudget(request.dailyBudget(), request.bidAmt());
+                    });
 
             return result;
         } catch (Exception e) {

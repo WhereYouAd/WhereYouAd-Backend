@@ -1,9 +1,11 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetFieldType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class DashboardResponse {
@@ -96,5 +98,20 @@ public class DashboardResponse {
             LocalDate endDate,
             DailyMetricFactResponse total,              // 기간 전체 합계 지표
             List<DailyMetricFactResponse> dailyMetrics  // 일자별 지표 리스트
+    ) {}
+
+    public record BudgetHistoryItem(
+            BudgetFieldType fieldType,
+            String targetName,
+            Long previousValue,
+            Long newValue,
+            LocalDateTime changedAt,
+            Provider provider
+    ) {}
+
+    public record BudgetHistoryListResponse(
+            LocalDate startDate,
+            LocalDate endDate,
+            List<BudgetHistoryItem> histories
     ) {}
 }

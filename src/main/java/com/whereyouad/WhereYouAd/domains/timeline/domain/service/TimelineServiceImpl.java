@@ -20,6 +20,8 @@ import com.whereyouad.WhereYouAd.domains.timeline.persistence.entity.Timeline;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.BudgetHistory;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.BudgetHistoryRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.repository.TimelineRepository;
 import lombok.AccessLevel;
@@ -46,6 +48,7 @@ public class TimelineServiceImpl implements TimelineService {
 
     private final TimelineRepository timelineRepository;
     private final MetricFactRepository metricFactRepository;
+    private final BudgetHistoryRepository budgetHistoryRepository;
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final TimelineUtil timelineUtil;
@@ -254,7 +257,15 @@ public class TimelineServiceImpl implements TimelineService {
         // 플랫폼별 기여도 반환
         List<TimelineResponse.PlatformContributionDTO> platformContributions = buildPlatformContributions(facts, timeline);
 
-        return TimelineConverter.toTimelineDetailDTO(timeline, metrics, dailyTrend, platformContributions);
+        // 타임라인 기간 내 예산 변경 이력 조회
+        List<BudgetHistory> histories = budgetHistoryRepository.findByOrgAndPeriod(
+                orgId,
+                timeline.getStartDate().atStartOfDay(),
+                timeline.getEndDate().plusDays(1).atStartOfDay()
+        );
+        List<TimelineResponse.BudgetHistoryItem> budgetHistories = TimelineConverter.toBudgetHistoryItems(histories);
+
+        return TimelineConverter.toTimelineDetailDTO(timeline, metrics, dailyTrend, platformContributions, budgetHistories);
     }
 
     @Override

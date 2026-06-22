@@ -20,4 +20,8 @@ public interface DashboardService {
     // 플랫폼 대시보드의 일자별 지표(MetricFact) 조회
     DashboardResponse.PlatformMetricFactSummaryResponse getPlatformMetricFacts(
             Long userId, Long orgId, String providerType, Integer days);
+
+    // 기간별 예산 변경 이력 조회
+    DashboardResponse.BudgetHistoryListResponse getBudgetHistory(
+            Long userId, Long orgId, LocalDate startDate, LocalDate endDate);
 }

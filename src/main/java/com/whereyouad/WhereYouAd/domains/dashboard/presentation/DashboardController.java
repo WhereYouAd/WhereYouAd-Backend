@@ -96,6 +96,16 @@ public class DashboardController implements DashboardControllerDocs {
         return ResponseEntity.ok(DataResponse.from(response));
     }
 
+    @GetMapping("/{orgId}/budget-history")
+    public ResponseEntity<DataResponse<DashboardResponse.BudgetHistoryListResponse>> getBudgetHistory(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(DataResponse.from(
+                dashboardService.getBudgetHistory(userId, orgId, startDate, endDate)));
+    }
+
     @GetMapping(value = "/{orgId}/clicks/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<SseEmitter> streamRealClicks(
             @AuthenticationPrincipal(expression = "userId") Long userId,
