@@ -70,10 +70,16 @@ public class MetaConverter {
         }
 
         Long budget = null;
-        if (src.dailyBudget() != null && !src.dailyBudget().isEmpty()) {
-            budget = parseLong(src.dailyBudget());
-            Currency currency = (platformAccount != null) ? platformAccount.getCurrency() : null;
-            budget = fromMetaBudget(budget, currency);
+
+        if (src.dailyBudget() != null && !src.dailyBudget().isBlank()) {
+            try {
+                long minorBudget = Long.parseLong(src.dailyBudget());
+                Currency currency = (platformAccount != null) ? platformAccount.getCurrency() : null;
+                budget = fromMetaBudget(minorBudget, currency);
+            } catch (NumberFormatException e) {
+                log.warn("[META] dailyBudget 파싱 실패 - value: {}", src.dailyBudget());
+                budget = null; // 실패값을 0이 아닌 null 로 저장
+            }
         }
 
         return AdGroup.builder()
