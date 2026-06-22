@@ -24,6 +24,9 @@ public interface OrgService {
 
     void removeOrganizationSoft(Long userId, Long orgId);
 
+    // 회원 탈퇴 전용 Soft Delete - 플랫폼 연동 검증 생략 (연동 해제는 UserDeleteScheduler 가 Hard Delete 시점에 처리)
+    void removeOrganizationSoftForWithdrawal(Long orgId);
+
     // User Hard Delete 정리용 - 특정 User 가 owner 인 Soft Deleted Organization 들을 관련 엔티티와 함께 Hard Delete
     void removeOrganizationsOwnedBySoftDeletedUser(Long userId);
 
