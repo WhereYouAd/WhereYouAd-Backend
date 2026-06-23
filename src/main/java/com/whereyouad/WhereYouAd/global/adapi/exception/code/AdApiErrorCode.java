@@ -15,13 +15,6 @@ public enum AdApiErrorCode implements BaseErrorCode {
     TOKEN_EXCHANGE_FAILED(HttpStatus.BAD_REQUEST, "ADAPI_400_3", "액세스 토큰을 발급받거나 장기 토큰으로 연장하는 데 실패했습니다. 인증이 만료되었거나 유효하지 않습니다."),
     AD_ACCOUNT_FETCH_FAILED(HttpStatus.BAD_REQUEST, "ADAPI_400_4", "광고 플랫폼에서 연동할 수 있는 광고 계정 목록을 조회하는 데 실패했습니다."),
     NO_LINKABLE_AD_ACCOUNT(HttpStatus.BAD_REQUEST, "ADAPI_400_5", "연동할 수 있는 광고 계정이 존재하지 않습니다. 플랫폼 관리자 센터에서 광고 계정을 먼저 생성해주세요."),
-    INVALID_BUDGET_AMOUNT(HttpStatus.BAD_REQUEST, "ADAPI_400_6", "예산이 Meta 최소 기준 미만입니다. 통화·최적화 방식에 따라 최소 예산이 다를 수 있습니다."),
-    BUDGET_TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "ADAPI_400_7", "Meta 의 광고그룹(AdSet)은 일일 예산만 변경할 수 있습니다. 총 예산은 캠페인에서 설정해주세요."),
-    INVALID_BUDGET_TYPE(HttpStatus.BAD_REQUEST, "ADAPI_400_8", "현재 설정된 예산 유형과 다른 유형으로 변경할 수 없습니다. 기존에 설정된 예산 유형(일일 예산/총 예산)에 맞춰 요청해주세요."),
-    SAME_BUDGET_AMOUNT(HttpStatus.BAD_REQUEST, "ADAPI_400_9", "예산 값을 이전 예산과 동일한 값으로 수정할 수 없습니다."),
-
-    // 403
-    NOT_ACCOUNT_OWNER(HttpStatus.FORBIDDEN, "ADAPI_403_2", "해당 광고 계정을 연동한 사용자만 예산을 변경할 수 있습니다."),
 
     // 409
     SYNC_IN_PROGRESS(HttpStatus.CONFLICT, "ADAPI_409_1", "해당 조직의 광고 데이터 동기화가 이미 진행 중입니다. 잠시 후 다시 시도해주세요."),

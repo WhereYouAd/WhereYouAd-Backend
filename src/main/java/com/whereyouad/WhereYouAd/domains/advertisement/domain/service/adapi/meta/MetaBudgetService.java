@@ -5,6 +5,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.application.mapper.Advert
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
+import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.MetaAdErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
@@ -66,7 +67,7 @@ public class MetaBudgetService {
         // 캠페인의 이전 예산 값 추출, 동일 값 검증
         Long previousBudget = campaign.getBudget();
         if (Objects.equals(previousBudget, request.amount())) {
-            throw new AdApiHandler(AdApiErrorCode.SAME_BUDGET_AMOUNT);
+            throw new AdApiHandler(MetaAdErrorCode.SAME_BUDGET_AMOUNT);
         }
 
         // Meta 의 광고가 맞는지 검증
@@ -111,7 +112,7 @@ public class MetaBudgetService {
 
         // Meta 의 광고 그룹(AdSet) 은 dailyBudget 만 변경 가능 -> lifetimeBudget 에 값 존재 시 오류
         if (request.lifetimeBudget() != null) {
-            throw new AdApiHandler(AdApiErrorCode.BUDGET_TYPE_NOT_SUPPORTED);
+            throw new AdApiHandler(MetaAdErrorCode.BUDGET_TYPE_NOT_SUPPORTED);
         }
 
         AdGroup adGroup = adGroupRepository.findById(adGroupId)
@@ -120,7 +121,7 @@ public class MetaBudgetService {
         // 이전 광고 그룹 예산 값 추출, 동일값 검증
         Long previousBudget = adGroup.getBudget();
         if (Objects.equals(previousBudget, request.dailyBudget())) {
-            throw new AdApiHandler(AdApiErrorCode.SAME_BUDGET_AMOUNT);
+            throw new AdApiHandler(MetaAdErrorCode.SAME_BUDGET_AMOUNT);
         }
 
         AdCampaign campaign = adGroup.getAdCampaign();
@@ -173,12 +174,12 @@ public class MetaBudgetService {
 
             // 변경하려는 예산 금액이 Meta 의 최소 기준치 미만일 시 오류
             if (isBudgetTooLowError(e)) {
-                throw new AdApiHandler(AdApiErrorCode.INVALID_BUDGET_AMOUNT);
+                throw new AdApiHandler(MetaAdErrorCode.INVALID_BUDGET_AMOUNT);
             }
 
             // 캠페인에 설정된 예산 유형(일일/총)과 다른 유형으로 변경 요청 시 오류
             if (isBudgetTypeMismatchError(e)) {
-                throw new AdApiHandler(AdApiErrorCode.INVALID_BUDGET_TYPE);
+                throw new AdApiHandler(MetaAdErrorCode.INVALID_BUDGET_TYPE);
             }
 
             // 그 외 오류
@@ -192,7 +193,7 @@ public class MetaBudgetService {
         PlatformConnection connection = platformConnectionRepository
                 .findByUserIdAndPlatformAccountId(userId, account.getId())
                 .filter(c -> c.getRevokedAt() == null)
-                .orElseThrow(() -> new AdApiHandler(AdApiErrorCode.NOT_ACCOUNT_OWNER));
+                .orElseThrow(() -> new AdApiHandler(MetaAdErrorCode.NOT_ACCOUNT_OWNER));
 
         if (connection.getTokenExpireAt() == null || connection.getTokenExpireAt().isBefore(LocalDateTime.now())) {
             throw new AdApiHandler(AdApiErrorCode.INVALID_API_CREDENTIALS);
@@ -212,7 +213,7 @@ public class MetaBudgetService {
     private void validateMinBudget(Long budget, Currency currency) {
         long min = MIN_BUDGET_BY_CURRENCY.getOrDefault(currency, DEFAULT_MIN_BUDGET);
         if (budget == null || budget < min) {
-            throw new AdApiHandler(AdApiErrorCode.INVALID_BUDGET_AMOUNT);
+            throw new AdApiHandler(MetaAdErrorCode.INVALID_BUDGET_AMOUNT);
         }
     }
 
