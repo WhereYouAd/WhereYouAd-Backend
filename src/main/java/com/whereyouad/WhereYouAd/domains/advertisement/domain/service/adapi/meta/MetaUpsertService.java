@@ -83,7 +83,7 @@ public class MetaUpsertService {
                                 newData.getName(),
                                 newData.getStatus(),
                                 newData.getTargetingInfo());
-                        existing.updateBudget(newData.getBudget(), null);
+                        existing.replaceBudget(newData.getBudget());
                         return adGroupRepository.save(existing);
                     })
                     .orElseGet(() -> adGroupRepository.save(newData));

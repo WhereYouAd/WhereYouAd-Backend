@@ -146,7 +146,7 @@ public class MetaBudgetService {
         callMetaBudgetUpdate(adGroup.getExternalGroupId(), token, dailyMinor, null);
 
         // 엔티티의 예산 값 수정
-        adGroup.updateBudget(request.dailyBudget(), null);
+        adGroup.replaceBudget(request.dailyBudget());
 
         // 광고 그룹 예산 변경 이력 추가 (BudgetHistory 엔티티 추가)
         budgetHistoryRepository.save(AdvertisementConverter.toAdGroupBudgetHistory(

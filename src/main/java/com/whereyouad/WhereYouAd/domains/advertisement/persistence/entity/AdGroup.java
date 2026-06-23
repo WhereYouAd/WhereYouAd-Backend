@@ -63,20 +63,13 @@ public class AdGroup extends BaseEntity {
         }
     }
 
-//    public void updateBudget(Long budget, Long bidAmount) {
-//        if (budget != null) this.budget = budget;
-//        if (bidAmount != null) this.bidAmount = bidAmount;
-//    }
-
     public void updateBudget(Long budget, Long bidAmount) {
-        if (this.adCampaign.getProvider() == Provider.NAVER) {
-            if (budget != null) this.budget = budget;
-            if (bidAmount != null) this.bidAmount = bidAmount;
-        }
+        if (budget != null) this.budget = budget;
+        if (bidAmount != null) this.bidAmount = bidAmount;
+    }
 
-        if (this.adCampaign.getProvider() == Provider.META) {
-            this.budget = budget;
-            if (bidAmount != null) this.bidAmount = bidAmount;
-        }
+    // Meta 에서 budget 값을 null 가능하게 업데이트하는 메서드
+    public void replaceBudget(Long budget) {
+        this.budget = budget;
     }
 }
