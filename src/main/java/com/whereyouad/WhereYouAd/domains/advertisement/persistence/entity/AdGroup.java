@@ -1,6 +1,5 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
