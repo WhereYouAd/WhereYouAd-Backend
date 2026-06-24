@@ -2,8 +2,10 @@ package com.whereyouad.WhereYouAd.domains.notification.persistence.entity;
 
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
+import io.netty.util.internal.StringUtil;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.StringUtils;
 
 @Entity
 @Table(name = "org_notification_setting")
@@ -27,4 +29,19 @@ public class OrgNotificationSetting extends BaseEntity {
 
     @Column(name = "discord_webhook_url", length = 512)
     private String discordWebhookUrl;
+
+    // null 값 허용하여 연결 해제도 지원 (null 값 들어올 시 연동 해제로 간주)
+    public void updateChannel(String slackWebhookUrl, String discordWebhookUrl) {
+        this.slackWebhookUrl = slackWebhookUrl;
+        this.discordWebhookUrl = discordWebhookUrl;
+    }
+
+    // 해당 조직에 슬랙 또는 디스코드 웹훅이 연결되어 있는지 확인용 메서드
+    public boolean hasSlack() {
+        return StringUtils.hasText(slackWebhookUrl);
+    }
+
+    public boolean hasDiscord() {
+        return StringUtils.hasText(discordWebhookUrl);
+    }
 }
