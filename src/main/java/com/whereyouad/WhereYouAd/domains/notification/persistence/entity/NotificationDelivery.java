@@ -2,7 +2,7 @@ package com.whereyouad.WhereYouAd.domains.notification.persistence.entity;
 
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryChannel;
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryStatus;
-import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,8 +48,8 @@ public class NotificationDelivery extends BaseEntity {
     private Notification notification;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "membership_id", nullable = false)
+    private OrgMember orgMember;
 
     public void markSuccess() {
         this.status = DeliveryStatus.SUCCESS;
