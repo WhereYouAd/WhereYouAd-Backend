@@ -2,7 +2,6 @@ package com.whereyouad.WhereYouAd.domains.notification.persistence.entity;
 
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
-import io.netty.util.internal.StringUtil;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.util.StringUtils;
