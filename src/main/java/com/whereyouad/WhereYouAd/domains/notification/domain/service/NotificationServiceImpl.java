@@ -28,6 +28,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final SlackWebhookClient slackClient;
     private final AESUtil aesUtil;
 
+    // 디스코드 / 슬랙 알림 전송 메서드
+    // 조직 내에 웹훅 URL 이 설정되어 있는 경우 일괄 전송
     @Override
     @Transactional(readOnly = true)
     public void sendApiAlarmToOrg(Long orgId, String title, String message) {
