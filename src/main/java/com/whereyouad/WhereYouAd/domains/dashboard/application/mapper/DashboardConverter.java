@@ -1,13 +1,13 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.BudgetHistory;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-
-import java.math.BigDecimal;
 
 public class DashboardConverter {
 
@@ -51,6 +51,22 @@ public class DashboardConverter {
                 .mapToLong(DashboardResponse.OngoingPlatformAdCount::count)
                 .sum();
         return new DashboardResponse.OngoingPlatformAdCountResponse(startDate, endDate, totalCount, providerCount);
+    }
+
+    public static List<DashboardResponse.BudgetHistoryItem> toBudgetHistoryItems(List<BudgetHistory> histories) {
+        return histories.stream().map(bh -> {
+            String targetName = bh.getAdCampaign() != null
+                    ? bh.getAdCampaign().getName()
+                    : bh.getAdGroup().getName();
+            return new DashboardResponse.BudgetHistoryItem(
+                    bh.getFieldType(),
+                    targetName,
+                    bh.getPreviousValue(),
+                    bh.getNewValue(),
+                    bh.getCreatedAt(),
+                    bh.getProvider()
+            );
+        }).toList();
     }
 
     //Data -> DTO

@@ -116,6 +116,23 @@ public interface DashboardControllerDocs {
     );
 
     @Operation(
+            summary = "대시보드 - 예산 변경 이력 조회 API",
+            description = "조직 내 캠페인 및 광고그룹의 예산/입찰가 변경 이력을 기간별로 조회합니다.\n\n" +
+                          "fieldType: CAMPAIGN_BUDGET(캠페인 예산), AD_GROUP_BUDGET(광고그룹 예산), BID_AMOUNT(입찰가)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "403", description = "해당 조직에 대한 접근 권한이 없는 경우"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 조직")
+    })
+    ResponseEntity<DataResponse<DashboardResponse.BudgetHistoryListResponse>> getBudgetHistory(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @Parameter(description = "조직 ID", required = true, example = "1") @PathVariable Long orgId,
+            @Parameter(description = "조회 시작일 (YYYY-MM-DD)", required = true, example = "2025-01-01") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "조회 종료일 (YYYY-MM-DD)", required = true, example = "2025-12-31") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    );
+
+    @Operation(
             summary = "대시보드 - 실시간 클릭수 스트림 출력 API",
             description = "해당 조직의 최근 60분간 실시간 클릭수 추이와 이상 징후(봇) 감지 여부를 스트림으로 보내주는 API입니다.\n\n" +
                     "파라미터로 `mode`를 받아 `dummy`이면 서버 내에서 생성하는 가상 트래픽을, `real`일 경우 실제 수집된 클릭 데이터를 기반으로 반환합니다.\n\n" +

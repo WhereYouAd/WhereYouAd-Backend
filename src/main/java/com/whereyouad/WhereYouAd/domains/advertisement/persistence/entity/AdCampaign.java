@@ -94,4 +94,8 @@ public class AdCampaign extends BaseEntity {
             this.description = description;
         }
     }
+
+    public void updateBudget(Long budget) {
+        this.budget = budget;
+    }
 }

@@ -1,17 +1,18 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.AdvertisementResponse;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetFieldType;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
-
-import java.util.List;
-import java.time.LocalDateTime;
-
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.BudgetHistory;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 public class AdvertisementConverter {
 
@@ -62,6 +63,39 @@ public class AdvertisementConverter {
                 .project(project)
                 .conversions(null)
                 .revenue(null)
+                .build();
+    }
+
+    public static BudgetHistory toCampaignBudgetHistory(AdCampaign campaign, Long previousValue, Long newValue, Long changedBy, Provider provider) {
+        return BudgetHistory.builder()
+                .adCampaign(campaign)
+                .fieldType(BudgetFieldType.CAMPAIGN_BUDGET)
+                .previousValue(previousValue)
+                .newValue(newValue)
+                .changedBy(changedBy)
+                .provider(provider)
+                .build();
+    }
+
+    public static BudgetHistory toAdGroupBudgetHistory(AdGroup adGroup, Long previousValue, Long newValue, Long changedBy, Provider provider) {
+        return BudgetHistory.builder()
+                .adGroup(adGroup)
+                .fieldType(BudgetFieldType.AD_GROUP_BUDGET)
+                .previousValue(previousValue)
+                .newValue(newValue)
+                .changedBy(changedBy)
+                .provider(provider)
+                .build();
+    }
+
+    public static BudgetHistory toBidAmountHistory(AdGroup adGroup, Long previousValue, Long newValue, Long changedBy, Provider provider) {
+        return BudgetHistory.builder()
+                .adGroup(adGroup)
+                .fieldType(BudgetFieldType.BID_AMOUNT)
+                .previousValue(previousValue)
+                .newValue(newValue)
+                .changedBy(changedBy)
+                .provider(provider)
                 .build();
     }
 }

@@ -60,6 +60,8 @@ public class NaverConverter {
                 .targetingInfo(extractTargetingInfo(keywords))
                 .status(mapToDomainStatus(dto.status()))
                 .adCampaign(campaign)
+                .budget(dto.useDailyBudget() != null && dto.useDailyBudget() ? dto.dailyBudget() : null)
+                .bidAmount(dto.bidAmt())
                 .build();
     }
 
@@ -69,6 +71,10 @@ public class NaverConverter {
                 dto.name(),
                 mapToDomainStatus(dto.status()),
                 extractTargetingInfo(keywords)
+        );
+        entity.updateBudget(
+                dto.useDailyBudget() != null && dto.useDailyBudget() ? dto.dailyBudget() : null,
+                dto.bidAmt()
         );
     }
 
