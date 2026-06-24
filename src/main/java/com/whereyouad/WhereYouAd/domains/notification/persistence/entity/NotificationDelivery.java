@@ -26,9 +26,10 @@ public class NotificationDelivery extends BaseEntity {
     @Column(name = "channel", nullable = false, length = 20)
     private DeliveryChannel channel;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 10)
-    private DeliveryStatus status;
+    private DeliveryStatus status = DeliveryStatus.PENDING;
 
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
