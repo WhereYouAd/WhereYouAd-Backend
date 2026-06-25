@@ -103,7 +103,7 @@ public class MetaBudgetService {
         );
     }
 
-    //  광고그룹 예산 변경 (AdSet은 daily_budget만 존재 → DAILY 고정)
+    //  광고그룹 예산 변경 (수정 -> dailyBudget, lifetimeBudget 모두 가능)
     @Transactional
     public MetaResponse.BudgetUpdateResponse updateAdGroupBudget(
             Long userId, Long adGroupId, AdvertisementRequest.MetaBudgetUpdateRequest request)
@@ -120,7 +120,7 @@ public class MetaBudgetService {
 
         // 이전 광고 그룹 예산 값 추출, 동일값 검증
         Long previousBudget = adGroup.getBudget();
-        if (Objects.equals(previousBudget, request.dailyBudget())) {
+        if (Objects.equals(previousBudget, request.amount())) {
             throw new AdApiHandler(MetaAdErrorCode.SAME_BUDGET_AMOUNT);
         }
 
@@ -128,27 +128,28 @@ public class MetaBudgetService {
         Currency currency = account.getCurrency();
 
         // 광고 계정에 설정된 통화 단위(원or달러) 에 맞춰 최소 금액 이상으로 요청한게 맞는지 검증
-        validateMinBudget(request.dailyBudget(), currency);
+        validateMinBudget(request.amount(), currency);
 
         // 사용자 토큰 추출 & 검증
         String token = resolveOwnerAccessToken(userId, account);
 
         // 예산 수정 요청 값 (dailyBudget) 을 Meta 에서 사용하는 통화 단위로 변환
         Long dailyMinor = MetaConverter.toMetaBudget(request.dailyBudget(), currency);
+        Long lifetimeMinor = MetaConverter.toMetaBudget(request.lifetimeBudget(), currency);
 
         // Meta 광고 캠페인 예산 수정 API 요청
-        callMetaBudgetUpdate(adGroup.getExternalGroupId(), token, dailyMinor, null);
+        callMetaBudgetUpdate(adGroup.getExternalGroupId(), token, dailyMinor, lifetimeMinor);
 
         // 엔티티의 예산 값 수정
-        adGroup.replaceBudget(request.dailyBudget());
+        adGroup.replaceBudget(request.amount());
 
         // 광고 그룹 예산 변경 이력 추가 (BudgetHistory 엔티티 추가)
         budgetHistoryRepository.save(AdvertisementConverter.toAdGroupBudgetHistory(
-                adGroup, previousBudget, request.dailyBudget(), userId, Provider.META
+                adGroup, previousBudget, request.amount(), userId, Provider.META
         ));
 
         return new MetaResponse.BudgetUpdateResponse(
-                adGroup.getId(), adGroup.getExternalGroupId(), request.dailyBudget(), request.budgetType()
+                adGroup.getId(), adGroup.getExternalGroupId(), request.amount(), request.budgetType()
         );
     }
 
