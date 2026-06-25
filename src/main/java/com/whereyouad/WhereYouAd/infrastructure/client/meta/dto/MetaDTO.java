@@ -66,6 +66,7 @@ public class MetaDTO {
             String name,
             String status,
             @JsonProperty("daily_budget") String dailyBudget,
+            @JsonProperty("lifetime_budget") String lifetimeBudget,
             @JsonProperty("targeting") Targeting targeting,
             @JsonProperty("billing_event") String billingEvent,
             @JsonProperty("optimization_goal") String optimizationGoal

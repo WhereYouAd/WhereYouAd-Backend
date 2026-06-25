@@ -60,6 +60,7 @@ public class MetaUpsertService {
                                 newData.getEndDate(),
                                 newData.getDescription()
                         );
+                        existing.applyBudgetType(newData.getBudgetType());
                         return adCampaignRepository.save(existing);
                     })
                     .orElseGet(() -> adCampaignRepository.save(newData));
@@ -84,6 +85,7 @@ public class MetaUpsertService {
                                 newData.getStatus(),
                                 newData.getTargetingInfo());
                         existing.replaceBudget(newData.getBudget());
+                        existing.applyBudgetType(newData.getBudgetType());
                         return adGroupRepository.save(existing);
                     })
                     .orElseGet(() -> adGroupRepository.save(newData));
