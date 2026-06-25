@@ -63,16 +63,15 @@ public class MetaBudgetService {
         AdCampaign campaign = adCampaignRepository.findById(campaignId)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCAMPAIGN_NOT_FOUND));
 
+        // Meta 의 광고가 맞는지 검증
+        if (campaign.getProvider() != Provider.META) {
+            throw new AdApiHandler(AdApiErrorCode.INVALID_PROVIDER_VALUE);
+        }
 
         // 캠페인의 이전 예산 값 추출, 동일 값 검증
         Long previousBudget = campaign.getBudget();
         if (Objects.equals(previousBudget, request.amount())) {
             throw new AdApiHandler(MetaAdErrorCode.SAME_BUDGET_AMOUNT);
-        }
-
-        // Meta 의 광고가 맞는지 검증
-        if (campaign.getProvider() != Provider.META) {
-            throw new AdApiHandler(AdApiErrorCode.INVALID_PROVIDER_VALUE);
         }
 
         PlatformAccount account = campaign.getPlatformAccount();
@@ -109,26 +108,20 @@ public class MetaBudgetService {
     public MetaResponse.BudgetUpdateResponse updateAdGroupBudget(
             Long userId, Long adGroupId, AdvertisementRequest.MetaBudgetUpdateRequest request)
     {
-
-        // Meta 의 광고 그룹(AdSet) 은 dailyBudget 만 변경 가능 -> lifetimeBudget 에 값 존재 시 오류
-        if (request.lifetimeBudget() != null) {
-            throw new AdApiHandler(MetaAdErrorCode.BUDGET_TYPE_NOT_SUPPORTED);
-        }
-
         AdGroup adGroup = adGroupRepository.findById(adGroupId)
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADGROUP_NOT_FOUND));
-
-        // 이전 광고 그룹 예산 값 추출, 동일값 검증
-        Long previousBudget = adGroup.getBudget();
-        if (Objects.equals(previousBudget, request.dailyBudget())) {
-            throw new AdApiHandler(MetaAdErrorCode.SAME_BUDGET_AMOUNT);
-        }
 
         AdCampaign campaign = adGroup.getAdCampaign();
 
         // Meta 의 광고가 맞는지 검증
         if (campaign.getProvider() != Provider.META) {
             throw new AdApiHandler(AdApiErrorCode.INVALID_PROVIDER_VALUE);
+        }
+
+        // 이전 광고 그룹 예산 값 추출, 동일값 검증
+        Long previousBudget = adGroup.getBudget();
+        if (Objects.equals(previousBudget, request.dailyBudget())) {
+            throw new AdApiHandler(MetaAdErrorCode.SAME_BUDGET_AMOUNT);
         }
 
         PlatformAccount account = campaign.getPlatformAccount();
