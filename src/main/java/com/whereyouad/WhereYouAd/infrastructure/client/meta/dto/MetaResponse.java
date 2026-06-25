@@ -1,5 +1,7 @@
 package com.whereyouad.WhereYouAd.infrastructure.client.meta.dto;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
+
 import java.util.List;
 
 public class MetaResponse {
@@ -20,6 +22,6 @@ public class MetaResponse {
             Long targetId,
             String externalId,
             Long updatedBudget,
-            String budgetType
+            BudgetType budgetType
     ) {}
 }

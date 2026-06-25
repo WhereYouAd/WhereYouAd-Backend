@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -42,8 +43,8 @@ public class AdvertisementRequest {
         }
 
         @JsonIgnore
-        public String budgetType() {
-            return lifetimeBudget != null ? "LIFETIME" : "DAILY";
+        public BudgetType budgetType() {
+            return lifetimeBudget != null ? BudgetType.TOTAL : BudgetType.DAILY;
         }
     }
 
