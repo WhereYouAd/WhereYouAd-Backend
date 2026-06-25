@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.met
 
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.AdvertisementRequest;
 import com.whereyouad.WhereYouAd.domains.advertisement.application.mapper.AdvertisementConverter;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
@@ -68,6 +69,17 @@ public class MetaBudgetService {
             throw new AdApiHandler(AdApiErrorCode.INVALID_PROVIDER_VALUE);
         }
 
+        // 캠페인에 자체 예산이 없으면 -> 캠페인 예산 변경 불가
+        if (campaign.getBudgetType() == null) {
+            throw new AdApiHandler(MetaAdErrorCode.BUDGET_NOT_ON_CAMPAIGN);
+        }
+
+        // 예산 유형 검증 -> 기존 dailyBudget / lifetimeBudget 유형에 맞는지 검증
+        BudgetType requestType = request.budgetType();
+        if (campaign.getBudgetType() != requestType) {
+            throw new AdApiHandler(MetaAdErrorCode.INVALID_BUDGET_TYPE);
+        }
+
         // 캠페인의 이전 예산 값 추출, 동일 값 검증
         Long previousBudget = campaign.getBudget();
         if (Objects.equals(previousBudget, request.amount())) {
@@ -116,6 +128,17 @@ public class MetaBudgetService {
         // Meta 의 광고가 맞는지 검증
         if (campaign.getProvider() != Provider.META) {
             throw new AdApiHandler(AdApiErrorCode.INVALID_PROVIDER_VALUE);
+        }
+
+        // 광고세트에 자체 예산이 없으면 -> 광고세트 예산 변경 불가
+        if (adGroup.getBudgetType() == null) {
+            throw new AdApiHandler(MetaAdErrorCode.BUDGET_NOT_ON_ADGROUP);
+        }
+
+        // 예산 유형 검증 -> 기존 dailyBudget / lifetimeBudget 유형에 맞는지 검증
+        BudgetType requestType = request.budgetType();
+        if (adGroup.getBudgetType() != requestType) {
+            throw new AdApiHandler(MetaAdErrorCode.INVALID_BUDGET_TYPE);
         }
 
         // 이전 광고 그룹 예산 값 추출, 동일값 검증

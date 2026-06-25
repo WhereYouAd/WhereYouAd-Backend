@@ -102,7 +102,8 @@ public interface MetaAdApiControllerDocs {
                     + "ADAPI_400_2 : 메타 캠페인이 아닌 대상에 대한 요청\n\n"
                     + "META_400_1 : 예산이 Meta 최소 기준 미만\n\n"
                     + "META_400_2 : 기존과 다른 예산 유형으로 변경 요청\n\n"
-                    + "META_400_3 : 기존 예산 값과 같은 값으로 변경 불가"),
+                    + "META_400_3 : 기존 예산 값과 같은 값으로 변경 불가"
+                    + "META_400_4 : 광고 세트에 예산 할당된 경우 (캠페인에 할당된 예산 없음)"),
             @ApiResponse(responseCode = "401", description = "ADAPI_401_1 : 연동 인증 정보(토큰)가 유효하지 않거나 만료됨"),
             @ApiResponse(responseCode = "403", description = "ADAPI_403_2 : 해당 광고 계정을 연동한 사용자가 아닌 회원의 요청"),
             @ApiResponse(responseCode = "404", description = "AD_404_1 : 존재하지 않는 캠페인 ID"),
@@ -127,7 +128,8 @@ public interface MetaAdApiControllerDocs {
                             + "ADAPI_400_2 : 메타 광고그룹이 아닌 대상에 대한 요청"
                             + "META_400_1 : 예산이 Meta 최소 기준 미만"
                             + "META_400_2 : 기존과 다른 예산 유형으로 변경 요청"
-                            + "META_400_3 : 기존 예산 값과 같은 값으로 변경 불가"),
+                            + "META_400_3 : 기존 예산 값과 같은 값으로 변경 불가"
+                            + "META_400_5 : 광고 캠페인에 예산 할당된 경우 (그룹에 할당된 예산 없음)"),
             @ApiResponse(responseCode = "401", description = "ADAPI_401_1 : 연동 인증 정보(토큰)가 유효하지 않거나 만료됨"),
             @ApiResponse(responseCode = "403", description = "ADAPI_403_1 : 해당 광고 계정을 연동한 사용자가 아닌 회원의 요청"),
             @ApiResponse(responseCode = "404", description = "AD_404_2 : 존재하지 않는 광고그룹 ID"),
