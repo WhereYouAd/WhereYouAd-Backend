@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -56,6 +57,7 @@ public class DummyClickProducer {
             Object[] adOrgPair = activeAds.get(random.nextInt(activeAds.size()));
             Long adContentId = (Long) adOrgPair[0];
             Long orgId = (Long) adOrgPair[1];
+            Provider provider = (Provider) adOrgPair[2];
 
             // 임의의 IP 주소, 기기 생성
             String ipAddress = "192.168.0." + (random.nextInt(50) + 1);
@@ -64,6 +66,7 @@ public class DummyClickProducer {
             ClickDto event = ClickDto.builder()
                     .adContentId(adContentId)
                     .orgId(orgId)
+                    .provider(provider)
                     .ipAddress(ipAddress)
                     .userAgent(userAgent)
                     .clickedAt(System.currentTimeMillis())
