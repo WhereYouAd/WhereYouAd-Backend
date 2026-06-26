@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -33,7 +34,7 @@ public class DummyClickProducer {
     public boolean toggle() {
         this.isRunning = !this.isRunning;
         if (this.isRunning) {
-            this.activeAds = adContentRepository.findAllAdOrgMappings();
+            this.activeAds = adContentRepository.findAllActiveAdOrgMappings(Status.ON_GOING);
             log.info("통합 대시보드 실시간 클릭수 더미데이터: 활성 상태인 광고를 모두 가져옵니다. {}개", activeAds.size());
         }
         log.info("Dummy Click Producer is now {}", isRunning ? "RUNNING" : "STOPPED");
