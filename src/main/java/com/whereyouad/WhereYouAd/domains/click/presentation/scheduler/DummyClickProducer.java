@@ -46,7 +46,13 @@ public class DummyClickProducer {
         if (!isRunning || activeAds.isEmpty()) {
             return;
         }
-        for (Object[] adOrgPair : activeAds) {
+        // 0.5초마다 최대 30개의 클릭만 발생시키도록 Limit 설정 (서버 부하 방지)
+        int limit = Math.min(activeAds.size(), 30);
+
+        // 30개에 대하여 반복하여 mock 클릭수 생성
+        for (int i = 0; i < limit; i++) {
+            // 전체 활성 광고 중 무작위로 하나를 선택
+            Object[] adOrgPair = activeAds.get(random.nextInt(activeAds.size()));
             Long adContentId = (Long) adOrgPair[0];
             Long orgId = (Long) adOrgPair[1];
 
@@ -67,6 +73,6 @@ public class DummyClickProducer {
             kafkaTemplate.send(TOPIC, String.valueOf(adContentId), event);
         }
 
-        log.info("Produced dummy clicks for {} active ads.", activeAds.size());
+        log.info("Produced dummy clicks for {} sampled ads.", limit);
     }
 }
