@@ -79,15 +79,13 @@ public class ClickServiceImpl implements ClickService {
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
         Long orgId = adContent.getAdGroup().getAdCampaign().getProject().getOrganization().getId();
-
-        // 추가 : 플랫폼(provider) 추출 — orgId와 동일한 연관관계 체인에서 꺼냄
         Provider provider = adContent.getAdGroup().getAdCampaign().getProvider();
 
         // 2. 클릭 이벤트 생성 후 Kafka로 발행
         ClickDto clickDto = ClickDto.builder()
                 .adContentId(adContent.getId())
                 .orgId(orgId)
-                .provider(provider)        // 추가
+                .provider(provider)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .clickedAt(System.currentTimeMillis())
