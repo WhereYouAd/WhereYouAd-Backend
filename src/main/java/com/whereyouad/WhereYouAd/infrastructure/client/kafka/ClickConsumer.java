@@ -52,6 +52,12 @@ public class ClickConsumer {
             log.warn("orgId 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
         }
 
+        // 플랫폼 단위 통합 집계 추가
+        if (event.getProvider() != null) {
+            String providerClickKey = String.format("click:%s:provider:%s:%s", mode, event.getProvider().name(), currentMinute);
+            redisUtil.incrementDataExpire(providerClickKey, REDIS_TTL_SECONDS);
+        }
+
         log.info("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
                 clickKey, event.getUserAgent(), event.getIpAddress(), currentClickCount);
     }
