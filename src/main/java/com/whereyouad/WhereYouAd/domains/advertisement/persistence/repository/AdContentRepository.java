@@ -89,8 +89,8 @@ public interface AdContentRepository extends JpaRepository<AdContent, Long> {
 
         Optional<AdContent> findByAdGroup_AdCampaign_PlatformAccountAndExternalAdId(PlatformAccount platformAccount, String externalAdId);
 
-        // 활성 상태인 모든 광고와 조직 id를 조회
-        @Query("SELECT ac.id, o.id FROM AdContent ac " +
+        // 활성 상태인 모든 광고와 조직 id, 플랫폼(Provider)을 조회
+        @Query("SELECT ac.id, o.id, c.provider FROM AdContent ac " +
                "JOIN ac.adGroup ag " +
                "JOIN ag.adCampaign c " +
                "JOIN c.project p " +
