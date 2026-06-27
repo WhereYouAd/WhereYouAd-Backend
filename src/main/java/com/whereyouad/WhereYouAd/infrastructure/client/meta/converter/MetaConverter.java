@@ -240,7 +240,7 @@ public class MetaConverter {
     // AdSet 예산(문자열, Meta 최소 단위) → 로컬 budget 단위 변환. 파싱 실패 시 null
     private static Long parseMinorBudget(String raw, Currency currency) {
         try {
-            long minorBudget = Long.parseLong(raw);
+            long minorBudget = Long.parseLong(raw.trim());
             return fromMetaBudget(minorBudget, currency);
         } catch (NumberFormatException e) {
             log.warn("[META] 예산 파싱 실패 - value: {}", raw);
@@ -254,10 +254,16 @@ public class MetaConverter {
     // lifetime/daily 중 설정된 예산을 로컬 통화 단위 금액 + 유형으로 변환 (Campaign·AdSet 공통)
     private static BudgetInfo resolveBudget(String lifetimeBudget, String dailyBudget, Currency currency) {
         if (isActiveBudget(lifetimeBudget)) {
-            return new BudgetInfo(parseMinorBudget(lifetimeBudget, currency), BudgetType.TOTAL);
+            Long amount = parseMinorBudget(lifetimeBudget, currency);
+            if (amount != null) {
+                return new BudgetInfo(amount, BudgetType.TOTAL);
+            }
         }
         if (isActiveBudget(dailyBudget)) {
-            return new BudgetInfo(parseMinorBudget(dailyBudget, currency), BudgetType.DAILY);
+            Long amount = parseMinorBudget(dailyBudget, currency);
+            if (amount != null) {
+                return new BudgetInfo(amount, BudgetType.DAILY);
+            }
         }
         return new BudgetInfo(null, null);
     }
