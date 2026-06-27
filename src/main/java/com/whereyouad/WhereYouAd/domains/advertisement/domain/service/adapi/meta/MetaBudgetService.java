@@ -239,7 +239,7 @@ public class MetaBudgetService {
         String body = e.contentUTF8();
         if (body == null) return false;
         String lower = body.toLowerCase();
-        return body.contains("1487079") || lower.contains("minimum") || lower.contains("budget is too low");
+        return body.contains("1487079") || body.contains("1885272") || lower.contains("minimum") || lower.contains("budget is too low");
     }
 
     // 일일 예산 캠페인(dailyBudget)에 총 예산(lifetimeBudget) 또는 그 반대로 요청을 보내는 등
