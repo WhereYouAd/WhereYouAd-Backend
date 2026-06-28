@@ -46,26 +46,19 @@ public class ClickConsumer {
 
         // 조직 단위 통합 집계
         if (event.getOrgId() != null) {
+            // 통합 대시보드용 - 조직 단위 집계
             String orgClickKey = String.format("click:%s:org:%s:%s", mode, event.getOrgId(), currentMinute);
             redisUtil.incrementDataExpire(orgClickKey, REDIS_TTL_SECONDS);
 
-            // 플랫폼(provider) 차원 집계 추가
-            // click:{mode}:org:{orgId}:provider:{PROVIDER}:{minute}
+            // 플랫폼별 대시보드용 - provider 단위 통합 집계 추가
             if (event.getProvider() != null) {
-                String providerClickKey = String.format("click:%s:org:%s:provider:%s:%s",
-                        mode, event.getOrgId(), event.getProvider().name(), currentMinute);
+                String providerClickKey = String.format("click:%s:org:%s:provider:%s:%s", mode, event.getOrgId(), event.getProvider().name(), currentMinute);
                 redisUtil.incrementDataExpire(providerClickKey, REDIS_TTL_SECONDS);
-            } else { // provider 누락 이벤트(구버전 메시지 등) 로그 처리
+            } else { // provider null 이벤트 로그 처리
                 log.warn("provider 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
             }
-        } else { //orgId 가 null 인 이벤트 들어올 시 로그 처리
+        } else { //orgId null 이벤트 로그 처리
             log.warn("orgId 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
-        }
-
-        // 플랫폼 단위 통합 집계 추가
-        if (event.getProvider() != null) {
-            String providerClickKey = String.format("click:%s:provider:%s:%s", mode, event.getProvider().name(), currentMinute);
-            redisUtil.incrementDataExpire(providerClickKey, REDIS_TTL_SECONDS);
         }
 
         log.info("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
