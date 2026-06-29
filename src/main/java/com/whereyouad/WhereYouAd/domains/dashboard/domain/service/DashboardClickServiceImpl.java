@@ -147,7 +147,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
                 detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
                 redisUtil.deleteData(suspectAlertKey);
             } catch (JsonProcessingException e) {
-                log.error("이상 징후 JSON 파싱 실패. key={}", suspectAlertKey, e);
+                log.error("이상 징후 JSON 파싱 실패. key={}, error={}", suspectAlertKey, e.getMessage(), e);
             }
         }
 
