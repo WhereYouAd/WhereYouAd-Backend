@@ -32,7 +32,7 @@ import java.util.*;
 public class DashboardClickServiceImpl implements DashboardClickService {
 
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 30; // SseEmitter 생명주기 30분 = 연결 30분 유지
-    private static final String ALL = "ALL";
+    private static final String ALL_PROVIDERS_TOKEN = "ALL";
     private static final Set<Provider> SUPPORTED_PROVIDERS =
             EnumSet.of(Provider.GOOGLE, Provider.NAVER, Provider.META);
 
@@ -107,7 +107,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
 
     // 내부 메서드: 조직의 60분 시계열 데이터와 알림 정보를 묶어서 반환
     private DashboardResponse.RealTimeGraphResponse getGraphData(Long orgId, String providerToken, String mode) {
-        boolean isOrgWide = ALL.equals(providerToken);
+        boolean isOrgWide = ALL_PROVIDERS_TOKEN.equals(providerToken);
 
         // 시계열 데이터 추출: 최근 60분(59분 전 ~ 현재 분) 동안의 Redis Key를 순회하며 카운트를 읽어옴
         List<ClickResponse.RealtimeClickCount> timeSeriesData = new ArrayList<>();
@@ -162,7 +162,7 @@ public class DashboardClickServiceImpl implements DashboardClickService {
     // provider 미지정 → ALL, 지정 시 NAVER/GOOGLE/META 만 허용
     private String parseProviderToken(String providerType) {
         if (providerType == null || providerType.isBlank()) {
-            return ALL;
+            return ALL_PROVIDERS_TOKEN;
         }
         try {
             Provider provider = Provider.valueOf(providerType.trim().toUpperCase());
