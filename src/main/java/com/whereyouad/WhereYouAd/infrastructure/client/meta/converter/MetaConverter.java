@@ -1,14 +1,12 @@
 package com.whereyouad.WhereYouAd.infrastructure.client.meta.converter;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.*;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.platform.domain.constant.Currency;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaDTO;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaResponse;
@@ -26,22 +24,8 @@ public class MetaConverter {
     // Meta Campaign → AdCampaign
     public static AdCampaign toCampaign(MetaDTO.Campaign src, Organization organization, PlatformAccount platformAccount) {
 
-        Long budget = null;
-        if (src.lifetimeBudget() != null) {
-            budget = parseLong(src.lifetimeBudget());
-            if (budget == 0L && src.lifetimeBudget() != null && !src.lifetimeBudget().isEmpty()) {
-                log.warn("[META] lifetimeBudget 파싱 실패 - value: {}", src.lifetimeBudget());
-            }
-        } else if (src.dailyBudget() != null) {
-            budget = parseLong(src.dailyBudget());
-        }
-
-        if (budget != null && platformAccount != null && platformAccount.getCurrency() != null) {
-            String currency = platformAccount.getCurrency().name().toUpperCase();
-            if (!currency.equals("KRW")) {
-                budget = budget / 100; // USD 달러 등 소수점이 있는 다른 통화는 여기서 센트 단위 환산
-            }
-        }
+        Currency currency = (platformAccount != null) ? platformAccount.getCurrency() : null;
+        BudgetInfo budgetInfo = resolveBudget(src.lifetimeBudget(), src.dailyBudget(), currency);
 
         //메타 마케팅 API 에서는 따로 캠페인에 설명 설정 안함 -> 임의 문구 삽입
         String description = "메타 API 자동 연동 캠페인 (이름 : " + src.name() + " 목표: " + src.objective() + ")";
@@ -52,7 +36,8 @@ public class MetaConverter {
                 .description(description)
                 .provider(Provider.META)
                 .status(mapStatus(src.status()))
-                .budget(budget)
+                .budget(budgetInfo.amount)
+                .budgetType(budgetInfo.type)
                 .goal(mapObjective(src.objective()))
                 .startDate(parseDate(src.startTime()))
                 .endDate(parseDate(src.stopTime()))
@@ -62,16 +47,23 @@ public class MetaConverter {
     }
 
     // Meta AdSet -> AdGroup
-    public static AdGroup toAdGroup(MetaDTO.AdSet src, AdCampaign campaign) {
+    public static AdGroup toAdGroup(MetaDTO.AdSet src, AdCampaign campaign, PlatformAccount platformAccount) {
+
         String targetingInfo = null;
         if (src.targeting() != null) {
             targetingInfo = buildTargetingInfo(src.targeting());
         }
+
+        Currency currency = (platformAccount != null) ? platformAccount.getCurrency() : null;
+        BudgetInfo budgetInfo = resolveBudget(src.lifetimeBudget(), src.dailyBudget(), currency);
+
         return AdGroup.builder()
                 .externalGroupId(src.id())
                 .name(src.name())
                 .status(mapStatus(src.status()))
                 .targetingInfo(targetingInfo)
+                .budget(budgetInfo.amount)
+                .budgetType(budgetInfo.type)
                 .adCampaign(campaign)
                 .build();
     }
@@ -244,4 +236,78 @@ public class MetaConverter {
                                                              java.util.List<String> failedAccountIds) {
         return new MetaResponse.MetaSyncSummary(campaignCount, adGroupCount, adContentCount, metricCount, failedAccountIds);
     }
+
+    // AdSet 예산(문자열, Meta 최소 단위) → 로컬 budget 단위 변환. 파싱 실패 시 null
+    private static Long parseMinorBudget(String raw, Currency currency) {
+        try {
+            long minorBudget = Long.parseLong(raw.trim());
+            return fromMetaBudget(minorBudget, currency);
+        } catch (NumberFormatException e) {
+            log.warn("[META] 예산 파싱 실패 - value: {}", raw);
+            return null;
+        }
+    }
+
+    // 예산 추출 결과 — 로컬 통화 단위 금액 + 예산 유형
+    private record BudgetInfo(Long amount, BudgetType type) {}
+
+    // lifetime/daily 중 설정된 예산을 로컬 통화 단위 금액 + 유형으로 변환 (Campaign·AdSet 공통)
+    private static BudgetInfo resolveBudget(String lifetimeBudget, String dailyBudget, Currency currency) {
+        if (isActiveBudget(lifetimeBudget)) {
+            Long amount = parseMinorBudget(lifetimeBudget, currency);
+            if (amount != null) {
+                return new BudgetInfo(amount, BudgetType.TOTAL);
+            }
+        }
+        if (isActiveBudget(dailyBudget)) {
+            Long amount = parseMinorBudget(dailyBudget, currency);
+            if (amount != null) {
+                return new BudgetInfo(amount, BudgetType.DAILY);
+            }
+        }
+        return new BudgetInfo(null, null);
+    }
+
+    // Meta 는 사용하지 않는 예산 필드를 "0" 으로 응답 → 양수일 때만 실제 설정된 예산으로 간주
+    private static boolean isActiveBudget(String raw) {
+        if (raw == null || raw.isBlank()) return false;
+        try {
+            return Long.parseLong(raw.trim()) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    // 로컬 budget(원 단위) → Meta 의 통화 단위로 변환
+    // Meta 는 금액을 최소 단위로 받는다 ex) USD 10$ -> 1000(센트) , KRW 1000 -> 1000
+    public static Long toMetaBudget(Long budget, Currency currency) {
+        if (budget == null) {
+            return null;
+        }
+
+        if (currency == null || currency == Currency.KRW) {
+            return budget;
+
+        }
+
+        return budget * 100;   // USD 등 소수점 통화는 센트 단위로 전송
+    }
+
+    // Meta 통화 단위 → 로컬 budget 단위 변환
+    private static Long fromMetaBudget(Long minorBudget, Currency currency) {
+        if (minorBudget == null) {
+            return null;
+        }
+
+        if (currency == null || currency == Currency.KRW) {
+            return minorBudget;
+        }
+
+        if (minorBudget % 100 != 0) {
+            log.warn("[META] 비 KRW 예산 단위가 100 의 배수가 아닙니다. (반올림 처리): {} {}", minorBudget, currency);
+        }
+
+        return Math.round(minorBudget / 100.0);
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -46,6 +47,10 @@ public class AdGroup extends BaseEntity {
     @Column(name = "budget")
     private Long budget;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "budget_type")
+    private BudgetType budgetType;
+
     @Column(name = "bid_amount")
     private Long bidAmount;
 
@@ -65,5 +70,14 @@ public class AdGroup extends BaseEntity {
     public void updateBudget(Long budget, Long bidAmount) {
         if (budget != null) this.budget = budget;
         if (bidAmount != null) this.bidAmount = bidAmount;
+    }
+
+    // Meta 에서 budget 값을 null 가능하게 업데이트하는 메서드
+    public void replaceBudget(Long budget) {
+        this.budget = budget;
+    }
+
+    public void applyBudgetType(BudgetType budgetType) {
+        this.budgetType = budgetType;
     }
 }

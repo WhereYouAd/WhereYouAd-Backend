@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
@@ -52,6 +53,10 @@ public class AdCampaign extends BaseEntity {
     private Long budget;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "budget_type")
+    private BudgetType budgetType;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "goal_type")
     private Goal goal;
 
@@ -97,5 +102,9 @@ public class AdCampaign extends BaseEntity {
 
     public void updateBudget(Long budget) {
         this.budget = budget;
+    }
+
+    public void applyBudgetType(BudgetType budgetType) {
+        this.budgetType = budgetType;
     }
 }
