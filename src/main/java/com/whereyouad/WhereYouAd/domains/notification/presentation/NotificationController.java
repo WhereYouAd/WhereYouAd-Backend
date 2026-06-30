@@ -7,6 +7,7 @@ import com.whereyouad.WhereYouAd.domains.notification.presentation.docs.Notifica
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,7 +76,7 @@ public class NotificationController implements NotificationControllerDocs {
     public ResponseEntity<DataResponse<Void>> updateMemberSettings(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestBody NotificationRequest.BulkUpdateMembers request
+            @RequestBody @Valid NotificationRequest.BulkUpdateMembers request
     ) {
         notificationService.updateMemberSettings(userId, orgId, request);
         return ResponseEntity.ok(DataResponse.ok());

@@ -1,5 +1,8 @@
 package com.whereyouad.WhereYouAd.domains.notification.application.dto.request;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class NotificationRequest {
@@ -29,12 +32,15 @@ public class NotificationRequest {
 
     // 알림을 받을 멤버 설정 DTO(ADMIN 전용)
     public record UpdateMemberReceive(
+            @NotNull(message = "membershipId는 필수입니다.")
             Long membershipId,
             boolean isReceive
     ) {}
 
     // 멤버 알림 설정 DTO
     public record BulkUpdateMembers(
+            @Valid
+            @NotEmpty(message = "members는 비어있을 수 없습니다.")
             List<UpdateMemberReceive> members
     ) {}
 }
