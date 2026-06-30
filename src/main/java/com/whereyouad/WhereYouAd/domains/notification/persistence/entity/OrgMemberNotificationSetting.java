@@ -49,21 +49,21 @@ public class OrgMemberNotificationSetting extends BaseEntity {
     @Column(name = "alert_rapid_clicks", nullable = false)
     private boolean alertRapidClicks;
 
-    public void updateMaster(boolean isMasterEnabled) {
-        this.isMasterEnabled = isMasterEnabled;
+    public void updateMaster(Boolean isMasterEnabled) {
+        if (isMasterEnabled != null) this.isMasterEnabled = isMasterEnabled;
     }
 
-    public void updateChannels(boolean isBrowserPushEnabled, boolean isEmailEnabled, boolean isSlackEnabled, boolean isDiscordEnabled) {
-        this.isBrowserPushEnabled = isBrowserPushEnabled;
-        this.isEmailEnabled = isEmailEnabled;
-        this.isSlackEnabled = isSlackEnabled;
-        this.isDiscordEnabled = isDiscordEnabled;
+    public void updateChannels(Boolean isBrowserPushEnabled, Boolean isEmailEnabled, Boolean isSlackEnabled, Boolean isDiscordEnabled) {
+        if (isBrowserPushEnabled != null) this.isBrowserPushEnabled = isBrowserPushEnabled;
+        if (isEmailEnabled != null) this.isEmailEnabled = isEmailEnabled;
+        if (isSlackEnabled != null) this.isSlackEnabled = isSlackEnabled;
+        if (isDiscordEnabled != null) this.isDiscordEnabled = isDiscordEnabled;
     }
 
-    public void updateAlerts(boolean alertBudget50, boolean alertBudget80, boolean alertBudget100, boolean alertRapidClicks) {
-        this.alertBudget50 = alertBudget50;
-        this.alertBudget80 = alertBudget80;
-        this.alertBudget100 = alertBudget100;
-        this.alertRapidClicks = alertRapidClicks;
+    public void updateAlerts(Boolean alertBudget50, Boolean alertBudget80, Boolean alertBudget100, Boolean alertRapidClicks) {
+        if (alertBudget50 != null) this.alertBudget50 = alertBudget50;
+        if (alertBudget80 != null) this.alertBudget80 = alertBudget80;
+        if (alertBudget100 != null) this.alertBudget100 = alertBudget100;
+        if (alertRapidClicks != null) this.alertRapidClicks = alertRapidClicks;
     }
 }
