@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(
@@ -69,4 +70,11 @@ public interface MetaClient {
             @RequestParam("time_increment") String timeIncrement,
             @RequestParam(value = "after", required = false) String afterCursor);
 
+    @PostMapping("/{nodeId}")
+    MetaDTO.UpdateResponse updateBudget(
+            @PathVariable("nodeId") String nodeId,
+            @RequestParam("access_token") String accessToken,
+            @RequestParam(value = "daily_budget", required = false) Long dailyBudget,
+            @RequestParam(value = "lifetime_budget", required = false) Long lifetimeBudget
+    );
 }

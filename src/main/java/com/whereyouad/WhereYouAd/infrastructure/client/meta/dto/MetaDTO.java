@@ -66,6 +66,7 @@ public class MetaDTO {
             String name,
             String status,
             @JsonProperty("daily_budget") String dailyBudget,
+            @JsonProperty("lifetime_budget") String lifetimeBudget,
             @JsonProperty("targeting") Targeting targeting,
             @JsonProperty("billing_event") String billingEvent,
             @JsonProperty("optimization_goal") String optimizationGoal
@@ -149,5 +150,12 @@ public class MetaDTO {
     public record Cursors(
             String before,
             String after
+    ) {}
+
+    // 추가 : 예산 변경
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record UpdateResponse(
+            Boolean success,
+            String id
     ) {}
 }

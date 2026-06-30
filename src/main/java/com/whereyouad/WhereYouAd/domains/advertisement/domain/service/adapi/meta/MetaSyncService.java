@@ -59,7 +59,7 @@ public class MetaSyncService {
     private static final String CAMPAIGN_FIELDS =
             "id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time";
     private static final String ADSET_FIELDS =
-            "id,campaign_id,name,status,daily_budget,targeting,billing_event,optimization_goal";
+            "id,campaign_id,name,status,daily_budget,lifetime_budget,targeting,billing_event,optimization_goal";
     private static final String AD_FIELDS =
             "id,adset_id,name,status,creative{id,body,object_type}";
     private static final String INSIGHT_FIELDS =
@@ -173,7 +173,7 @@ public class MetaSyncService {
 
                 // 페이지 단위 배치 UPSERT — campaignMap을 넘겨 부모 스코프 적용
                 Map<String, AdGroup> pageResult =
-                        metaUpsertService.upsertAdGroups(adSetsResp.data(), campaignMap);
+                        metaUpsertService.upsertAdGroups(adSetsResp.data(), campaignMap, pAccountEntity);
                 adSetMap.putAll(pageResult);
                 adSetCount += pageResult.size();
 
