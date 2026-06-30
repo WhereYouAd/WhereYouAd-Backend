@@ -27,4 +27,12 @@ public class OrgNotificationSetting extends BaseEntity {
 
     @Column(name = "discord_webhook_url", length = 512)
     private String discordWebhookUrl;
+
+    public void updateSlackWebhookUrl(String slackWebhookUrl) {
+        this.slackWebhookUrl = slackWebhookUrl;
+    }
+
+    public void updateDiscordWebhookUrl(String discordWebhookUrl) {
+        this.discordWebhookUrl = discordWebhookUrl;
+    }
 }

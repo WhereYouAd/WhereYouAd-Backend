@@ -48,4 +48,22 @@ public class OrgMemberNotificationSetting extends BaseEntity {
 
     @Column(name = "alert_rapid_clicks", nullable = false)
     private boolean alertRapidClicks;
+
+    public void updateMaster(boolean isMasterEnabled) {
+        this.isMasterEnabled = isMasterEnabled;
+    }
+
+    public void updateChannels(boolean isBrowserPushEnabled, boolean isEmailEnabled, boolean isSlackEnabled, boolean isDiscordEnabled) {
+        this.isBrowserPushEnabled = isBrowserPushEnabled;
+        this.isEmailEnabled = isEmailEnabled;
+        this.isSlackEnabled = isSlackEnabled;
+        this.isDiscordEnabled = isDiscordEnabled;
+    }
+
+    public void updateAlerts(boolean alertBudget50, boolean alertBudget80, boolean alertBudget100, boolean alertRapidClicks) {
+        this.alertBudget50 = alertBudget50;
+        this.alertBudget80 = alertBudget80;
+        this.alertBudget100 = alertBudget100;
+        this.alertRapidClicks = alertRapidClicks;
+    }
 }
