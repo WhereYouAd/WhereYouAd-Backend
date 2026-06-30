@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.click.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
@@ -78,11 +79,13 @@ public class ClickServiceImpl implements ClickService {
                 .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
 
         Long orgId = adContent.getAdGroup().getAdCampaign().getProject().getOrganization().getId();
+        Provider provider = adContent.getAdGroup().getAdCampaign().getProvider();
 
         // 2. 클릭 이벤트 생성 후 Kafka로 발행
         ClickDto clickDto = ClickDto.builder()
                 .adContentId(adContent.getId())
                 .orgId(orgId)
+                .provider(provider)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .clickedAt(System.currentTimeMillis())
