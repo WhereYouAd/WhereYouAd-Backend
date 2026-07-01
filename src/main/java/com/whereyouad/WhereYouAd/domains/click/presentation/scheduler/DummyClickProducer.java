@@ -77,6 +77,6 @@ public class DummyClickProducer {
             kafkaTemplate.send(TOPIC, String.valueOf(adContentId), event);
         }
 
-        log.info("Produced dummy clicks for {} sampled ads.", limit);
+        log.debug("Produced dummy clicks for {} sampled ads.", limit);
     }
 }

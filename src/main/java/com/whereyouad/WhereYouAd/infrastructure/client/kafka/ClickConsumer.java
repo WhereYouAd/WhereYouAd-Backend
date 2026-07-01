@@ -61,7 +61,7 @@ public class ClickConsumer {
             log.warn("orgId 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
         }
 
-        log.info("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
+        log.debug("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
                 clickKey, event.getUserAgent(), event.getIpAddress(), currentClickCount);
     }
 
@@ -135,7 +135,7 @@ public class ClickConsumer {
 
         clickLogRepository.save(clickLog);
 
-        log.info("[DB저장] adId={}, ip={}, isSuspect={}",
+        log.debug("[DB저장] adId={}, ip={}, isSuspect={}",
                 event.getAdContentId(), event.getIpAddress(), isSuspect);
     }
 }
