@@ -146,9 +146,9 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             String suspectJson = redisUtil.getData(suspectAlertKey);
 
             if (suspectJson != null) {
-                hasSuspect = true;
                 try {
                     detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
+                    hasSuspect = true;
                     redisUtil.deleteData(suspectAlertKey);
                 } catch (JsonProcessingException e) {
                     log.error("이상 징후 JSON 파싱 실패. key={}, error={}", suspectAlertKey, e.getMessage(), e);
