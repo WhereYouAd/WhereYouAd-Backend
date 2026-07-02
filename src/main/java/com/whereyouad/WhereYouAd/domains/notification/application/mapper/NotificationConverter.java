@@ -42,7 +42,7 @@ public class NotificationConverter {
         );
     }
 
-    // 기본 알림 설정(entity -> dto), 기본값: 예산 100프로 소진 시 이메일 알림
+    // 기본 알림 설정(entity -> dto), 기본값: 예산 80프로 소진 시 이메일 알림
     public static OrgMemberNotificationSetting toDefaultMemberSetting(OrgMember member) {
         return OrgMemberNotificationSetting.builder()
                 .orgMember(member)
@@ -52,8 +52,8 @@ public class NotificationConverter {
                 .isSlackEnabled(false)
                 .isDiscordEnabled(false)
                 .alertBudget50(false)
-                .alertBudget80(false)
-                .alertBudget100(true)
+                .alertBudget80(true)
+                .alertBudget100(false)
                 .alertRapidClicks(false)
                 .build();
     }
