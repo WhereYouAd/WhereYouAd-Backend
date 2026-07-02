@@ -59,14 +59,18 @@ public class NotificationServiceImpl implements NotificationService {
         setting.updateChannels(request.isBrowserPushEnabled(), request.isEmailEnabled(), request.isSlackEnabled(), request.isDiscordEnabled());
 
         // ADMIN인 경우 webhook url도 변경 가능
+        // Optional이 null -> 필드 미전송(변경 없음), Optional.empty() -> 명시적 null(URL 삭제)
         if (member.getRole() == OrgRole.ADMIN) {
-            if (request.slackWebhookUrl() != null || request.discordWebhookUrl() != null) {
+            boolean hasWebhookUpdate = request.slackWebhookUrl() != null || request.discordWebhookUrl() != null;
+
+            // url 필드가 요청에 포함된 경우만 업데이트
+            if (hasWebhookUpdate) {
                 OrgNotificationSetting orgSetting = findOrCreateOrgSetting(member.getOrganization());
                 if (request.slackWebhookUrl() != null) {
-                    orgSetting.updateSlackWebhookUrl(request.slackWebhookUrl());
+                    orgSetting.updateSlackWebhookUrl(request.slackWebhookUrl().orElse(null));
                 }
                 if (request.discordWebhookUrl() != null) {
-                    orgSetting.updateDiscordWebhookUrl(request.discordWebhookUrl());
+                    orgSetting.updateDiscordWebhookUrl(request.discordWebhookUrl().orElse(null));
                 }
             }
         }

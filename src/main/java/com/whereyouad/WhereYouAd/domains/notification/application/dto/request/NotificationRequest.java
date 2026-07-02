@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Optional;
 
 public class NotificationRequest {
 
@@ -13,13 +14,14 @@ public class NotificationRequest {
     ) {}
 
     // 채널별 알림 설정 DTO
+    // slackWebhookUrl/discordWebhookUrl: 필드 미전송 시 변경 없음, null 명시 시 URL 삭제 (ADMIN 전용)
     public record UpdateChannels(
             Boolean isBrowserPushEnabled,
             Boolean isEmailEnabled,
             Boolean isSlackEnabled,
-            String slackWebhookUrl,
+            Optional<String> slackWebhookUrl,
             Boolean isDiscordEnabled,
-            String discordWebhookUrl
+            Optional<String> discordWebhookUrl
     ) {}
 
     // 알림 기준 설정 DTO
