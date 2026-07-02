@@ -133,21 +133,26 @@ public class DashboardClickServiceImpl implements DashboardClickService {
             timeSeriesData.add(new ClickResponse.RealtimeClickCount(minute, count));
         }
 
-        String suspectAlertKey = isOrgWide
-                ? "click:suspect:alert:org:" + orgId
-                : String.format("click:suspect:alert:org:%s:provider:%s", orgId, providerToken);
-
-        String suspectJson = redisUtil.getData(suspectAlertKey);
         boolean hasSuspect = false;
         DashboardResponse.SuspectDetail detail = null;
 
-        if (suspectJson != null) {
-            hasSuspect = true;
-            try {
-                detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
-                redisUtil.deleteData(suspectAlertKey);
-            } catch (JsonProcessingException e) {
-                log.error("이상 징후 JSON 파싱 실패. key={}, error={}", suspectAlertKey, e.getMessage(), e);
+        // 클릭 봇 의심 경고는 real 모드일때만 동작하도록 설정
+        // dummy 모드에서도 봇 의심 경고 표시 필요할 시 해당 코드 변경
+        if ("real".equalsIgnoreCase(mode)) {
+            String suspectAlertKey = isOrgWide ?
+                    "click:suspect:alert:org:" + orgId
+                    : String.format("click:suspect:alert:org:%s:provider:%s", orgId, providerToken);
+
+            String suspectJson = redisUtil.getData(suspectAlertKey);
+
+            if (suspectJson != null) {
+                hasSuspect = true;
+                try {
+                    detail = objectMapper.readValue(suspectJson, DashboardResponse.SuspectDetail.class);
+                    redisUtil.deleteData(suspectAlertKey);
+                } catch (JsonProcessingException e) {
+                    log.error("이상 징후 JSON 파싱 실패. key={}, error={}", suspectAlertKey, e.getMessage(), e);
+                }
             }
         }
 
