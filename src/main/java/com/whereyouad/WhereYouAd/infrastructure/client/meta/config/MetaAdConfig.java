@@ -27,7 +27,7 @@ public class MetaAdConfig {
                 .pathSegment(graphApiVersion, "dialog", "oauth")
                 .queryParam("client_id", appId)
                 .queryParam("redirect_uri", redirectUri)
-                .queryParam("scope", "ads_read,business_management")
+                .queryParam("scope", "ads_read,ads_management,business_management") // 추가 -> 예산 수정을 위한 ads_management 권한
                 .queryParam("response_type", "code")
                 .queryParam("state", state)  //  orgId-userId 조각
                 .build()
