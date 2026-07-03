@@ -15,12 +15,7 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organiz
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.user.domain.constant.UserStatus;
 import com.whereyouad.WhereYouAd.global.utils.cursor.CursorUtil;
-import com.whereyouad.WhereYouAd.domains.notification.application.mapper.NotificationConverter;
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryChannel;
-import com.whereyouad.WhereYouAd.domains.notification.exception.NotificationException;
-import com.whereyouad.WhereYouAd.domains.notification.exception.code.NotificationErrorCode;
-import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgNotificationSetting;
-import com.whereyouad.WhereYouAd.domains.notification.persistence.repository.OrgNotificationSettingRepository;
 import com.whereyouad.WhereYouAd.global.utils.AESUtil;
 import com.whereyouad.WhereYouAd.infrastructure.client.discord.DiscordWebhookClient;
 import com.whereyouad.WhereYouAd.infrastructure.client.slack.SlackWebhookClient;
@@ -30,11 +25,12 @@ import org.springframework.data.domain.Slice;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +45,9 @@ public class NotificationServiceImpl implements NotificationService {
     private final OrgMemberRepository orgMemberRepository;
     private final OrgMemberNotificationSettingRepository memberSettingRepository;
     private final OrgNotificationSettingRepository orgSettingRepository;
+    private final DiscordWebhookClient discordClient;
+    private final SlackWebhookClient slackClient;
+    private final AESUtil aesUtil;
 
     // 현재 내 알림 설정 조회
     @Override
@@ -79,14 +78,14 @@ public class NotificationServiceImpl implements NotificationService {
         if (member.getRole() == OrgRole.ADMIN) {
             boolean hasWebhookUpdate = request.slackWebhookUrl() != null || request.discordWebhookUrl() != null;
 
-            // url 필드가 요청에 포함된 경우만 업데이트
+            // url 필드가 요청에 포함된 경우만 업데이트 (평문 URL 은 암호화하여 저장)
             if (hasWebhookUpdate) {
                 OrgNotificationSetting orgSetting = findOrCreateOrgSetting(member.getOrganization());
                 if (request.slackWebhookUrl() != null) {
-                    orgSetting.updateSlackWebhookUrl(request.slackWebhookUrl().orElse(null));
+                    orgSetting.updateSlackWebhookUrl(encryptOrNull(request.slackWebhookUrl().orElse(null)));
                 }
                 if (request.discordWebhookUrl() != null) {
-                    orgSetting.updateDiscordWebhookUrl(request.discordWebhookUrl().orElse(null));
+                    orgSetting.updateDiscordWebhookUrl(encryptOrNull(request.discordWebhookUrl().orElse(null)));
                 }
             }
         }
@@ -155,6 +154,37 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    // 디스코드 / 슬랙 알림 전송 메서드
+    // 조직 내에 웹훅 URL 이 설정되어 있는 경우 일괄 전송
+    // *** 각 플랫폼 스케줄러에서 조직으로 디스코드 / 슬랙 알림을 보내려면 이 메서드를 사용하면 됩니다 ***
+    @Override
+    @Transactional(readOnly = true)
+    public void sendApiAlarmToOrg(Long orgId, String title, String message) {
+        OrgNotificationSetting setting = orgSettingRepository.findById(orgId)
+                .orElseThrow(() -> new NotificationException(NotificationErrorCode.ORG_NOTIFICATION_SETTING_NOT_FOUND));
+
+        if (!setting.hasSlack() && !setting.hasDiscord()) {
+            throw new NotificationException(NotificationErrorCode.NO_CHANNEL_CONFIGURED);
+        }
+
+        if (setting.hasSlack()) {
+            dispatch(DeliveryChannel.SLACK, setting.getSlackWebhookUrl(), orgId,
+                    uri -> slackClient.send(uri, NotificationConverter.toSlackMessage(title, message)));
+        }
+
+        if (setting.hasDiscord()) {
+            dispatch(DeliveryChannel.DISCORD, setting.getDiscordWebhookUrl(), orgId,
+                    uri -> discordClient.send(uri, NotificationConverter.toDiscordMessage(title, message)));
+        }
+    }
+
+    // 알림 발송 테스트용 (설정한 채널이 실제로 동작하는지 확인)
+    @Override
+    @Transactional(readOnly = true)
+    public void sendTest(Long orgId, NotificationRequest.TestSend request) {
+        sendApiAlarmToOrg(orgId, request.title(), request.message());
+    }
+
     // orgMember 조회 내부 메서드
     private OrgMember findMember(Long userId, Long orgId) {
         return orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
@@ -184,31 +214,15 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    private final OrgNotificationSettingRepository settingRepository;
-    private final DiscordWebhookClient discordClient;
-    private final SlackWebhookClient slackClient;
-    private final AESUtil aesUtil;
-
-    // 디스코드 / 슬랙 알림 전송 메서드
-    // 조직 내에 웹훅 URL 이 설정되어 있는 경우 일괄 전송
-    @Override
-    @Transactional(readOnly = true)
-    public void sendApiAlarmToOrg(Long orgId, String title, String message) {
-        OrgNotificationSetting setting = settingRepository.findById(orgId)
-                .orElseThrow(() -> new NotificationException(NotificationErrorCode.ORG_NOTIFICATION_SETTING_NOT_FOUND));
-
-        if (!setting.hasSlack() && !setting.hasDiscord()) {
-            throw new NotificationException(NotificationErrorCode.NO_CHANNEL_CONFIGURED);
+    // 웹훅 URL 암호화 (null/빈 값이면 저장하지 않고 null 반환 -> 연동 해제)
+    private String encryptOrNull(String plain) {
+        if (!StringUtils.hasText(plain)) {
+            return null;
         }
-
-        if (setting.hasSlack()) {
-            dispatch(DeliveryChannel.SLACK, setting.getSlackWebhookUrl(), orgId,
-                    uri -> slackClient.send(uri, NotificationConverter.toSlackMessage(title, message)));
-        }
-
-        if (setting.hasDiscord()) {
-            dispatch(DeliveryChannel.DISCORD, setting.getDiscordWebhookUrl(), orgId,
-                    uri -> discordClient.send(uri, NotificationConverter.toDiscordMessage(title, message)));
+        try {
+            return new String(aesUtil.encryptAES(plain), StandardCharsets.UTF_8);
+        } catch (GeneralSecurityException e) {
+            throw new NotificationException(NotificationErrorCode.NOTIFICATION_CHANNEL_SAVE_FAILED);
         }
     }
 

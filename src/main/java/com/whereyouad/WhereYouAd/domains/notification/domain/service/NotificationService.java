@@ -18,4 +18,7 @@ public interface NotificationService {
     void updateMemberSettings(Long userId, Long orgId, NotificationRequest.BulkUpdateMembers request);
 
     void sendApiAlarmToOrg(Long orgId, String title, String message);
+
+    // 설정한 채널이 실제로 동작하는지 테스트 발송
+    void sendTest(Long orgId, NotificationRequest.TestSend request);
 }
