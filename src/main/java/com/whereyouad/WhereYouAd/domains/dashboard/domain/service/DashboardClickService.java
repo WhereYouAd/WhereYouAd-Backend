@@ -4,6 +4,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface DashboardClickService {
 
-    SseEmitter subscribe(Long userId ,Long orgId, String mode);
+    SseEmitter subscribe(Long userId ,Long orgId, String mode, String providerType);
 
 }
