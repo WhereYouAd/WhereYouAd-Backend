@@ -48,11 +48,6 @@ public class NotificationRequest {
             List<UpdateMemberReceive> members
     ) {}
 
-    public record ChannelSettingRequest(
-            String slackWebhookUrl,
-            String discordWebhookUrl
-    ) {}
-
     public record TestSend(
             @NotBlank(message = "제목은 필수입니다.")
             String title,
