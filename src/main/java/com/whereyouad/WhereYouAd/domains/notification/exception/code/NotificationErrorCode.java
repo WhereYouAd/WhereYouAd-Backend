@@ -9,6 +9,11 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum NotificationErrorCode implements BaseErrorCode {
 
+    // 403
+    FORBIDDEN(HttpStatus.FORBIDDEN, "NOTIFICATION_403_1", "해당 작업을 수행할 권한이 없습니다."),
+
+    // 404
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_404_1", "해당 조직의 멤버를 찾을 수 없습니다."),
     // 400
     NO_CHANNEL_CONFIGURED(HttpStatus.BAD_REQUEST, "NOTIFICATION_400_1", "발송할 외부 채널(슬랙/디스코드)이 설정되어 있지 않습니다."),
 
