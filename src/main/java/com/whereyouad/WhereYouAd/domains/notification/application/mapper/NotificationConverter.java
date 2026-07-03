@@ -6,8 +6,6 @@ import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgNoti
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 
-import com.whereyouad.WhereYouAd.domains.notification.application.dto.response.NotificationResponse;
-import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgNotificationSetting;
 import com.whereyouad.WhereYouAd.infrastructure.client.discord.dto.DiscordMessage;
 import com.whereyouad.WhereYouAd.infrastructure.client.slack.dto.SlackMessage;
 
@@ -25,9 +23,9 @@ public class NotificationConverter {
                 setting.isBrowserPushEnabled(),
                 setting.isEmailEnabled(),
                 setting.isSlackEnabled(),
-                orgSetting != null ? orgSetting.getSlackWebhookUrl() : null,
+                orgSetting != null && orgSetting.hasSlack(),
                 setting.isDiscordEnabled(),
-                orgSetting != null ? orgSetting.getDiscordWebhookUrl() : null,
+                orgSetting != null && orgSetting.hasDiscord(),
                 setting.isAlertBudget50(),
                 setting.isAlertBudget80(),
                 setting.isAlertBudget100(),
@@ -70,14 +68,6 @@ public class NotificationConverter {
         return OrgNotificationSetting.builder()
                 .organization(organization)
                 .build();
-    }
-
-    public static NotificationResponse.ChannelsListResponse toChannelsListResponse(OrgNotificationSetting setting) {
-        return new NotificationResponse.ChannelsListResponse(setting.getOrgId(), setting.hasSlack(), setting.hasDiscord());
-    }
-
-    public static NotificationResponse.ChannelsListResponse emptyChannelsResponse(Long orgId) {
-        return new NotificationResponse.ChannelsListResponse(orgId, false, false);
     }
 
     public static DiscordMessage toDiscordMessage(String title, String message) {
