@@ -44,6 +44,7 @@ public class ClickConsumer {
 
         Long currentClickCount = redisUtil.incrementDataExpire(clickKey, REDIS_TTL_SECONDS);
 
+        // 조직 단위 통합 집계
         if (event.getOrgId() != null) {
             // 통합 대시보드용 - 조직 단위 집계
             String orgClickKey = String.format("click:%s:org:%s:%s", mode, event.getOrgId(), currentMinute);
@@ -116,6 +117,13 @@ public class ClickConsumer {
                 // JSON 변환 후 Redis 저장 (수명 60초)
                 String detailJson = objectMapper.writeValueAsString(suspectDetail);
                 redisUtil.setDataExpire(alertKey, detailJson, 60);
+
+                // 플랫폼 지정 구독용 키 추가 (read 쪽 provider 분기와 정합)
+                if (event.getProvider() != null) {
+                    String providerAlertKey = String.format("click:suspect:alert:org:%s:provider:%s",
+                            event.getOrgId(), event.getProvider().name());
+                    redisUtil.setDataExpire(providerAlertKey, detailJson, 60);
+                }
 
                 log.info(" 봇 감지 : 실제 데이터 매핑 완료 및 Redis 적재: {}", alertKey);
             } catch (Exception e) {

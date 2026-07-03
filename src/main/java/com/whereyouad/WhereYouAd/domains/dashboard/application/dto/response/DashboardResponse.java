@@ -64,6 +64,7 @@ public class DashboardResponse {
 
     // 실시간 클릭수 스트림 반환 응답
     public record RealTimeGraphResponse(
+            String provider,   // 추가: 대상 플랫폼 (GOOGLE/NAVER/META). 조직 전체 조회면 null
             List<ClickResponse.RealtimeClickCount> timeSeriesData, // 최근 N분간의 클릭수 배열 (차트 X, Y축 데이터)
             String mode,  // 현재 데이터 모드 ("real" 또는 "dummy")
             Boolean hasSuspect,  // 이상 징후 발생 여부 (빨간 점 트리거)
