@@ -156,10 +156,27 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 디스코드 / 슬랙 알림 전송 메서드
     // 조직 내에 웹훅 URL 이 설정되어 있는 경우 일괄 전송
-    // *** 각 플랫폼 스케줄러에서 조직으로 디스코드 / 슬랙 알림을 보내려면 이 메서드를 사용하면 됩니다 ***
+    /// *** 각 플랫폼 스케줄러에서 조직으로 디스코드 / 슬랙 알림을 보내려면 이 메서드를 사용하면 됩니다 ***
     @Override
     @Transactional(readOnly = true)
     public void sendApiAlarmToOrg(Long orgId, String title, String message) {
+
+        OrgNotificationSetting setting = orgSettingRepository.findById(orgId).orElse(null);
+
+        // 외부 알림 채널 미설정 조직은 예외 throw 하지 않고 skip (스케줄러 루프에서 안전하게 호출 가능)
+        if (setting == null || (!setting.hasSlack() && !setting.hasDiscord())) {
+            log.debug("[외부 알림 발송 skip] 설정된 외부 채널(디스코드/슬랙) 없음, orgId={}", orgId);
+            return;
+        }
+
+        // 외부 알림 설정된 조직만 실질적 알림 전송
+        sendApiAlarm(setting, orgId, title, message);
+    }
+
+    // 알림 발송 테스트용 (설정한 채널이 실제로 동작하는지 확인)
+    @Override
+    @Transactional(readOnly = true)
+    public void sendTest(Long orgId, NotificationRequest.TestSend request) {
         OrgNotificationSetting setting = orgSettingRepository.findById(orgId)
                 .orElseThrow(() -> new NotificationException(NotificationErrorCode.ORG_NOTIFICATION_SETTING_NOT_FOUND));
 
@@ -167,6 +184,11 @@ public class NotificationServiceImpl implements NotificationService {
             throw new NotificationException(NotificationErrorCode.NO_CHANNEL_CONFIGURED);
         }
 
+        sendApiAlarm(setting, orgId, request.title(), request.message());
+    }
+
+    // 실질적 외부 채널 알림 전송 메서드
+    private void sendApiAlarm(OrgNotificationSetting setting, Long orgId, String title, String message) {
         if (setting.hasSlack()) {
             dispatch(DeliveryChannel.SLACK, setting.getSlackWebhookUrl(), orgId,
                     uri -> slackClient.send(uri, NotificationConverter.toSlackMessage(title, message)));
@@ -176,13 +198,6 @@ public class NotificationServiceImpl implements NotificationService {
             dispatch(DeliveryChannel.DISCORD, setting.getDiscordWebhookUrl(), orgId,
                     uri -> discordClient.send(uri, NotificationConverter.toDiscordMessage(title, message)));
         }
-    }
-
-    // 알림 발송 테스트용 (설정한 채널이 실제로 동작하는지 확인)
-    @Override
-    @Transactional(readOnly = true)
-    public void sendTest(Long orgId, NotificationRequest.TestSend request) {
-        sendApiAlarmToOrg(orgId, request.title(), request.message());
     }
 
     // orgMember 조회 내부 메서드
