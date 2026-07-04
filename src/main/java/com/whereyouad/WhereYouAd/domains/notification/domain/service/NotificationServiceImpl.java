@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -158,7 +159,7 @@ public class NotificationServiceImpl implements NotificationService {
     // 조직 내에 웹훅 URL 이 설정되어 있는 경우 일괄 전송
     /// *** 각 플랫폼 스케줄러에서 조직으로 디스코드 / 슬랙 알림을 보내려면 이 메서드를 사용하면 됩니다 ***
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendApiAlarmToOrg(Long orgId, String title, String message) {
 
         OrgNotificationSetting setting = orgSettingRepository.findById(orgId).orElse(null);
@@ -175,7 +176,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 알림 발송 테스트용 (설정한 채널이 실제로 동작하는지 확인)
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendTest(Long orgId, NotificationRequest.TestSend request) {
         OrgNotificationSetting setting = orgSettingRepository.findById(orgId)
                 .orElseThrow(() -> new NotificationException(NotificationErrorCode.ORG_NOTIFICATION_SETTING_NOT_FOUND));
