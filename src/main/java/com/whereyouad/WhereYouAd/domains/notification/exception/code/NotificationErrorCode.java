@@ -17,7 +17,7 @@ public enum NotificationErrorCode implements BaseErrorCode {
 
     // 404
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_404_1", "해당 조직의 멤버를 찾을 수 없습니다."),
-    ORG_NOTIFICATION_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_404_1", "조직 알림 설정이 존재하지 않습니다."),
+    ORG_NOTIFICATION_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_404_2", "조직 알림 설정이 존재하지 않습니다."),
 
     // 500
     NOTIFICATION_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "NOTIFICATION_500_1", "알림 발송에 실패했습니다."),
