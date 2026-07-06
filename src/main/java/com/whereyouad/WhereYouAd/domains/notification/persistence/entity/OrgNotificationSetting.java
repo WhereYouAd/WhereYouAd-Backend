@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organiz
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.util.StringUtils;
 
 @Entity
@@ -29,12 +30,33 @@ public class OrgNotificationSetting extends BaseEntity {
     @Column(name = "discord_webhook_url", length = 512)
     private String discordWebhookUrl;
 
+    @Column(name = "is_slack_enabled", nullable = false)
+    @ColumnDefault("false")
+    private boolean isSlackEnabled;
+
+    @Column(name = "is_discord_enabled", nullable = false)
+    @ColumnDefault("false")
+    private boolean isDiscordEnabled;
+
+    // 외부 채널 알림 수신 여부 토글 업데이트 메서드
+    // 웹훅 URL 이 등록되어 있더라도, 알림 수신 비활성화만 가능하도록 따로 메서드 추가
+    public void updateChannelEnabled(Boolean isSlackEnabled, Boolean isDiscordEnabled) {
+        if (isSlackEnabled != null) this.isSlackEnabled = isSlackEnabled;
+        if (isDiscordEnabled != null) this.isDiscordEnabled = isDiscordEnabled;
+    }
+
     public void updateSlackWebhookUrl(String slackWebhookUrl) {
         this.slackWebhookUrl = slackWebhookUrl;
+        if (!StringUtils.hasText(slackWebhookUrl)) {
+            this.isSlackEnabled = false; // 웹훅 URL 이 null 로 업데이트 되면 알림 수신 여부도 자동 false 로 전환
+        }
     }
 
     public void updateDiscordWebhookUrl(String discordWebhookUrl) {
         this.discordWebhookUrl = discordWebhookUrl;
+        if (!StringUtils.hasText(discordWebhookUrl)) {
+            this.isDiscordEnabled = false; // 웹훅 URL 이 null 로 업데이트 되면 알림 수신 여부도 자동 false 로 전환
+        }
     }
 
     // 해당 조직에 슬랙 또는 디스코드 웹훅이 연결되어 있는지 확인용 메서드
