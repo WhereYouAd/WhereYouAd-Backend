@@ -48,4 +48,27 @@ public class AdvertisementRequest {
         }
     }
 
+    public record GoogleBudgetUpdateRequest(
+            @Positive(message = "일일 예산은 0보다 커야 합니다.")
+            Long dailyBudget,
+            @Positive(message = "총 예산은 0보다 커야 합니다.")
+            Long lifetimeBudget
+    ) {
+        @JsonIgnore
+        @AssertTrue(message = "일일 예산과 총 예산 중 정확히 하나만 입력해야 합니다.")
+        public boolean isExactlyOne() {
+            return (dailyBudget == null) ^ (lifetimeBudget == null);
+        }
+
+        @JsonIgnore
+        public Long amount() {
+            return lifetimeBudget != null ? lifetimeBudget : dailyBudget;
+        }
+
+        @JsonIgnore
+        public BudgetType budgetType() {
+            return lifetimeBudget != null ? BudgetType.TOTAL : BudgetType.DAILY;
+        }
+    }
+
 }
