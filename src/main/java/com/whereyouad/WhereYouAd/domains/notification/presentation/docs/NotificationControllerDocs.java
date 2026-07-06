@@ -37,9 +37,12 @@ public interface NotificationControllerDocs {
             @RequestBody NotificationRequest.UpdateMaster request
     );
 
-    @Operation(summary = "알림 채널 설정 변경", description = "브라우저 푸시, 이메일, 슬랙, 디스코드 알림 채널을 설정합니다. slackWebhookUrl/discordWebhookUrl은 ADMIN만 반영됩니다. URL을 null로 전송하면 해당 채널 URL이 삭제됩니다.")
+    @Operation(summary = "알림 채널 설정 변경", description = "브라우저 푸시, 이메일, 슬랙, 디스코드 알림 채널을 설정합니다. " +
+            "slackWebhookUrl/discordWebhookUrl은 ADMIN만 반영됩니다. " +
+            "웹훅 URL은 값이 있으면 설정, disconnectSlack/disconnectDiscord=true면 삭제(연결 해제), 둘 다 없으면 변경 없음입니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "변경 성공"),
+            @ApiResponse(responseCode = "400", description = "NOTIFICATION_400_2: URL 없이 알림 활성화\n\n NOTIFICATION_400_3 : 활성화+연결해제 동시 요청"),
             @ApiResponse(responseCode = "404", description = "해당 조직의 멤버가 아닙니다.")
     })
     ResponseEntity<DataResponse<Void>> updateChannels(

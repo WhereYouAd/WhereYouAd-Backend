@@ -31,12 +31,6 @@ public class OrgMemberNotificationSetting extends BaseEntity {
     @Column(name = "is_email_enabled", nullable = false)
     private boolean isEmailEnabled;
 
-    @Column(name = "is_slack_enabled", nullable = false)
-    private boolean isSlackEnabled;
-
-    @Column(name = "is_discord_enabled", nullable = false)
-    private boolean isDiscordEnabled;
-
     @Column(name = "alert_budget_50", nullable = false)
     private boolean alertBudget50;
 
@@ -53,11 +47,9 @@ public class OrgMemberNotificationSetting extends BaseEntity {
         if (isMasterEnabled != null) this.isMasterEnabled = isMasterEnabled;
     }
 
-    public void updateChannels(Boolean isBrowserPushEnabled, Boolean isEmailEnabled, Boolean isSlackEnabled, Boolean isDiscordEnabled) {
+    public void updateChannels(Boolean isBrowserPushEnabled, Boolean isEmailEnabled) {
         if (isBrowserPushEnabled != null) this.isBrowserPushEnabled = isBrowserPushEnabled;
         if (isEmailEnabled != null) this.isEmailEnabled = isEmailEnabled;
-        if (isSlackEnabled != null) this.isSlackEnabled = isSlackEnabled;
-        if (isDiscordEnabled != null) this.isDiscordEnabled = isDiscordEnabled;
     }
 
     public void updateAlerts(Boolean alertBudget50, Boolean alertBudget80, Boolean alertBudget100, Boolean alertRapidClicks) {

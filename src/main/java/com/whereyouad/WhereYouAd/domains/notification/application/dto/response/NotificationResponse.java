@@ -9,9 +9,9 @@ public class NotificationResponse {
             boolean isBrowserPushEnabled,
             boolean isEmailEnabled,
             boolean isSlackEnabled,
-            String slackWebhookUrl,
+            boolean isSlackConnected,
             boolean isDiscordEnabled,
-            String discordWebhookUrl,
+            boolean isDiscordConnected,
             boolean alertBudget50,
             boolean alertBudget80,
             boolean alertBudget100,
@@ -31,4 +31,5 @@ public class NotificationResponse {
             String nextCursor,
             List<MemberSetting> members
     ) {}
+
 }
