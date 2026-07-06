@@ -101,6 +101,39 @@ public class GoogleAdWebClient {
         return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
     }
 
+    // 캠페인 예산 리소스 이름 조회
+    public Mono<String> getCampaignBudgetResourceName(String customerId, PlatformConnection connection, AdAuthRequest request, String externalCampaignId) {
+        String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
+
+        String requestBody = "{\n" +
+                "  \"query\": \"SELECT " +
+                "campaign.campaign_budget " +
+                "FROM campaign " +
+                "WHERE campaign.id = '" + externalCampaignId + "'\"\n" +
+                "}";
+
+        return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
+    }
+
+    // 캠페인 예산 변경 (mutate)
+    public Mono<String> mutateCampaignBudget(String customerId, PlatformConnection connection, AdAuthRequest request, String budgetResourceName, Long amountMicros) {
+        String apiUrl = apiBaseUrl + customerId + "/campaignBudgets:mutate";
+
+        String requestBody = "{\n" +
+                "  \"operations\": [\n" +
+                "    {\n" +
+                "      \"updateMask\": \"amountMicros\",\n" +
+                "      \"update\": {\n" +
+                "        \"resourceName\": \"" + budgetResourceName + "\",\n" +
+                "        \"amountMicros\": \"" + amountMicros + "\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
+    }
+
     // 공통 WebClient 비동기 POST 요청
     private Mono<String> postWebClientRequest(String customerId, PlatformConnection connection, AdAuthRequest request, String apiUrl, String requestBody) {
         return Mono.defer(() -> {
