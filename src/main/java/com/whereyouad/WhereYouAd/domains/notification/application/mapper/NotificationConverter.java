@@ -22,9 +22,9 @@ public class NotificationConverter {
                 setting.isMasterEnabled(),
                 setting.isBrowserPushEnabled(),
                 setting.isEmailEnabled(),
-                setting.isSlackEnabled(),
+                orgSetting != null && orgSetting.isSlackEnabled(),
                 orgSetting != null && orgSetting.hasSlack(),
-                setting.isDiscordEnabled(),
+                orgSetting != null && orgSetting.isDiscordEnabled(),
                 orgSetting != null && orgSetting.hasDiscord(),
                 setting.isAlertBudget50(),
                 setting.isAlertBudget80(),
@@ -54,8 +54,6 @@ public class NotificationConverter {
                 .isMasterEnabled(true)
                 .isBrowserPushEnabled(false)
                 .isEmailEnabled(true)
-                .isSlackEnabled(false)
-                .isDiscordEnabled(false)
                 .alertBudget50(false)
                 .alertBudget80(true)
                 .alertBudget100(false)
