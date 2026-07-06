@@ -36,6 +36,7 @@ public class GoogleDTO {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AdCampaignBudgetNode {
         private Long amountMicros;
+        private String period;
     }
 
     // 2. 광고 그룹 조회용 DTO

@@ -56,6 +56,7 @@ public class GoogleAdWebClient {
                 "campaign.start_date_time, " +
                 "campaign.end_date_time, " +
                 "campaign_budget.amount_micros, " +
+                "campaign_budget.period, " +
                 "campaign.advertising_channel_type " +
                 "FROM campaign " +
                 "WHERE campaign.status != 'REMOVED'\"\n" +

@@ -116,6 +116,7 @@ public class GoogleAdService {
                                 newCampaign.getEndDate(),
                                 newCampaign.getDescription()
                         );
+                        existing.get().applyBudgetType(newCampaign.getBudgetType());
                     } else {
                         adCampaignRepository.save(newCampaign);
                     }

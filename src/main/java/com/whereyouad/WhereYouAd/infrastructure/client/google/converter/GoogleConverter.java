@@ -27,8 +27,17 @@ public class GoogleConverter {
         GoogleDTO.AdCampaignBudgetNode budget = result.getCampaignBudget();
 
         Long budgetAmount = null;
+        com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType budgetType = null;
         if (budget != null && budget.getAmountMicros() != null) {
             budgetAmount = budget.getAmountMicros() / 1_000_000L;
+            
+            if ("DAILY".equalsIgnoreCase(budget.getPeriod())) {
+                budgetType = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType.DAILY;
+            } else if (budget.getPeriod() != null) {
+                budgetType = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType.TOTAL;
+            } else {
+                budgetType = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType.DAILY; // 기본값
+            }
         }
 
         Goal goal = campaign != null ? mapGoal(campaign.getAdvertisingChannelType()) : null;
@@ -41,6 +50,7 @@ public class GoogleConverter {
                 .description(campaign != null ? description : null)
                 .status(campaign != null ? mapStatus(campaign.getStatus()) : Status.OVER)
                 .budget(budgetAmount)
+                .budgetType(budgetType)
                 .goal(goal)
                 .startDate(campaign != null ? parseDate(campaign.getStartDateTime()) : null)
                 .endDate(campaign != null ? parseDate(campaign.getEndDateTime()) : null)
