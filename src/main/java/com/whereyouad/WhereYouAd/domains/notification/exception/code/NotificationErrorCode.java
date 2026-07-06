@@ -11,6 +11,8 @@ public enum NotificationErrorCode implements BaseErrorCode {
 
     // 400
     NO_CHANNEL_CONFIGURED(HttpStatus.BAD_REQUEST, "NOTIFICATION_400_1", "발송할 외부 채널(슬랙/디스코드)이 설정되어 있지 않습니다."),
+    NO_CHANNEL_URL(HttpStatus.BAD_REQUEST, "NOTIFICATION_400_2", "외부 채널 알림을 활성화 하기 위한 해당 채널 웹훅 URL 이 입력되지 않았습니다."),
+    CHANNEL_REQUEST_CONFLICT(HttpStatus.BAD_REQUEST, "NOTIFICATION_400_3", "채널 알림 활성화와 연결 해제(웹훅 삭제)를 동시에 요청할 수 없습니다."),
 
     // 403
     FORBIDDEN(HttpStatus.FORBIDDEN, "NOTIFICATION_403_1", "해당 작업을 수행할 권한이 없습니다."),
