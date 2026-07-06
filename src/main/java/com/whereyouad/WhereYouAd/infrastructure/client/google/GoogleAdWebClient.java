@@ -44,6 +44,20 @@ public class GoogleAdWebClient {
         return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
     }
 
+    // 상위 계정 아래의 클라이언트 계정 정보도 모두 조회(캠페인~광고 정보 조회 가능하게끔)
+    public Mono<String> getAccessibleClientAccounts(String customerId, PlatformConnection connection, AdAuthRequest request) {
+        String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
+
+        String requestBody = "{\n" +
+                "  \"query\": \"SELECT " +
+                "customer_client.id, customer_client.manager " +
+                "FROM customer_client " +
+                "WHERE customer_client.level <= 1\"\n" +
+                "}";
+
+        return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
+    }
+
     // 전체 캠페인 조회
     public Mono<String> searchAllCampaigns(String customerId, PlatformConnection connection, AdAuthRequest request) {
         String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
@@ -56,7 +70,6 @@ public class GoogleAdWebClient {
                 "campaign.start_date_time, " +
                 "campaign.end_date_time, " +
                 "campaign_budget.amount_micros, " +
-                "campaign_budget.period, " +
                 "campaign.advertising_channel_type " +
                 "FROM campaign " +
                 "WHERE campaign.status != 'REMOVED'\"\n" +

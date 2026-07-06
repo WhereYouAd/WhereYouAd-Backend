@@ -63,19 +63,35 @@ public class GoogleBudgetService {
         Long amountMicros = request.amount() * 1_000_000L;
 
         try {
-            // 1. 캠페인의 campaign_budget 리소스 이름 조회
-            String customerId = account.getExternalAccountId();
+            // 1. 캠페인의 campaign_budget 리소스 이름 조회를 위해 해당 캠페인이 위치한 정확한 Client Account ID 찾기
+            String rootCustomerId = account.getExternalAccountId();
             AdAuthRequest emptyRequest = AdAuthRequest.empty();
-            String jsonResponse = googleAdWebClient.getCampaignBudgetResourceName(customerId, connection, emptyRequest, campaign.getExternalCampaignId()).block();
+
+            java.util.List<String> clientAccountIds = fetchAccessibleClientAccountsLocal(rootCustomerId, connection, emptyRequest);
             
-            String budgetResourceName = extractBudgetResourceName(jsonResponse);
+            String budgetResourceName = null;
+            String targetCustomerId = rootCustomerId;
+            
+            for (String clientAccountId : clientAccountIds) {
+                try {
+                    String jsonResponse = googleAdWebClient.getCampaignBudgetResourceName(clientAccountId, connection, emptyRequest, campaign.getExternalCampaignId()).block();
+                    budgetResourceName = extractBudgetResourceName(jsonResponse);
+                    if (budgetResourceName != null) {
+                        targetCustomerId = clientAccountId;
+                        break; // 캠페인을 찾았으므로 중단
+                    }
+                } catch (Exception e) {
+                    // 해당 하위 계정에 캠페인이 없거나 권한 오류일 시 다음 계정 확인
+                }
+            }
+
             if (budgetResourceName == null) {
-                log.error("[Google] 예산 리소스 이름 추출 실패 - campaignId: {}", campaign.getExternalCampaignId());
+                log.error("[Google] 예산 리소스 이름 추출 실패 - 모든 하위 계정 탐색 완료, campaignId: {}", campaign.getExternalCampaignId());
                 throw new AdApiHandler(AdApiErrorCode.BUDGET_UPDATE_FAILED);
             }
 
-            // 2. 캠페인 예산 변경(Mutate)
-            googleAdWebClient.mutateCampaignBudget(customerId, connection, emptyRequest, budgetResourceName, amountMicros).block();
+            // 2. 캠페인 예산 변경(Mutate) - 찾은 targetCustomerId를 대상으로 수행
+            googleAdWebClient.mutateCampaignBudget(targetCustomerId, connection, emptyRequest, budgetResourceName, amountMicros).block();
 
             // 3. 엔티티 업데이트 및 히스토리 저장
             campaign.updateBudget(request.amount());
@@ -122,5 +138,26 @@ public class GoogleBudgetService {
             log.error("Google Ads GAQL 응답 파싱 중 오류", e);
         }
         return null;
+    }
+
+    private java.util.List<String> fetchAccessibleClientAccountsLocal(String customerId, PlatformConnection connection, AdAuthRequest request) {
+        try {
+            String jsonResponse = googleAdWebClient.getAccessibleClientAccounts(customerId, connection, request).block();
+            if (jsonResponse == null || jsonResponse.isBlank()) return java.util.List.of(customerId);
+
+            com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO.AdCustomerClientResponse response = 
+                objectMapper.readValue(jsonResponse, com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO.AdCustomerClientResponse.class);
+            
+            if (response != null && response.getResults() != null && !response.getResults().isEmpty()) {
+                return response.getResults().stream()
+                        .filter(result -> result.getCustomerClient() != null)
+                        .filter(result -> Boolean.FALSE.equals(result.getCustomerClient().getManager()))
+                        .map(result -> result.getCustomerClient().getId())
+                        .toList();
+            }
+        } catch (Exception e) {
+            log.warn("하위 클라이언트 계정 조회 중 오류 발생 (기본 계정으로 대체): {}", e.getMessage());
+        }
+        return java.util.List.of(customerId); // 실패하거나 비어있으면 일단 자기 자신 반환 (단일 계정일 경우)
     }
 }

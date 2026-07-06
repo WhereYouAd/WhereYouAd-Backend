@@ -136,4 +136,24 @@ public class GoogleDTO {
     public static class SegmentsNode {
         private String date;
     }
+
+    // 5. 하위 클라이언트 계정 조회용 DTO
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AdCustomerClientResponse {
+        private List<AdCustomerClientResult> results;
+    }
+
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AdCustomerClientResult {
+        private AdCustomerClientNode customerClient;
+    }
+
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AdCustomerClientNode {
+        private String id;
+        private Boolean manager;
+    }
 }

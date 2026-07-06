@@ -58,13 +58,17 @@ public class GoogleAdService {
 
         for (PlatformConnection connection : connections) {
             String customerId = connection.getPlatformAccount().getExternalAccountId();
-            try {
-                syncAdCampaigns(customerId, connection, emptyRequest);
-                syncAdGroups(customerId, connection, emptyRequest);
-                syncAdContents(customerId, connection, emptyRequest);
-                syncMetricFacts(customerId, connection, emptyRequest);
-            } catch (Exception e) {
-                log.warn("계정 [{}]의 구글 광고 데이터 연동 중 오류가 발생했습니다. (광고가 없는 계정이거나 권한 문제일 수 있습니다.) 사유: {}", customerId, e.getMessage());
+            List<String> clientAccountIds = fetchAccessibleClientAccounts(customerId, connection, emptyRequest);
+
+            for (String clientAccountId : clientAccountIds) {
+                try {
+                    syncAdCampaigns(clientAccountId, connection, emptyRequest);
+                    syncAdGroups(clientAccountId, connection, emptyRequest);
+                    syncAdContents(clientAccountId, connection, emptyRequest);
+                    syncMetricFacts(clientAccountId, connection, emptyRequest);
+                } catch (Exception e) {
+                    log.warn("계정 [{}]의 구글 광고 데이터 연동 중 오류가 발생했습니다. (광고가 없는 계정이거나 권한 문제일 수 있습니다.) 사유: {}", clientAccountId, e.getMessage());
+                }
             }
         }
 
@@ -78,15 +82,38 @@ public class GoogleAdService {
 
         for (PlatformConnection connection : connections) {
             String customerId = connection.getPlatformAccount().getExternalAccountId();
-            try {
-                syncAdCampaigns(customerId, connection, emptyRequest);
-                syncAdGroups(customerId, connection, emptyRequest);
-                syncAdContents(customerId, connection, emptyRequest);
-                syncMetricFacts(customerId, connection, emptyRequest);
-            } catch (Exception e) {
-                log.warn("계정 [{}]의 구글 광고 데이터 동기화 중 오류가 발생했습니다. 사유: {}", customerId, e.getMessage());
+            List<String> clientAccountIds = fetchAccessibleClientAccounts(customerId, connection, emptyRequest);
+
+            for (String clientAccountId : clientAccountIds) {
+                try {
+                    syncAdCampaigns(clientAccountId, connection, emptyRequest);
+                    syncAdGroups(clientAccountId, connection, emptyRequest);
+                    syncAdContents(clientAccountId, connection, emptyRequest);
+                    syncMetricFacts(clientAccountId, connection, emptyRequest);
+                } catch (Exception e) {
+                    log.warn("계정 [{}]의 구글 광고 데이터 동기화 중 오류가 발생했습니다. 사유: {}", clientAccountId, e.getMessage());
+                }
             }
         }
+    }
+
+    private List<String> fetchAccessibleClientAccounts(String customerId, PlatformConnection connection, AdAuthRequest request) {
+        try {
+            String jsonResponse = googleAdWebClient.getAccessibleClientAccounts(customerId, connection, request).block();
+            if (jsonResponse == null || jsonResponse.isBlank()) return List.of();
+
+            GoogleDTO.AdCustomerClientResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AdCustomerClientResponse.class);
+            if (response != null && response.getResults() != null && !response.getResults().isEmpty()) {
+                return response.getResults().stream()
+                        .filter(result -> result.getCustomerClient() != null)
+                        .filter(result -> Boolean.FALSE.equals(result.getCustomerClient().getManager()))
+                        .map(result -> result.getCustomerClient().getId())
+                        .toList();
+            }
+        } catch (Exception e) {
+            log.warn("하위 클라이언트 계정 조회 중 오류 발생: {}", e.getMessage());
+        }
+        return List.of(); // 실패하거나 비어있으면 빈 리스트 반환 (MCC가 자체 통계를 조회하는 오류 방지)
     }
 
     private void syncAdCampaigns(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
