@@ -109,11 +109,11 @@ public class DashboardServiceImpl implements DashboardService {
             throw new DashboardException(ProjectErrorCode.ACCESS_FORBIDDEN);
         }
 
-        //DB 내부 Mock data 중 가장 최근의 timeBucket 값 추출
-        LocalDateTime latestDate = metricFactRepository.findLatestTimeBucket()
+        //DB 내부 Mock data 중 조직별로 가장 최근의 timeBucket 값 추출
+        LocalDateTime latestDate = metricFactRepository.findLatestTimeBucketByOrgId(orgId)
                 .orElse(LocalDateTime.now());
 
-        //DB 내부 Mock data 중 가장 최근의 timeBucket 값 기반 한달전, 두달전 기준 정립
+        //DB 내부 조직별 Mock data 중 가장 최근의 timeBucket 값 기반 한달전, 두달전 기준 정립
         LocalDateTime oneMonthAgo = latestDate.minusMonths(1);
 
         LocalDateTime twoMonthsAgo = latestDate.minusMonths(2);
