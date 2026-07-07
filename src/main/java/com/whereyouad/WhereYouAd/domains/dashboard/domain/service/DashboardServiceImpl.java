@@ -112,7 +112,7 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDateTime latestDate = metricFactRepository.findLatestTimeBucketByOrgId(orgId)
                 .orElse(LocalDateTime.now());
 
-        //집계 상한(endDate)은 exclusive(< endDate)이므로, 최신 버킷까지 포함하려면 하루 뒤를 상한으로 사용
+        //집계에서 가장 최신 timeBucket 을 포함하기 위해 하루 뒤를 상한으로 사용
         LocalDateTime currentEnd = latestDate.plusDays(1);
 
         //가장 최근 timeBucket 기준 한달전, 두달전 기준 정립
