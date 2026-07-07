@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.timeline.persistence.entity;
 
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.ComparisonPeriodType;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.PerformanceStatus;
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -54,6 +55,10 @@ public class Timeline extends BaseEntity {
     private LocalDate comparisonEndDate;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "comparison_period_type", nullable = false)
+    private ComparisonPeriodType comparisonPeriodType;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "performance_status")
     private PerformanceStatus performanceStatus;
 
@@ -84,7 +89,8 @@ public class Timeline extends BaseEntity {
                        boolean useImpression,
                        boolean useRoas,
                        LocalDate comparisonStartDate,
-                       LocalDate comparisonEndDate
+                       LocalDate comparisonEndDate,
+                       ComparisonPeriodType comparisonPeriodType
     ) {
         this.name = name;
         this.startDate = startDate;
@@ -95,5 +101,6 @@ public class Timeline extends BaseEntity {
         this.useRoas = useRoas;
         this.comparisonStartDate = comparisonStartDate;
         this.comparisonEndDate = comparisonEndDate;
+        this.comparisonPeriodType = comparisonPeriodType;
     }
 }

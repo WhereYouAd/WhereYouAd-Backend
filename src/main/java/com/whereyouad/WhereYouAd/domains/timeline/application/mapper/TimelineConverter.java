@@ -31,6 +31,7 @@ public class TimelineConverter {
                 .useRoas(dto.metrics().contains(MetricType.ROAS))
                 .comparisonStartDate(comparisonStartDate)
                 .comparisonEndDate(comparisonEndDate)
+                .comparisonPeriodType(dto.comparisonPeriodType())
                 .createdBy(userId)
                 .organization(organization)
                 .build();
@@ -67,6 +68,7 @@ public class TimelineConverter {
                 timeline.getStartDate(),
                 timeline.getEndDate(),
                 timeline.getPerformanceStatus(),
+                timeline.getComparisonPeriodType(),
                 metrics,
                 timeline.getSummary(),
                 dailyTrend,
