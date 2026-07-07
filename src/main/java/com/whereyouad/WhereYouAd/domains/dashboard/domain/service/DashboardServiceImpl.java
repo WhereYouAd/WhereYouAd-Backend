@@ -3,7 +3,6 @@ package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetFieldType;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.BudgetHistory;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
