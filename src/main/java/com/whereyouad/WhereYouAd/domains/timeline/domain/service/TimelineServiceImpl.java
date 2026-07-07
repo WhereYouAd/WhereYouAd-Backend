@@ -173,7 +173,8 @@ public class TimelineServiceImpl implements TimelineService {
         // 9. 엔티티 업데이트
         timeline.update(dto.name(), dto.startDate(), dto.endDate(),
                 useClick, useConversion, useImpression, useRoas,
-                comparisonDates.start(), comparisonDates.end());
+                comparisonDates.start(), comparisonDates.end(),
+                dto.comparisonPeriodType());
         // AI 요약도 초기화
         timeline.updateSummary(null);
 
