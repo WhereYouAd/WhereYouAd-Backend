@@ -29,12 +29,15 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     BigDecimal sumSpendsByUserIdAndOrgIdAndProvider(@Param("userId") Long userId, @Param("orgId") Long orgId,
             @Param("provider") Provider provider);
 
-    //전체 지표 조회 로직에서 사용
-    // 해당 프로젝트의 가장 최신 데이터 날짜를 가져오는 쿼리
-    @Query("SELECT MAX(m.timeBucket) FROM MetricFact m")
-    Optional<LocalDateTime> findLatestTimeBucket();
+    @Query("SELECT MAX(m.timeBucket) FROM MetricFact m " +
+            "JOIN m.adContent ac " +
+            "JOIN ac.adGroup ag " +
+            "JOIN ag.adCampaign camp " +
+            "WHERE camp.organization.id = :orgId")
+    Optional<LocalDateTime> findLatestTimeBucketByOrgId(@Param("orgId") Long orgId);
 
-    // orgId에 속한 모든 프로젝트의 지표중 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표를 지정된 기간 범위 합산
+    // orgId 에 속한 광고(adCampaign) 중 status 가 ON_GOING 인 지표를 지정된 기간 범위 합산
+    // project 유무와 무관하게 adCampaign 이 조직에 속하면 집계 (status 서브쿼리를 조인으로 흡수)
     @Query("SELECT " +
             "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
             "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
@@ -42,17 +45,15 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "COALESCE(SUM(m.spend), 0) AS totalSpend, " +
             "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
-            "JOIN m.project p " +
-            "WHERE p.organization.id = :orgId " +
-            "AND p.organization.status = :orgStatus " +
-            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate " +
-            "AND m.adContent.id IN (" +
-            "   SELECT ac.id " +
-            "   FROM AdContent ac " +
-            "   JOIN ac.adGroup ag " +
-            "   JOIN ag.adCampaign camp " +
-            "   WHERE camp.status = :status" + ")"
-            )
+            "JOIN m.adContent ac " +
+            "JOIN ac.adGroup ag " +
+            "JOIN ag.adCampaign camp " +
+            "JOIN camp.organization o " +
+            "WHERE o.id = :orgId " +
+            "AND o.status = :orgStatus " +
+            "AND camp.status = :status " +
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate"
+    )
     MetricSumProjection findMetricsSumByOrgIdAndDateRange(
             @Param("orgId") Long orgId,
             @Param("startDate") LocalDateTime startDate,
@@ -61,7 +62,8 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("status") Status status
             );
 
-    // orgId에 속한 모든 프로젝트의 지표중 해당 MetricFact 가 속한 AdCampaign 지표를 지정된 기간 범위 합산 (status 고려 x)
+    // orgId 에 속한 광고(adCampaign) 지표를 지정된 기간 범위 합산 (campaign status 고려 x)
+    // project 유무와 무관하게 adCampaign 이 조직에 속하면 집계
     @Query("SELECT " +
             "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
             "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
@@ -69,10 +71,13 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "COALESCE(SUM(m.spend), 0) AS totalSpend, " +
             "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
-            "JOIN m.project p " +
-            "WHERE p.organization.id = :orgId " +
-            "AND p.organization.status = :orgStatus " +
-            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate "
+            "JOIN m.adContent ac " +
+            "JOIN ac.adGroup ag " +
+            "JOIN ag.adCampaign camp " +
+            "JOIN camp.organization o " +
+            "WHERE o.id = :orgId " +
+            "AND o.status = :orgStatus " +
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate"
     )
     MetricSumProjection findMetricsSumByOrgIdAndDateRange(
             @Param("orgId") Long orgId,
@@ -81,7 +86,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("orgStatus") OrgStatus orgStatus
     );
 
-    //orgId 와 provider 가 일치하고 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표에 대해 지정된 기간 범위 합산
+    // orgId 와 provider 가 일치하고 해당 광고(adCampaign) 의 status 가 ON_GOING 인 지표에 대해 지정된 기간 범위 합산
     @Query("SELECT " +
             "COALESCE(SUM(m.impressions), 0) AS totalImpressions, " +
             "COALESCE(SUM(m.clicks), 0) AS totalClicks, " +
@@ -89,18 +94,16 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             "COALESCE(SUM(m.spend), 0) AS totalSpend, " +
             "COALESCE(SUM(m.revenue), 0) AS totalRevenue " +
             "FROM MetricFact m " +
-            "JOIN m.project p " +
-            "WHERE p.organization.id = :orgId " +
-            "AND p.organization.status = :orgStatus " +
+            "JOIN m.adContent ac " +
+            "JOIN ac.adGroup ag " +
+            "JOIN ag.adCampaign camp " +
+            "JOIN camp.organization o " +
+            "WHERE o.id = :orgId " +
+            "AND o.status = :orgStatus " +
             "AND m.provider = :provider " +
-            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate " +
-            "AND m.adContent.id IN (" +
-            "   SELECT ac.id " +
-            "   FROM AdContent ac " +
-            "   JOIN ac.adGroup ag " +
-            "   JOIN ag.adCampaign camp " +
-            "   WHERE camp.status = :status" + ")"
-            )
+            "AND camp.status = :status " +
+            "AND m.timeBucket >= :startDate AND m.timeBucket < :endDate"
+    )
     MetricSumProjection findMetricsSumByOrgIdAndProvider(
             @Param("orgId") Long orgId,
             @Param("provider") Provider provider,
