@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -70,6 +71,7 @@ public class GoogleAdWebClient {
                 "campaign.start_date_time, " +
                 "campaign.end_date_time, " +
                 "campaign_budget.amount_micros, " +
+                "campaign_budget.period, " +
                 "campaign.advertising_channel_type " +
                 "FROM campaign " +
                 "WHERE campaign.status != 'REMOVED'\"\n" +
@@ -160,14 +162,14 @@ public class GoogleAdWebClient {
                         .bodyValue(requestBody)
                         .retrieve()
                         .bodyToMono(String.class)
-                        .doOnError(org.springframework.web.reactive.function.client.WebClientResponseException.class, e -> {
+                        .doOnError(WebClientResponseException.class, e -> {
                             log.error("[Google Ads API Error] Customer ID: {}", customerId);
                             log.error("상태 코드: {}", e.getStatusCode());
                             log.error("에러 상세 내용: {}", e.getResponseBodyAsString());
                         })
                         .doOnError(error -> {
                             // WebClientResponseException이 아닌 다른 에러(네트워크 단절 등)일 경우
-                            if (!(error instanceof org.springframework.web.reactive.function.client.WebClientResponseException)) {
+                            if (!(error instanceof WebClientResponseException)) {
                                 log.error("[Google Ads API Network Error] Customer ID: {}", customerId, error);
                             }
                         });
