@@ -50,6 +50,12 @@ public class GoogleBudgetService {
             throw new AdApiHandler(AdApiErrorCode.INVALID_PROVIDER_VALUE);
         }
 
+        // 예산 유형 검증 (기존 예산 유형과 다른 유형으로 변경 불가)
+        BudgetType requestType = request.budgetType();
+        if (campaign.getBudgetType() != requestType) {
+            throw new AdApiHandler(GoogleAdErrorCode.INVALID_BUDGET_TYPE);
+        }
+
         // 금액 변경 여부 검증
         Long previousBudget = campaign.getBudget();
         if (Objects.equals(previousBudget, request.amount())) {
@@ -95,9 +101,6 @@ public class GoogleBudgetService {
 
             // 3. 엔티티 업데이트 및 히스토리 저장
             campaign.updateBudget(request.amount());
-            
-            BudgetType requestType = request.budgetType();
-            campaign.applyBudgetType(requestType);
 
             budgetHistoryRepository.save(AdvertisementConverter.toCampaignBudgetHistory(
                     campaign, previousBudget, request.amount(), userId, Provider.GOOGLE
