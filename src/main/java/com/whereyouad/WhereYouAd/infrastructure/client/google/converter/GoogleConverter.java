@@ -1,9 +1,6 @@
 package com.whereyouad.WhereYouAd.infrastructure.client.google.converter;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.*;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
@@ -27,16 +24,16 @@ public class GoogleConverter {
         GoogleDTO.AdCampaignBudgetNode budget = result.getCampaignBudget();
 
         Long budgetAmount = null;
-        com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType budgetType = null;
+        BudgetType budgetType = null;
         if (budget != null && budget.getAmountMicros() != null) {
             budgetAmount = budget.getAmountMicros() / 1_000_000L;
             
             if ("DAILY".equalsIgnoreCase(budget.getPeriod())) {
-                budgetType = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType.DAILY;
+                budgetType = BudgetType.DAILY;
             } else if (budget.getPeriod() != null) {
-                budgetType = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType.TOTAL;
+                budgetType = BudgetType.TOTAL;
             } else {
-                budgetType = com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType.DAILY; // 기본값
+                budgetType = BudgetType.DAILY; // 기본값
             }
         }
 
