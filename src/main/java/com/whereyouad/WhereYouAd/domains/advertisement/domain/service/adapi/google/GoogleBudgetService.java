@@ -20,12 +20,14 @@ import com.whereyouad.WhereYouAd.global.adapi.dto.AdAuthRequest;
 import com.whereyouad.WhereYouAd.global.adapi.exception.AdApiHandler;
 import com.whereyouad.WhereYouAd.global.adapi.exception.code.AdApiErrorCode;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.GoogleAdWebClient;
+import com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -73,7 +75,7 @@ public class GoogleBudgetService {
             String rootCustomerId = account.getExternalAccountId();
             AdAuthRequest emptyRequest = AdAuthRequest.empty();
 
-            java.util.List<String> clientAccountIds = fetchAccessibleClientAccountsLocal(rootCustomerId, connection, emptyRequest);
+            List<String> clientAccountIds = fetchAccessibleClientAccountsLocal(rootCustomerId, connection, emptyRequest);
             
             String budgetResourceName = null;
             String targetCustomerId = rootCustomerId;
@@ -88,6 +90,7 @@ public class GoogleBudgetService {
                     }
                 } catch (Exception e) {
                     // 해당 하위 계정에 캠페인이 없거나 권한 오류일 시 다음 계정 확인
+                    log.debug("하위 계정 [{}]에서 캠페인 조회 실패 (권한 없음 또는 캠페인 없음). 다음 계정 탐색 진행", clientAccountId);
                 }
             }
 
@@ -143,13 +146,13 @@ public class GoogleBudgetService {
         return null;
     }
 
-    private java.util.List<String> fetchAccessibleClientAccountsLocal(String customerId, PlatformConnection connection, AdAuthRequest request) {
+    private List<String> fetchAccessibleClientAccountsLocal(String customerId, PlatformConnection connection, AdAuthRequest request) {
         try {
             String jsonResponse = googleAdWebClient.getAccessibleClientAccounts(customerId, connection, request).block();
             if (jsonResponse == null || jsonResponse.isBlank()) return java.util.List.of(customerId);
 
-            com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO.AdCustomerClientResponse response = 
-                objectMapper.readValue(jsonResponse, com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO.AdCustomerClientResponse.class);
+            GoogleDTO.AdCustomerClientResponse response =
+                objectMapper.readValue(jsonResponse, GoogleDTO.AdCustomerClientResponse.class);
             
             if (response != null && response.getResults() != null && !response.getResults().isEmpty()) {
                 return response.getResults().stream()
