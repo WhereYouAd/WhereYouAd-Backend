@@ -178,5 +178,6 @@ public class GoogleDTO {
     public static class AdCustomerClientNode {
         private String id;
         private Boolean manager;
+        private String descriptiveName;
     }
 }

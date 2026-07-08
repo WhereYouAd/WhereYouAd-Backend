@@ -71,31 +71,16 @@ public class GoogleBudgetService {
         Long amountMicros = request.amount() * 1_000_000L;
 
         try {
-            // 1. 캠페인의 campaign_budget 리소스 이름 조회를 위해 해당 캠페인이 위치한 정확한 Client Account ID 찾기
-            String rootCustomerId = account.getExternalAccountId();
+            // 1. 캠페인의 타겟 Client Account 추출
+            String targetCustomerId = account.getExternalAccountId();
             AdAuthRequest emptyRequest = AdAuthRequest.empty();
 
-            List<String> clientAccountIds = fetchAccessibleClientAccountsLocal(rootCustomerId, connection, emptyRequest);
-            
-            String budgetResourceName = null;
-            String targetCustomerId = rootCustomerId;
-            
-            for (String clientAccountId : clientAccountIds) {
-                try {
-                    String jsonResponse = googleAdWebClient.getCampaignBudgetResourceName(clientAccountId, connection, emptyRequest, campaign.getExternalCampaignId()).block();
-                    budgetResourceName = extractBudgetResourceName(jsonResponse);
-                    if (budgetResourceName != null) {
-                        targetCustomerId = clientAccountId;
-                        break; // 캠페인을 찾았으므로 중단
-                    }
-                } catch (Exception e) {
-                    // 해당 하위 계정에 캠페인이 없거나 권한 오류일 시 다음 계정 확인
-                    log.debug("하위 계정 [{}]에서 캠페인 조회 실패 (권한 없음 또는 캠페인 없음). 다음 계정 탐색 진행", clientAccountId);
-                }
-            }
+            // 캠페인의 budgetResourceName 가져오기
+            String jsonResponse = googleAdWebClient.getCampaignBudgetResourceName(targetCustomerId, connection, emptyRequest, campaign.getExternalCampaignId()).block();
+            String budgetResourceName = extractBudgetResourceName(jsonResponse);
 
             if (budgetResourceName == null) {
-                log.error("[Google] 예산 리소스 이름 추출 실패 - 모든 하위 계정 탐색 완료, campaignId: {}", campaign.getExternalCampaignId());
+                log.error("[Google] 예산 리소스 이름 추출 실패 - 타겟 하위 계정 검색 실패, campaignId: {}", campaign.getExternalCampaignId());
                 throw new AdApiHandler(AdApiErrorCode.BUDGET_UPDATE_FAILED);
             }
 
@@ -123,8 +108,10 @@ public class GoogleBudgetService {
     }
 
     private PlatformConnection resolveConnection(Long userId, PlatformAccount account) {
+        // 하위 계정인 경우, 토큰(Connection)은 부모 계정에 연결되어 있음
+        PlatformAccount targetAccount = account.getParentAccount() != null ? account.getParentAccount() : account;
         return platformConnectionRepository
-                .findByUserIdAndPlatformAccountId(userId, account.getId())
+                .findByUserIdAndPlatformAccountId(userId, targetAccount.getId())
                 .filter(c -> c.getRevokedAt() == null)
                 .orElseThrow(() -> new AdApiHandler(GoogleAdErrorCode.NOT_ACCOUNT_OWNER));
     }
@@ -146,24 +133,4 @@ public class GoogleBudgetService {
         return null;
     }
 
-    private List<String> fetchAccessibleClientAccountsLocal(String customerId, PlatformConnection connection, AdAuthRequest request) {
-        try {
-            String jsonResponse = googleAdWebClient.getAccessibleClientAccounts(customerId, connection, request).block();
-            if (jsonResponse == null || jsonResponse.isBlank()) return java.util.List.of(customerId);
-
-            GoogleDTO.AdCustomerClientResponse response =
-                objectMapper.readValue(jsonResponse, GoogleDTO.AdCustomerClientResponse.class);
-            
-            if (response != null && response.getResults() != null && !response.getResults().isEmpty()) {
-                return response.getResults().stream()
-                        .filter(result -> result.getCustomerClient() != null)
-                        .filter(result -> Boolean.FALSE.equals(result.getCustomerClient().getManager()))
-                        .map(result -> result.getCustomerClient().getId())
-                        .toList();
-            }
-        } catch (Exception e) {
-            log.warn("하위 클라이언트 계정 조회 중 오류 발생 (기본 계정으로 대체): {}", e.getMessage());
-        }
-        return java.util.List.of(customerId); // 실패하거나 비어있으면 일단 자기 자신 반환 (단일 계정일 경우)
-    }
 }
