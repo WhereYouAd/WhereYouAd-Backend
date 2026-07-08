@@ -30,7 +30,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("provider") Provider provider);
 
     // 전체 지표 조회 로직에서 사용
-    // 해당 프로젝트의 가장 최신 데이터 날짜를 가져오는 쿼리
+    // 해당 조직(orgId)의 가장 최신 timeBucket을 가져오는 쿼리
     @Query("SELECT MAX(m.timeBucket) FROM MetricFact m " +
             "JOIN m.project p " +
             "WHERE p.organization.id = :orgId")
