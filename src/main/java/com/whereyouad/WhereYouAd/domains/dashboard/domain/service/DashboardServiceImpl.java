@@ -3,7 +3,6 @@ package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetFieldType;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.BudgetHistory;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
@@ -109,14 +108,16 @@ public class DashboardServiceImpl implements DashboardService {
             throw new DashboardException(ProjectErrorCode.ACCESS_FORBIDDEN);
         }
 
-        //DB 내부 Mock data 중 가장 최근의 timeBucket 값 추출
-        LocalDateTime latestDate = metricFactRepository.findLatestTimeBucket()
+        //DB 내부 Mock data 중 조직별로 가장 최근의 timeBucket 값 추출
+        LocalDateTime latestDate = metricFactRepository.findLatestTimeBucketByOrgId(orgId)
                 .orElse(LocalDateTime.now());
 
-        //DB 내부 Mock data 중 가장 최근의 timeBucket 값 기반 한달전, 두달전 기준 정립
-        LocalDateTime oneMonthAgo = latestDate.minusMonths(1);
+        //집계에서 가장 최신 timeBucket 을 포함하기 위해 하루 뒤를 상한으로 사용
+        LocalDateTime currentEnd = latestDate.plusDays(1);
 
-        LocalDateTime twoMonthsAgo = latestDate.minusMonths(2);
+        //가장 최근 timeBucket 기준 한달전, 두달전 기준 정립
+        LocalDateTime oneMonthAgo = currentEnd.minusMonths(1);
+        LocalDateTime twoMonthsAgo = currentEnd.minusMonths(2);
 
         MetricSumProjection currentProjection;
         MetricSumProjection pastProjection;
@@ -125,7 +126,7 @@ public class DashboardServiceImpl implements DashboardService {
             //시간값들과 회원이 속한 project 리스트 기반 projection 으로 DB 에서
             //TotalImpressions, TotalClicks, TotalConversions, TotalSpend, TotalRevenue 를 집계해서 가져오기
             currentProjection = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
-                    orgId, oneMonthAgo, latestDate, OrgStatus.ACTIVE, Status.ON_GOING
+                    orgId, oneMonthAgo, currentEnd, OrgStatus.ACTIVE, Status.ON_GOING
             ); //가장 최근 ~ 한달 전의 집계 projection
 
             pastProjection = metricFactRepository.findMetricsSumByOrgIdAndDateRange(
@@ -141,7 +142,7 @@ public class DashboardServiceImpl implements DashboardService {
                 throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
             }
             currentProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
-                    orgId, provider, oneMonthAgo, latestDate, OrgStatus.ACTIVE, Status.ON_GOING);
+                    orgId, provider, oneMonthAgo, currentEnd, OrgStatus.ACTIVE, Status.ON_GOING);
             pastProjection = metricFactRepository.findMetricsSumByOrgIdAndProvider(
                     orgId, provider, twoMonthsAgo, oneMonthAgo, OrgStatus.ACTIVE, Status.ON_GOING);
         }
