@@ -51,7 +51,7 @@ public class GoogleAdWebClient {
 
         String requestBody = "{\n" +
                 "  \"query\": \"SELECT " +
-                "customer_client.id, customer_client.manager " +
+                "customer_client.id, customer_client.manager, customer_client.descriptive_name " +
                 "FROM customer_client " +
                 "WHERE customer_client.level <= 1\"\n" +
                 "}";
