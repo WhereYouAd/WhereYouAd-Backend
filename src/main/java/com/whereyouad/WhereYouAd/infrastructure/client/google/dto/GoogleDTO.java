@@ -67,6 +67,29 @@ public class GoogleDTO {
         private String id;
     }
 
+    // 2-1. 애셋 그룹 조회용 DTO (Performance Max 캠페인용)
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AssetGroupResponse {
+        private List<AssetGroupResult> results;
+    }
+
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AssetGroupResult {
+        private AssetGroupNode assetGroup;
+        private AdGroupCampaignNode campaign; // 캠페인 노드는 동일 구조 재사용
+    }
+
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AssetGroupNode {
+        private String id;
+        private String name;
+        private String status;
+    }
+
+
     // 3. 개별 광고 조회용 DTO
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)

@@ -97,6 +97,23 @@ public class GoogleAdWebClient {
         return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
     }
 
+    // 전체 애셋 그룹 조회 (Performance Max 캠페인용)
+    public Mono<String> searchAllAssetGroups(String customerId, PlatformConnection connection, AdAuthRequest request) {
+        String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
+
+        String requestBody = "{\n" +
+                "  \"query\": \"SELECT " +
+                "asset_group.id, " +
+                "asset_group.name, " +
+                "asset_group.status, " +
+                "campaign.id " +
+                "FROM asset_group " +
+                "WHERE asset_group.status != 'REMOVED'\"\n" +
+                "}";
+
+        return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
+    }
+
     // 전체 개별 광고 조회
     public Mono<String> searchAllAdContents(String customerId, PlatformConnection connection, AdAuthRequest request) {
         String apiUrl = apiBaseUrl + customerId + "/googleAds:search";

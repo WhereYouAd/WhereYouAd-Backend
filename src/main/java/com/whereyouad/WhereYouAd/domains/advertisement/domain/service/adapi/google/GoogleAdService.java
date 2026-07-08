@@ -64,6 +64,7 @@ public class GoogleAdService {
                 try {
                     syncAdCampaigns(clientAccountId, connection, emptyRequest);
                     syncAdGroups(clientAccountId, connection, emptyRequest);
+                    syncAssetGroups(clientAccountId, connection, emptyRequest); // 애셋 그룹 추가
                     syncAdContents(clientAccountId, connection, emptyRequest);
                     syncMetricFacts(clientAccountId, connection, emptyRequest);
                 } catch (Exception e) {
@@ -88,6 +89,7 @@ public class GoogleAdService {
                 try {
                     syncAdCampaigns(clientAccountId, connection, emptyRequest);
                     syncAdGroups(clientAccountId, connection, emptyRequest);
+                    syncAssetGroups(clientAccountId, connection, emptyRequest); // 애셋 그룹 추가
                     syncAdContents(clientAccountId, connection, emptyRequest);
                     syncMetricFacts(clientAccountId, connection, emptyRequest);
                 } catch (Exception e) {
@@ -190,6 +192,45 @@ public class GoogleAdService {
         } catch (Exception e) {
             log.error("광고 그룹 JSON 파싱 및 저장 실패", e);
             throw new AdApiHandler(AdApiErrorCode.GOOGLE_DATA_SYNC_FAILED);
+        }
+    }
+
+    private void syncAssetGroups(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
+        String jsonResponse = googleAdWebClient.searchAllAssetGroups(customerId, platformConnection, request).block();
+
+        if (jsonResponse == null || jsonResponse.isBlank()) return;
+
+        PlatformAccount currentAccount = platformConnection.getPlatformAccount();
+
+        try {
+            GoogleDTO.AssetGroupResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AssetGroupResponse.class);
+
+            if (response != null && response.getResults() != null) {
+                for (GoogleDTO.AssetGroupResult result : response.getResults()) {
+                    String externalCampaignId = result.getCampaign().getId();
+                    AdCampaign adCampaign = adCampaignRepository.findByPlatformAccountAndExternalCampaignId(currentAccount, externalCampaignId).orElse(null);
+
+                    if (adCampaign == null) continue;
+
+                    String externalGroupId = result.getAssetGroup().getId();
+                    Optional<AdGroup> existing = adGroupRepository.findByAdCampaignAndExternalGroupId(adCampaign, externalGroupId);
+                    AdGroup newGroup = googleConverter.toAssetGroup(result, adCampaign);
+
+                    if (existing.isPresent()) {
+                        existing.get().update(
+                                newGroup.getName(), 
+                                newGroup.getStatus(), 
+                                existing.get().getTargetingInfo()
+                        );
+                    } else {
+                        adGroupRepository.save(newGroup);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("애셋 그룹 JSON 파싱 및 저장 실패", e);
+            // 애셋 그룹 조회를 지원하지 않는 계정일 수도 있으므로 에러를 던지지 않고 경고 로그만 남김 (PMax 캠페인이 없는 등)
+            log.warn("해당 계정에서 애셋 그룹 동기화를 건너뜁니다: {}", e.getMessage());
         }
     }
 

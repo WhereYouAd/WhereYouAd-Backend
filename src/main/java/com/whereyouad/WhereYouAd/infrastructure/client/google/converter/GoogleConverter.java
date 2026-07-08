@@ -67,6 +67,17 @@ public class GoogleConverter {
                 .build();
     }
 
+    public AdGroup toAssetGroup(GoogleDTO.AssetGroupResult result, AdCampaign adCampaign) {
+        GoogleDTO.AssetGroupNode assetGroup = result.getAssetGroup();
+
+        return AdGroup.builder()
+                .externalGroupId(assetGroup != null ? assetGroup.getId() : null)
+                .name(assetGroup != null ? assetGroup.getName() : null)
+                .status(assetGroup != null ? mapStatus(assetGroup.getStatus()) : Status.OVER)
+                .adCampaign(adCampaign)
+                .build();
+    }
+
     public AdContent toAdContent(GoogleDTO.AdContentResult result, AdGroup adGroup) {
         GoogleDTO.AdGroupAdNode adGroupAd = result.getAdGroupAd();
         GoogleDTO.AdNode ad = adGroupAd != null ? adGroupAd.getAd() : null;
