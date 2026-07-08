@@ -29,10 +29,12 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     BigDecimal sumSpendsByUserIdAndOrgIdAndProvider(@Param("userId") Long userId, @Param("orgId") Long orgId,
             @Param("provider") Provider provider);
 
-    //전체 지표 조회 로직에서 사용
+    // 전체 지표 조회 로직에서 사용
     // 해당 프로젝트의 가장 최신 데이터 날짜를 가져오는 쿼리
-    @Query("SELECT MAX(m.timeBucket) FROM MetricFact m")
-    Optional<LocalDateTime> findLatestTimeBucket();
+    @Query("SELECT MAX(m.timeBucket) FROM MetricFact m " +
+            "JOIN m.project p " +
+            "WHERE p.organization.id = :orgId")
+    Optional<LocalDateTime> findLatestTimeBucketByOrgId(@Param("orgId") Long orgId);
 
     // orgId에 속한 모든 프로젝트의 지표중 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표를 지정된 기간 범위 합산
     @Query("SELECT " +
