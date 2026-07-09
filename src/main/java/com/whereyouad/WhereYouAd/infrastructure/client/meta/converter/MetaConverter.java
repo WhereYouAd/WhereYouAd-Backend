@@ -16,9 +16,18 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Slf4j
 public class MetaConverter {
+
+    // 구매 대표 action_type 우선순위 (상위 → 하위). 첫 매칭 하나만 사용해 이중집계 방지
+    private static final java.util.List<String> PURCHASE_ACTION_PRIORITY = java.util.List.of(
+            "omni_purchase",                       // 픽셀+앱+오프라인 통합(중복 제거) — 최우선
+            "purchase",                            // 표준 집계
+            "offsite_conversion.fb_pixel_purchase" // 픽셀 단일 소스
+    );
+
     // MetaDTO -> MetricFactResponse 변환
 
     // Meta Campaign → AdCampaign
@@ -112,27 +121,17 @@ public class MetaConverter {
         } else {
             timeBucket = LocalDate.now().atStartOfDay();
         }
-        long conversions = 0L;
-        BigDecimal revenue = BigDecimal.ZERO;
-        if (src.actions() != null) {
-            for (MetaDTO.Action action : src.actions()) {
-                if ("purchase".equals(action.actionType())
-                        || "offsite_conversion.fb_pixel_purchase".equals(action.actionType())) {
-                    try {
-                        if (action.value() != null) {
-                            conversions += (long) Double.parseDouble(action.value());
-                        }
-                    } catch (NumberFormatException e) {
-                        log.warn("[META] 전환 값 파싱 실패 (건너뜀) - value: {}", action.value());
-                    }
-                }
-            }
-        }
+
+        // Meta 배열에는 동일 구매가 omni_purchase / purchase / offsite_conversion.fb_pixel_purchase 로 중복 표기될 수 있어, 합산(+=) 시 이중집계됨.
+        // -> 우선순위상 "단 하나의 대표 action_type" value 만 채택한다.
+        long conversions = parseLong(pickPurchaseValue(src.actions()).orElse(null));
+        BigDecimal revenue = parseBigDecimal(pickPurchaseValue(src.actionValues()).orElse(null));
+
         return MetricFact.builder()
                 .grain(Grain.DAILY)
                 .timeBucket(timeBucket)
                 .impressions(parseLong(src.impressions()))
-                .clicks(parseLong(src.clicks()))
+                .clicks(parseLong(src.inlineLinkClicks()))
                 .conversions(conversions)
                 .spend(parseBigDecimal(src.spend()))
                 .revenue(revenue)
@@ -308,6 +307,21 @@ public class MetaConverter {
         }
 
         return Math.round(minorBudget / 100.0);
+    }
+
+    // 우선순위에 따라 단일 구매 action 의 value 반환 (없으면 empty)
+    private static java.util.Optional<String> pickPurchaseValue(List<MetaDTO.Action> actions) {
+        if (actions == null) return java.util.Optional.empty();
+
+        for (String type : PURCHASE_ACTION_PRIORITY) {
+            for (MetaDTO.Action a : actions) {
+                if (type.equals(a.actionType())) {
+                    return java.util.Optional.ofNullable(a.value());
+                }
+            }
+        }
+
+        return java.util.Optional.empty();
     }
 
 }
