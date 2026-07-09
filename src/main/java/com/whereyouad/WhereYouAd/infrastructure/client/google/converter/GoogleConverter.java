@@ -1,9 +1,6 @@
 package com.whereyouad.WhereYouAd.infrastructure.client.google.converter;
 
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
-import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.*;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
@@ -27,8 +24,17 @@ public class GoogleConverter {
         GoogleDTO.AdCampaignBudgetNode budget = result.getCampaignBudget();
 
         Long budgetAmount = null;
+        BudgetType budgetType = null;
         if (budget != null && budget.getAmountMicros() != null) {
             budgetAmount = budget.getAmountMicros() / 1_000_000L;
+            
+            if ("DAILY".equalsIgnoreCase(budget.getPeriod())) {
+                budgetType = BudgetType.DAILY;
+            } else if (budget.getPeriod() != null) {
+                budgetType = BudgetType.TOTAL;
+            } else {
+                budgetType = BudgetType.DAILY; // 기본값
+            }
         }
 
         Goal goal = campaign != null ? mapGoal(campaign.getAdvertisingChannelType()) : null;
@@ -41,6 +47,7 @@ public class GoogleConverter {
                 .description(campaign != null ? description : null)
                 .status(campaign != null ? mapStatus(campaign.getStatus()) : Status.OVER)
                 .budget(budgetAmount)
+                .budgetType(budgetType)
                 .goal(goal)
                 .startDate(campaign != null ? parseDate(campaign.getStartDateTime()) : null)
                 .endDate(campaign != null ? parseDate(campaign.getEndDateTime()) : null)
@@ -56,6 +63,17 @@ public class GoogleConverter {
                 .externalGroupId(adGroup != null ? adGroup.getId() : null)
                 .name(adGroup != null ? adGroup.getName() : null)
                 .status(adGroup != null ? mapStatus(adGroup.getStatus()) : Status.OVER)
+                .adCampaign(adCampaign)
+                .build();
+    }
+
+    public AdGroup toAssetGroup(GoogleDTO.AssetGroupResult result, AdCampaign adCampaign) {
+        GoogleDTO.AssetGroupNode assetGroup = result.getAssetGroup();
+
+        return AdGroup.builder()
+                .externalGroupId(assetGroup != null ? assetGroup.getId() : null)
+                .name(assetGroup != null ? assetGroup.getName() : null)
+                .status(assetGroup != null ? mapStatus(assetGroup.getStatus()) : Status.OVER)
                 .adCampaign(adCampaign)
                 .build();
     }

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -44,6 +45,20 @@ public class GoogleAdWebClient {
         return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
     }
 
+    // 상위 계정 아래의 클라이언트 계정 정보도 모두 조회(캠페인~광고 정보 조회 가능하게끔)
+    public Mono<String> getAccessibleClientAccounts(String customerId, PlatformConnection connection, AdAuthRequest request) {
+        String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
+
+        String requestBody = "{\n" +
+                "  \"query\": \"SELECT " +
+                "customer_client.id, customer_client.manager, customer_client.descriptive_name " +
+                "FROM customer_client " +
+                "WHERE customer_client.level <= 1\"\n" +
+                "}";
+
+        return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
+    }
+
     // 전체 캠페인 조회
     public Mono<String> searchAllCampaigns(String customerId, PlatformConnection connection, AdAuthRequest request) {
         String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
@@ -56,6 +71,7 @@ public class GoogleAdWebClient {
                 "campaign.start_date_time, " +
                 "campaign.end_date_time, " +
                 "campaign_budget.amount_micros, " +
+                "campaign_budget.period, " +
                 "campaign.advertising_channel_type " +
                 "FROM campaign " +
                 "WHERE campaign.status != 'REMOVED'\"\n" +
@@ -81,6 +97,23 @@ public class GoogleAdWebClient {
         return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
     }
 
+    // 전체 애셋 그룹 조회 (Performance Max 캠페인용)
+    public Mono<String> searchAllAssetGroups(String customerId, PlatformConnection connection, AdAuthRequest request) {
+        String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
+
+        String requestBody = "{\n" +
+                "  \"query\": \"SELECT " +
+                "asset_group.id, " +
+                "asset_group.name, " +
+                "asset_group.status, " +
+                "campaign.id " +
+                "FROM asset_group " +
+                "WHERE asset_group.status != 'REMOVED'\"\n" +
+                "}";
+
+        return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
+    }
+
     // 전체 개별 광고 조회
     public Mono<String> searchAllAdContents(String customerId, PlatformConnection connection, AdAuthRequest request) {
         String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
@@ -101,6 +134,39 @@ public class GoogleAdWebClient {
         return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
     }
 
+    // 캠페인 예산 리소스 이름 조회
+    public Mono<String> getCampaignBudgetResourceName(String customerId, PlatformConnection connection, AdAuthRequest request, String externalCampaignId) {
+        String apiUrl = apiBaseUrl + customerId + "/googleAds:search";
+
+        String requestBody = "{\n" +
+                "  \"query\": \"SELECT " +
+                "campaign.campaign_budget " +
+                "FROM campaign " +
+                "WHERE campaign.id = '" + externalCampaignId + "'\"\n" +
+                "}";
+
+        return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
+    }
+
+    // 캠페인 예산 변경 (mutate)
+    public Mono<String> mutateCampaignBudget(String customerId, PlatformConnection connection, AdAuthRequest request, String budgetResourceName, Long amountMicros) {
+        String apiUrl = apiBaseUrl + customerId + "/campaignBudgets:mutate";
+
+        String requestBody = "{\n" +
+                "  \"operations\": [\n" +
+                "    {\n" +
+                "      \"updateMask\": \"amountMicros\",\n" +
+                "      \"update\": {\n" +
+                "        \"resourceName\": \"" + budgetResourceName + "\",\n" +
+                "        \"amountMicros\": \"" + amountMicros + "\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        return postWebClientRequest(customerId, connection, request, apiUrl, requestBody);
+    }
+
     // 공통 WebClient 비동기 POST 요청
     private Mono<String> postWebClientRequest(String customerId, PlatformConnection connection, AdAuthRequest request, String apiUrl, String requestBody) {
         return Mono.defer(() -> {
@@ -113,14 +179,14 @@ public class GoogleAdWebClient {
                         .bodyValue(requestBody)
                         .retrieve()
                         .bodyToMono(String.class)
-                        .doOnError(org.springframework.web.reactive.function.client.WebClientResponseException.class, e -> {
+                        .doOnError(WebClientResponseException.class, e -> {
                             log.error("[Google Ads API Error] Customer ID: {}", customerId);
                             log.error("상태 코드: {}", e.getStatusCode());
                             log.error("에러 상세 내용: {}", e.getResponseBodyAsString());
                         })
                         .doOnError(error -> {
                             // WebClientResponseException이 아닌 다른 에러(네트워크 단절 등)일 경우
-                            if (!(error instanceof org.springframework.web.reactive.function.client.WebClientResponseException)) {
+                            if (!(error instanceof WebClientResponseException)) {
                                 log.error("[Google Ads API Network Error] Customer ID: {}", customerId, error);
                             }
                         });
