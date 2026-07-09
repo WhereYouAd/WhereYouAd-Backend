@@ -68,6 +68,8 @@ public interface MetaClient {
             @RequestParam("level") String level,
             @RequestParam("time_range") String timeRange,
             @RequestParam("time_increment") String timeIncrement,
+            // 어트리뷰션 윈도우 명시 (전환/매출 수치 재현성 확보)
+            @RequestParam(value = "action_attribution_windows", required = false) String actionAttributionWindows,
             @RequestParam(value = "after", required = false) String afterCursor);
 
     @PostMapping("/{nodeId}")
