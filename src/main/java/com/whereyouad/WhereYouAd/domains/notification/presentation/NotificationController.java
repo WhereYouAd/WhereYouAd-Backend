@@ -61,6 +61,17 @@ public class NotificationController implements NotificationControllerDocs {
         return ResponseEntity.ok(DataResponse.ok());
     }
 
+    @PatchMapping("/settings/{orgId}/org")
+    @Override
+    public ResponseEntity<DataResponse<Void>> updateOrgSettings(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody NotificationRequest.UpdateOrgSettings request
+    ) {
+        notificationService.updateOrgSettings(userId, orgId, request);
+        return ResponseEntity.ok(DataResponse.ok());
+    }
+
     @GetMapping("/settings/{orgId}/members")
     @Override
     public ResponseEntity<DataResponse<NotificationResponse.MemberSettingList>> getMemberSettings(
