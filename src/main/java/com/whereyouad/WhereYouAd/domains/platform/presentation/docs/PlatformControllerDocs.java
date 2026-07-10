@@ -76,7 +76,7 @@ public interface PlatformControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공"),
             @ApiResponse(responseCode = "400", description = "PLATFORM_400_2 : DISCONNECTED 된 광고 계정이 아닙니다."),
-            @ApiResponse(responseCode = "403", description = "PLATFORM_403_1 : ADMIN 이 아닙니다. \n\n PLATFORM_403_3 : 본인이 등록한 광고 계정만 재연동 가능"),
+            @ApiResponse(responseCode = "403", description = "PLATFORM_403_1 : ADMIN 이 아닙니다. \n\n PLATFORM_403_2 : 해당 광고 계정은 요청한 조직 소속이 아닙니다. \n\n PLATFORM_403_3 : 본인이 등록한 광고 계정만 재연동 가능"),
             @ApiResponse(responseCode = "404", description = "USER_404_1 : 이메일에 해당하는 사용자를 찾을 수 없습니다. \n\n PLATFORM_404_2 : 해당 조직의 멤버가 아닙니다. \n\n PLATFORM_404_3 : 해당 광고 계정을 찾을 수 없습니다.")
     })
     @PatchMapping("/{orgId}/accounts/{accountId}/reconnect")
