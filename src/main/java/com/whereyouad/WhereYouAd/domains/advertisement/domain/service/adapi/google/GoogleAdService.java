@@ -10,6 +10,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Ad
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.GoogleAdResponse;
+import com.whereyouad.WhereYouAd.domains.platform.domain.constant.PlatformStatus;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
@@ -134,6 +135,7 @@ public class GoogleAdService {
                                                 .provider(Provider.GOOGLE)
                                                 .parentAccount(parentAccount)
                                                 .organization(parentAccount.getOrganization())
+                                                .status(PlatformStatus.ACTIVE)
                                                 .build();
                                         return platformAccountRepository.save(newAccount);
                                     });
