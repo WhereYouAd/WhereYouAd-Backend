@@ -28,7 +28,10 @@ public class NotificationConverter {
                 orgSetting != null && orgSetting.hasDiscord(),
                 setting.isAlertRapidClicks(),
                 setting.isAlertBotClicks(),
-                setting.isAlertReport()
+                setting.isAlertReport(),
+                orgSetting != null && orgSetting.isAlertRapidClicks(),
+                orgSetting != null && orgSetting.isAlertBotClicks(),
+                orgSetting != null && orgSetting.isAlertReport()
         );
     }
 
