@@ -206,6 +206,10 @@ public class PlatformServiceImpl implements PlatformService {
             throw new PlatformHandler(PlatformErrorCode.NOT_DISCONNECTED_ACCOUNT);
         }
 
+        if (!platformAccount.getOrganization().getId().equals(orgId)) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_BELONG_TO_ORG);
+        }
+
         platformAccount.reconnect();
     }
 
