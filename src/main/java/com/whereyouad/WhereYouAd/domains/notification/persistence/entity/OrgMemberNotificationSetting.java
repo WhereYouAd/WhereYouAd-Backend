@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMemb
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "org_member_notification_setting")
@@ -32,12 +33,15 @@ public class OrgMemberNotificationSetting extends BaseEntity {
     private boolean isEmailEnabled;
 
     @Column(name = "alert_rapid_clicks", nullable = false)
+    @ColumnDefault("false")
     private boolean alertRapidClicks;
 
     @Column(name = "alert_bot_clicks", nullable = false)
+    @ColumnDefault("false")
     private boolean alertBotClicks;
 
     @Column(name = "alert_report", nullable = false)
+    @ColumnDefault("false")
     private boolean alertReport;
 
     public void updateMaster(Boolean isMasterEnabled) {
