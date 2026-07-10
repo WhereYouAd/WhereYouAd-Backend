@@ -61,4 +61,8 @@ public class PlatformAccount extends BaseEntity {
         this.status = PlatformStatus.DISCONNECTED;
     }
 
+    public void reconnect() {
+        this.status = PlatformStatus.ACTIVE;
+    }
+
 }
