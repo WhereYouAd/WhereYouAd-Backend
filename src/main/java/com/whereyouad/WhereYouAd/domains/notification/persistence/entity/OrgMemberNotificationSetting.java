@@ -31,17 +31,14 @@ public class OrgMemberNotificationSetting extends BaseEntity {
     @Column(name = "is_email_enabled", nullable = false)
     private boolean isEmailEnabled;
 
-    @Column(name = "alert_budget_50", nullable = false)
-    private boolean alertBudget50;
-
-    @Column(name = "alert_budget_80", nullable = false)
-    private boolean alertBudget80;
-
-    @Column(name = "alert_budget_100", nullable = false)
-    private boolean alertBudget100;
-
     @Column(name = "alert_rapid_clicks", nullable = false)
     private boolean alertRapidClicks;
+
+    @Column(name = "alert_bot_clicks", nullable = false)
+    private boolean alertBotClicks;
+
+    @Column(name = "alert_report", nullable = false)
+    private boolean alertReport;
 
     public void updateMaster(Boolean isMasterEnabled) {
         if (isMasterEnabled != null) this.isMasterEnabled = isMasterEnabled;
@@ -52,10 +49,9 @@ public class OrgMemberNotificationSetting extends BaseEntity {
         if (isEmailEnabled != null) this.isEmailEnabled = isEmailEnabled;
     }
 
-    public void updateAlerts(Boolean alertBudget50, Boolean alertBudget80, Boolean alertBudget100, Boolean alertRapidClicks) {
-        if (alertBudget50 != null) this.alertBudget50 = alertBudget50;
-        if (alertBudget80 != null) this.alertBudget80 = alertBudget80;
-        if (alertBudget100 != null) this.alertBudget100 = alertBudget100;
+    public void updateAlerts(Boolean alertRapidClicks, Boolean alertBotClicks, Boolean alertReport) {
+        if (alertBotClicks != null) this.alertBotClicks = alertBotClicks;
+        if (alertReport != null) this.alertReport = alertReport;
         if (alertRapidClicks != null) this.alertRapidClicks = alertRapidClicks;
     }
 }
