@@ -117,12 +117,12 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    // 알림 기준 설정 메서드(예산 소진, 클릭 수 급증 등)
+    // 알림 기준 설정 메서드(클릭 급증 / 봇 클릭 감지 / 주,일간 보고서)
     @Override
     public void updateAlerts(Long userId, Long orgId, NotificationRequest.UpdateAlerts request) {
         OrgMember member = findMember(userId, orgId);
         OrgMemberNotificationSetting setting = findOrCreateSetting(member);
-        setting.updateAlerts(request.alertBudget50(), request.alertBudget80(), request.alertBudget100(), request.alertRapidClicks());
+        setting.updateAlerts(request.alertRapidClicks(), request.alertBotClicks(), request.alertReport());
     }
 
     @Transactional(readOnly = true)
