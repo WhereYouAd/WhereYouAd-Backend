@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
+import java.util.Map;
 
 public interface GoogleAdOAuthDocs {
 
@@ -19,9 +20,8 @@ public interface GoogleAdOAuthDocs {
                     "인증이 완료되면 사전에 등록된 콜백(callback) URI로 인증 코드(code)와 상태 값(state)이 반환됩니다."
     )
     @GetMapping("/login")
-    ResponseEntity<Void> redirectToGoogleAuth(@Parameter @RequestParam("orgId") Long orgId,
-                              @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") Long userId,
-                              HttpServletResponse response) throws IOException;
+    ResponseEntity<DataResponse<Map<String, String>>> redirectToGoogleAuth(@Parameter @RequestParam("orgId") Long orgId,
+                              @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") Long userId);
 
     @Operation(
             summary = "구글 OAuth 인증 콜백 및 리프레시 토큰 발급",
