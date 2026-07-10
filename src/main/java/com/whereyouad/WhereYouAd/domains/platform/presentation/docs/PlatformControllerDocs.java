@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -65,6 +66,24 @@ public interface PlatformControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody PlatformRequest.PlatformAccount request
+    );
+
+
+    @Operation(
+            summary = "광고 플랫폼 재연동 API",
+            description = "삭제 요청이 접수된 상태의 계정 (status=DISCONNECTED) 을 재연동하는 API 입니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공"),
+            @ApiResponse(responseCode = "400", description = "PLATFORM_400_2 : DISCONNECTED 된 광고 계정이 아닙니다."),
+            @ApiResponse(responseCode = "403", description = "PLATFORM_403_1 : ADMIN 이 아닙니다. \n\n PLATFORM_403_2 : 해당 광고 계정은 요청한 조직 소속이 아닙니다. \n\n PLATFORM_403_3 : 본인이 등록한 광고 계정만 재연동 가능"),
+            @ApiResponse(responseCode = "404", description = "USER_404_1 : 이메일에 해당하는 사용자를 찾을 수 없습니다. \n\n PLATFORM_404_2 : 해당 조직의 멤버가 아닙니다. \n\n PLATFORM_404_3 : 해당 광고 계정을 찾을 수 없습니다.")
+    })
+    @PatchMapping("/{orgId}/accounts/{accountId}/reconnect")
+    ResponseEntity<DataResponse<String>> reconnectPlatform(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long accountId
     );
 
     @Operation(
