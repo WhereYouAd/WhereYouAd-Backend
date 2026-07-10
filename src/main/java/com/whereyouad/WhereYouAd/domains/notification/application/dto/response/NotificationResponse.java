@@ -14,7 +14,10 @@ public class NotificationResponse {
             boolean isDiscordConnected,
             boolean alertRapidClicks,
             boolean alertBotClicks,
-            boolean alertReport
+            boolean alertReport,
+            boolean orgAlertRapidClicks,   // 조직 외부채널 발송 설정 (ADMIN 설정)
+            boolean orgAlertBotClicks,
+            boolean orgAlertReport
     ) {}
 
     public record MemberSetting(
