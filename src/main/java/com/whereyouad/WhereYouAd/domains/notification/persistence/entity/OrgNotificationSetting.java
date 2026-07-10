@@ -38,6 +38,22 @@ public class OrgNotificationSetting extends BaseEntity {
     @ColumnDefault("false")
     private boolean isDiscordEnabled;
 
+    @Column(name = "alert_rapid_clicks", nullable = false)
+    private boolean alertRapidClicks;
+
+    @Column(name = "alert_bot_clicks", nullable = false)
+    private boolean alertBotClicks;
+
+    @Column(name = "alert_report", nullable = false)
+    private boolean alertReport;
+
+    // 조직 단위 외부 채널 알림 토글 업데이트 메서드
+    public void updateAlerts(Boolean alertRapidClicks, Boolean alertBotClicks, Boolean alertReport) {
+        if (alertRapidClicks != null) this.alertRapidClicks = alertRapidClicks;
+        if (alertBotClicks != null) this.alertBotClicks = alertBotClicks;
+        if (alertReport != null) this.alertReport = alertReport;
+    }
+
     // 외부 채널 알림 수신 여부 토글 업데이트 메서드
     // 웹훅 URL 이 등록되어 있더라도, 알림 수신 비활성화만 가능하도록 따로 메서드 추가
     public void updateChannelEnabled(Boolean isSlackEnabled, Boolean isDiscordEnabled) {
