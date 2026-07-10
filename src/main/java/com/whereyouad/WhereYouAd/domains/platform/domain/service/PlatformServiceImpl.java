@@ -195,6 +195,10 @@ public class PlatformServiceImpl implements PlatformService {
             throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
         }
 
+        // 계정 소유자(연동 주인) 검증
+        platformConnectionRepository.findByUserIdAndPlatformAccountId(userId, accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_NOT_ACCOUNT_OWNER));
+
         PlatformAccount platformAccount = platformAccountRepository.findById(accountId)
                 .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
 
