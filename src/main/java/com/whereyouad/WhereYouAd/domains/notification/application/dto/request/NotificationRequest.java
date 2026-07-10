@@ -27,12 +27,11 @@ public class NotificationRequest {
             Boolean disconnectDiscord
     ) {}
 
-    // 알림 기준 설정 DTO
+    // 알림 기준 설정 DTO -> 각 멤버
     public record UpdateAlerts(
-            Boolean alertBudget50,
-            Boolean alertBudget80,
-            Boolean alertBudget100,
-            Boolean alertRapidClicks
+            Boolean alertRapidClicks,
+            Boolean alertBotClicks,
+            Boolean alertReport
     ) {}
 
     // 알림을 받을 멤버 설정 DTO(ADMIN 전용)
