@@ -14,21 +14,28 @@ public class NotificationRequest {
             Boolean isMasterEnabled
     ) {}
 
-    // 채널별 알림 설정 DTO (ADMIN 전용: slackWebhookUrl/discordWebhookUrl, disconnectSlack/disconnectDiscord)
-    // 외부 채널 URL: 값 있으면 설정 / disconnectXxx=true 면 삭제(연결 해제) / 둘 다 없으면 변경 없음
+    // 변경: 멤버 스코프(브라우저/이메일)만 남김. 슬랙/디스코드 웹훅·활성화는 UpdateOrgSettings 로 이동
     public record UpdateChannels(
             Boolean isBrowserPushEnabled,
-            Boolean isEmailEnabled,
+            Boolean isEmailEnabled
+    ) {}
+
+    // 알림 기준 설정 DTO -> 각 멤버
+    public record UpdateAlerts(
+            Boolean alertRapidClicks,
+            Boolean alertBotClicks,
+            Boolean alertReport
+    ) {}
+
+    // 조직 단위 외부 채널 알림 설정 (ADMIN 전용)
+    // 외부 채널 웹훅 연결/활성화 + 외부 채널로 내보낼 알림 종류 설정을 하나의 DTO 로 통합
+    public record UpdateOrgSettings(
             Boolean isSlackEnabled,
             String slackWebhookUrl,
             Boolean disconnectSlack,
             Boolean isDiscordEnabled,
             String discordWebhookUrl,
-            Boolean disconnectDiscord
-    ) {}
-
-    // 알림 기준 설정 DTO -> 각 멤버
-    public record UpdateAlerts(
+            Boolean disconnectDiscord,
             Boolean alertRapidClicks,
             Boolean alertBotClicks,
             Boolean alertReport
