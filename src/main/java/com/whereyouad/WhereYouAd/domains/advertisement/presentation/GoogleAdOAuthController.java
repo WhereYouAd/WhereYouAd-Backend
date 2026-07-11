@@ -12,11 +12,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -42,8 +43,7 @@ public class GoogleAdOAuthController implements GoogleAdOAuthDocs {
 
     // 구글 연동 로그인 화면으로 리다이렉트
     @GetMapping("/login")
-    public ResponseEntity<Void> redirectToGoogleAuth(@RequestParam("orgId") Long orgId, @AuthenticationPrincipal(expression = "userId") Long userId,
-                                                     HttpServletResponse response) throws IOException {
+    public ResponseEntity<DataResponse<Map<String, String>>> redirectToGoogleAuth(@RequestParam("orgId") Long orgId, @AuthenticationPrincipal(expression = "userId") Long userId) {
 
         String stateToken = UUID.randomUUID().toString();
         String rawState = userId + "_" + orgId;
@@ -59,12 +59,7 @@ public class GoogleAdOAuthController implements GoogleAdOAuthDocs {
                 "&prompt=consent" +
                 "&state=" + stateToken;
 
-        URI location = URI.create(authUrl);
-
-        return ResponseEntity
-                .status(HttpStatus.FOUND)
-                .location(location)
-                .build();
+        return ResponseEntity.ok(DataResponse.from(Map.of("redirectUrl", authUrl)));
     }
 
     @GetMapping("/callback")

@@ -106,10 +106,8 @@ public class PlatformServiceImpl implements PlatformService {
             throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
         }
 
-        // userId, orgId 기반 PlatformConnection 조회 (삭제 대기(DISCONNECTED) 계정은 이미 해제된 것으로 보고 제외)
-        List<PlatformConnection> connections = platformConnectionRepository.findByUserIdAndOrgId(userId, orgId).stream()
-                .filter(connection -> connection.getPlatformAccount().getStatus() != PlatformStatus.DISCONNECTED)
-                .toList();
+        // userId, orgId 기반 PlatformConnection 조회 (삭제 대기(DISCONNECTED) 계정도 조회 가능
+        List<PlatformConnection> connections = platformConnectionRepository.findByUserIdAndOrgId(userId, orgId);
 
         // DTO 로 변환 및 반환
         return PlatformConverter.toPlatformAccountListResponse(connections);
@@ -183,6 +181,36 @@ public class PlatformServiceImpl implements PlatformService {
 
         // 상태만 DISCONNECTED 로 변경
         platformAccount.softDelete();
+    }
+
+    @Override
+    public void reconnectPlatform(Long userId, Long orgId, Long accountId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ORG_MEMBER_NOT_FOUND));
+
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
+        }
+
+        // 계정 소유자(연동 주인) 검증
+        platformConnectionRepository.findByUserIdAndPlatformAccountId(userId, accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_NOT_ACCOUNT_OWNER));
+
+        PlatformAccount platformAccount = platformAccountRepository.findById(accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
+
+        if (platformAccount.getStatus() != PlatformStatus.DISCONNECTED) {
+            throw new PlatformHandler(PlatformErrorCode.NOT_DISCONNECTED_ACCOUNT);
+        }
+
+        if (!platformAccount.getOrganization().getId().equals(orgId)) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_BELONG_TO_ORG);
+        }
+
+        platformAccount.reconnect();
     }
 
     // 시스템 내부 호출용 플랫폼 연동 해제 — 권한 검증 없이 계정 단위로 실제 데이터를 정리
