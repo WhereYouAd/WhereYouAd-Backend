@@ -1,10 +1,10 @@
 package com.whereyouad.WhereYouAd.domains.image.presentation;
 
-import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 import com.whereyouad.WhereYouAd.domains.image.application.dto.response.ImageResponse;
 import com.whereyouad.WhereYouAd.domains.image.presentation.docs.ImageControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.infrastructure.client.aws.s3.S3UploadService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +18,7 @@ public class ImageController implements ImageControllerDocs {
 
     private final S3UploadService s3UploadService;
 
+    @Hidden
     @PostMapping("/upload")
     public ResponseEntity<DataResponse<ImageResponse.ImageUploadResponse>> uploadFile(@RequestPart("image") MultipartFile image) {
         String imageUrl = s3UploadService.uploadImage(image);
