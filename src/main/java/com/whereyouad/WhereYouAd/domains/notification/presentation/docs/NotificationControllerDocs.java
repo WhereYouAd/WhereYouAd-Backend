@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@Tag(name = "Notification Settings", description = "알림 설정 API")
+@Tag(name = "Notification API", description = "알림 설정 API")
 public interface NotificationControllerDocs {
 
     @Operation(summary = "내 알림 설정 조회", description = "현재 로그인한 사용자의 알림 설정을 조회합니다. 설정이 없을 경우 기본값으로 자동 생성됩니다.")
