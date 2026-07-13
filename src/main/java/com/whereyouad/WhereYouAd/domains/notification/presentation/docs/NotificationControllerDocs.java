@@ -49,7 +49,7 @@ public interface NotificationControllerDocs {
             @RequestBody NotificationRequest.UpdateChannels request
     );
 
-    @Operation(summary = "알림 목표 설정 변경", description = "비즈니스 알림 트리거(클릭 급증, 봇 클릭 감지, 주·일간 보고서)를 설정합니다.")
+    @Operation(summary = "알림 목표 설정 변경", description = "비즈니스 알림 트리거(클릭 관련, 주·일간 보고서)를 설정합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "변경 성공"),
             @ApiResponse(responseCode = "404", description = "해당 조직의 멤버가 아닙니다.")
