@@ -38,22 +38,17 @@ public class OrgNotificationSetting extends BaseEntity {
     @ColumnDefault("false")
     private boolean isDiscordEnabled;
 
-    @Column(name = "alert_rapid_clicks", nullable = false)
+    @Column(name = "alert_clicks", nullable = false)
     @ColumnDefault("false")
-    private boolean alertRapidClicks;
-
-    @Column(name = "alert_bot_clicks", nullable = false)
-    @ColumnDefault("false")
-    private boolean alertBotClicks;
+    private boolean alertClicks;
 
     @Column(name = "alert_report", nullable = false)
     @ColumnDefault("false")
     private boolean alertReport;
 
     // 조직 단위 외부 채널 알림 토글 업데이트 메서드
-    public void updateAlerts(Boolean alertRapidClicks, Boolean alertBotClicks, Boolean alertReport) {
-        if (alertRapidClicks != null) this.alertRapidClicks = alertRapidClicks;
-        if (alertBotClicks != null) this.alertBotClicks = alertBotClicks;
+    public void updateAlerts(Boolean alertClicks, Boolean alertReport) {
+        if (alertClicks != null) this.alertClicks = alertClicks;
         if (alertReport != null) this.alertReport = alertReport;
     }
 
