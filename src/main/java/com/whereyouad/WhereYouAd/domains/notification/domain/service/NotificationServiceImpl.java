@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.notification.domain.service;
 import com.whereyouad.WhereYouAd.domains.notification.application.dto.request.NotificationRequest;
 import com.whereyouad.WhereYouAd.domains.notification.application.dto.response.NotificationResponse;
 import com.whereyouad.WhereYouAd.domains.notification.application.mapper.NotificationConverter;
+import com.whereyouad.WhereYouAd.domains.notification.domain.constant.NotificationType;
 import com.whereyouad.WhereYouAd.domains.notification.exception.NotificationException;
 import com.whereyouad.WhereYouAd.domains.notification.exception.code.NotificationErrorCode;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgMemberNotificationSetting;
@@ -28,7 +29,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -67,62 +70,61 @@ public class NotificationServiceImpl implements NotificationService {
         setting.updateMaster(request.isMasterEnabled());
     }
 
-    // 채널별 알림 설정 메서드
+    // 채널별 알림 설정 메서드 -> 회원 개인 알림설정(이메일, 브라우저 푸시)만
     @Override
     public void updateChannels(Long userId, Long orgId, NotificationRequest.UpdateChannels request) {
         OrgMember member = findMember(userId, orgId);
         OrgMemberNotificationSetting setting = findOrCreateSetting(member);
         setting.updateChannels(request.isBrowserPushEnabled(), request.isEmailEnabled());
-
-        // ADMIN 인 경우에만 외부 채널 URL / 수신 토글 변경 가능
-        // URL 값 있으면 설정 / disconnectXxx=true 면 삭제 / 둘 다 없으면 변경 없음
-        if (member.getRole() == OrgRole.ADMIN) {
-            boolean hasOrgChannelUpdate =
-                    StringUtils.hasText(request.slackWebhookUrl()) || Boolean.TRUE.equals(request.disconnectSlack())
-                            || StringUtils.hasText(request.discordWebhookUrl()) || Boolean.TRUE.equals(request.disconnectDiscord())
-                            || request.isSlackEnabled() != null || request.isDiscordEnabled() != null;
-
-            // url 필드 또는 활성화 여부(is~~Enabled) 가 요청에 포함된 경우만 업데이트 (평문 URL 은 암호화하여 저장)
-            if (hasOrgChannelUpdate) {
-                // 활성화와 연결 해제를 동시에 요청하는 모순 방지 (URL 삭제 전에 먼저 차단)
-                // ex. isSlackEnabled = true 로 하면서, disconnectSlack = true 로 전송하는 경우
-                if ((Boolean.TRUE.equals(request.isSlackEnabled()) && Boolean.TRUE.equals(request.disconnectSlack())) ||
-                        (Boolean.TRUE.equals(request.isDiscordEnabled()) && Boolean.TRUE.equals(request.disconnectDiscord()))) {
-                    throw new NotificationException(NotificationErrorCode.CHANNEL_REQUEST_CONFLICT);
-                }
-
-                OrgNotificationSetting orgSetting = findOrCreateOrgSetting(member.getOrganization());
-
-                // URL 반영: 삭제 플래그 우선, 아니면 값이 있을 때만 설정 (삭제 시 엔티티가 enabled=false 자동 처리)
-                if (Boolean.TRUE.equals(request.disconnectSlack())) {
-                    orgSetting.updateSlackWebhookUrl(null);
-                } else if (StringUtils.hasText(request.slackWebhookUrl())) {
-                    orgSetting.updateSlackWebhookUrl(encryptOrNull(request.slackWebhookUrl()));
-                }
-
-                if (Boolean.TRUE.equals(request.disconnectDiscord())) {
-                    orgSetting.updateDiscordWebhookUrl(null);
-                } else if (StringUtils.hasText(request.discordWebhookUrl())) {
-                    orgSetting.updateDiscordWebhookUrl(encryptOrNull(request.discordWebhookUrl()));
-                }
-
-                // URL(요청 또는 기존 DB)이 없는 채널을 활성화하려 하면 거부
-                if ((Boolean.TRUE.equals(request.isSlackEnabled()) && !orgSetting.hasSlack()) ||
-                        (Boolean.TRUE.equals(request.isDiscordEnabled()) && !orgSetting.hasDiscord())) {
-                    throw new NotificationException(NotificationErrorCode.NO_CHANNEL_URL);
-                }
-
-                orgSetting.updateChannelEnabled(request.isSlackEnabled(), request.isDiscordEnabled());
-            }
-        }
     }
 
-    // 알림 기준 설정 메서드(예산 소진, 클릭 수 급증 등)
+    // 알림 기준 설정 메서드(클릭 급증 / 봇 클릭 감지 / 주,일간 보고서)
     @Override
     public void updateAlerts(Long userId, Long orgId, NotificationRequest.UpdateAlerts request) {
         OrgMember member = findMember(userId, orgId);
         OrgMemberNotificationSetting setting = findOrCreateSetting(member);
-        setting.updateAlerts(request.alertBudget50(), request.alertBudget80(), request.alertBudget100(), request.alertRapidClicks());
+        setting.updateAlerts(request.alertClicks(), request.alertReport());
+    }
+
+    // 조직 단위 알림 트리거 설정 (ADMIN 전용) — 외부 채널로 내보낼 알림 종류 (클릭 급증 / 봇 클릭 감지 / 주,일간 보고서) 설정
+    @Override
+    public void updateOrgSettings(Long userId, Long orgId, NotificationRequest.UpdateOrgSettings request) {
+        OrgMember member = findMember(userId, orgId);
+        requireAdmin(member);
+
+        OrgNotificationSetting orgSetting = findOrCreateOrgSetting(member.getOrganization());
+
+        // 활성화와 연결 해제를 동시에 요청하는 모순 방지 (URL 삭제 전에 먼저 차단)
+        if ((Boolean.TRUE.equals(request.isSlackEnabled()) && Boolean.TRUE.equals(request.disconnectSlack())) ||
+                (Boolean.TRUE.equals(request.isDiscordEnabled()) && Boolean.TRUE.equals(request.disconnectDiscord()))) {
+            throw new NotificationException(NotificationErrorCode.CHANNEL_REQUEST_CONFLICT);
+        }
+
+        // URL 반영: 삭제 플래그 우선, 아니면 값이 있을 때만 설정 (삭제 시 엔티티가 enabled=false 자동 처리)
+        if (Boolean.TRUE.equals(request.disconnectSlack())) {
+            orgSetting.updateSlackWebhookUrl(null);
+        } else if (StringUtils.hasText(request.slackWebhookUrl())) {
+            validateWebhookUrl(request.slackWebhookUrl(), "hooks.slack.com");
+            orgSetting.updateSlackWebhookUrl(encryptOrNull(request.slackWebhookUrl()));
+        }
+
+        if (Boolean.TRUE.equals(request.disconnectDiscord())) {
+            orgSetting.updateDiscordWebhookUrl(null);
+        } else if (StringUtils.hasText(request.discordWebhookUrl())) {
+            validateWebhookUrl(request.discordWebhookUrl(), "discord.com", "discordapp.com");
+            orgSetting.updateDiscordWebhookUrl(encryptOrNull(request.discordWebhookUrl()));
+        }
+
+        // URL(요청 또는 기존 DB)이 없는 채널을 활성화하려 하면 거부
+        if ((Boolean.TRUE.equals(request.isSlackEnabled()) && !orgSetting.hasSlack()) ||
+                (Boolean.TRUE.equals(request.isDiscordEnabled()) && !orgSetting.hasDiscord())) {
+            throw new NotificationException(NotificationErrorCode.NO_CHANNEL_URL);
+        }
+
+        orgSetting.updateChannelEnabled(request.isSlackEnabled(), request.isDiscordEnabled());
+
+        // 외부 채널로 내보낼 알림 종류 설정
+        orgSetting.updateAlerts(request.alertClicks(), request.alertReport());
     }
 
     @Transactional(readOnly = true)
@@ -182,12 +184,19 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 디스코드 / 슬랙 알림 전송 메서드
     // 조직 내에 웹훅 URL 이 설정되어 있는 경우 일괄 전송
+    // 추가 : NotificationType 을 입력받아 해당 조직의 수신여부를 확인하고 수신 차단되어 있을경우 알림을 발송하지 않습니다.
     /// *** 각 플랫폼 스케줄러에서 조직으로 디스코드 / 슬랙 알림을 보내려면 이 메서드를 사용하면 됩니다 ***
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void sendApiAlarmToOrg(Long orgId, String title, String message) {
+    public void sendApiAlarmToOrg(Long orgId, NotificationType type, String title, String message) {
 
         OrgNotificationSetting setting = orgSettingRepository.findById(orgId).orElse(null);
+
+        // 조직 단위로 외부 채널 알림 설정에 이 알림 종류가 꺼져 있으면(또는 설정 없음) 발송 skip
+        if (setting == null || !isAlertTypeEnabled(setting, type)) {
+            log.debug("[외부 알림 발송 skip] 알림 종류 비활성화/설정없음, type={}, orgId={}", type, orgId);
+            return;
+        }
 
         boolean slackActive = setting != null && setting.hasSlack() && setting.isSlackEnabled();
         boolean discordActive = setting != null && setting.hasDiscord() && setting.isDiscordEnabled();
@@ -228,6 +237,36 @@ public class NotificationServiceImpl implements NotificationService {
             dispatch(DeliveryChannel.DISCORD, setting.getDiscordWebhookUrl(), orgId,
                     uri -> discordClient.send(uri, NotificationConverter.toDiscordMessage(title, message)));
         }
+    }
+
+    // 웹훅 URL이 실제 파싱 가능한 https URL이며 허용 host인지 검증
+    private void validateWebhookUrl(String url, String... allowedHosts) {
+        final URI uri;
+        try {
+            uri = new URI(url.trim());   // 형식이 URL이 아니면 URISyntaxException
+        } catch (URISyntaxException e) {
+            throw new NotificationException(NotificationErrorCode.INVALID_CHANNEL_URL);
+        }
+
+        // https + host 존재 확인
+        if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_CHANNEL_URL);
+        }
+
+        // 허용된 host 인지 확인 (slack 또는 discord 가 맞는가?)
+        boolean hostAllowed = Arrays.stream(allowedHosts)
+                .anyMatch(h -> h.equalsIgnoreCase(uri.getHost()));
+        if (!hostAllowed) {
+            throw new NotificationException(NotificationErrorCode.INVALID_CHANNEL_URL);
+        }
+    }
+
+    // 알림 종류 입력 받아 실제 조직에서 수신 설정 되어있는지 여부 반환
+    private boolean isAlertTypeEnabled(OrgNotificationSetting setting, NotificationType type) {
+        return switch (type) {
+            case CLICKS -> setting.isAlertClicks();
+            case REPORT -> setting.isAlertReport();
+        };
     }
 
     // 외부 채널 skip 사유 로깅: URL 미설정 vs 설정됐으나 수신 비활성화

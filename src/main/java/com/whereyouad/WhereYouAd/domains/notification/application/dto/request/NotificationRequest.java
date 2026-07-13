@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public class NotificationRequest {
 
@@ -14,25 +15,37 @@ public class NotificationRequest {
             Boolean isMasterEnabled
     ) {}
 
-    // 채널별 알림 설정 DTO (ADMIN 전용: slackWebhookUrl/discordWebhookUrl, disconnectSlack/disconnectDiscord)
-    // 외부 채널 URL: 값 있으면 설정 / disconnectXxx=true 면 삭제(연결 해제) / 둘 다 없으면 변경 없음
+    // 변경: 멤버 스코프(브라우저/이메일)만 남김. 슬랙/디스코드 웹훅·활성화는 UpdateOrgSettings 로 이동
     public record UpdateChannels(
             Boolean isBrowserPushEnabled,
-            Boolean isEmailEnabled,
+            Boolean isEmailEnabled
+    ) {}
+
+    // 알림 기준 설정 DTO -> 각 멤버
+    public record UpdateAlerts(
+            Boolean alertClicks,
+            Boolean alertReport
+    ) {}
+
+    // 조직 단위 외부 채널 알림 설정 (ADMIN 전용)
+    // 외부 채널 웹훅 연결/활성화 + 외부 채널로 내보낼 알림 종류 설정을 하나의 DTO 로 통합
+    public record UpdateOrgSettings(
             Boolean isSlackEnabled,
+            @Pattern(
+                    regexp = "^https://hooks\\.slack\\.com/services/.+",
+                    message = "슬랙 웹훅 URL 형식이 올바르지 않습니다."
+            )
             String slackWebhookUrl,
             Boolean disconnectSlack,
             Boolean isDiscordEnabled,
+            @Pattern(
+                    regexp = "^https://(discord|discordapp)\\.com/api/webhooks/.+",
+                    message = "디스코드 웹훅 URL 형식이 올바르지 않습니다."
+            )
             String discordWebhookUrl,
-            Boolean disconnectDiscord
-    ) {}
-
-    // 알림 기준 설정 DTO
-    public record UpdateAlerts(
-            Boolean alertBudget50,
-            Boolean alertBudget80,
-            Boolean alertBudget100,
-            Boolean alertRapidClicks
+            Boolean disconnectDiscord,
+            Boolean alertClicks,
+            Boolean alertReport
     ) {}
 
     // 알림을 받을 멤버 설정 DTO(ADMIN 전용)

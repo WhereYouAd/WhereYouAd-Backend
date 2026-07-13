@@ -60,6 +60,18 @@ public class PlatformController implements PlatformControllerDocs {
         );
     }
 
+    @PatchMapping("/{orgId}/accounts/{accountId}/reconnect")
+    public ResponseEntity<DataResponse<String>> reconnectPlatform(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long accountId
+    ) {
+
+        platformService.reconnectPlatform(userId, orgId, accountId);
+
+        return ResponseEntity.ok(DataResponse.from("계정이 재연동 되었습니다. Id : " + accountId));
+    }
+
     @DeleteMapping("/{orgId}/accounts/{accountId}")
     public ResponseEntity<DataResponse<String>> disconnectPlatform(
             @AuthenticationPrincipal(expression = "userId") Long userId,

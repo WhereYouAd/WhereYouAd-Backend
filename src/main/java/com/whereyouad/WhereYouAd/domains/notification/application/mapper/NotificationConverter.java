@@ -26,10 +26,10 @@ public class NotificationConverter {
                 orgSetting != null && orgSetting.hasSlack(),
                 orgSetting != null && orgSetting.isDiscordEnabled(),
                 orgSetting != null && orgSetting.hasDiscord(),
-                setting.isAlertBudget50(),
-                setting.isAlertBudget80(),
-                setting.isAlertBudget100(),
-                setting.isAlertRapidClicks()
+                setting.isAlertClicks(),
+                setting.isAlertReport(),
+                orgSetting != null && orgSetting.isAlertClicks(),
+                orgSetting != null && orgSetting.isAlertReport()
         );
     }
 
@@ -47,17 +47,15 @@ public class NotificationConverter {
         );
     }
 
-    // 기본 알림 설정(entity -> dto), 기본값: 예산 80프로 소진 시 이메일 알림
+    // 기본 알림 설정(entity -> dto), 기본값: 마스터 알림 ON, 이메일 수신 ON / 그 외 알림 관련 모두 수신 X
     public static OrgMemberNotificationSetting toDefaultMemberSetting(OrgMember member) {
         return OrgMemberNotificationSetting.builder()
                 .orgMember(member)
                 .isMasterEnabled(true)
                 .isBrowserPushEnabled(false)
                 .isEmailEnabled(true)
-                .alertBudget50(false)
-                .alertBudget80(true)
-                .alertBudget100(false)
-                .alertRapidClicks(false)
+                .alertClicks(false)
+                .alertReport(true)
                 .build();
     }
 
@@ -70,9 +68,9 @@ public class NotificationConverter {
 
     public static DiscordMessage toDiscordMessage(String title, String message) {
         DiscordMessage.Embed embed = new DiscordMessage.Embed(
-                title == null ? "" : title, message == null ? "" : message, 5814783 // TODO: 디스코드는 알림 메세지 설정 가능 : 현재는 파랑색
+                title == null ? "" : title, message == null ? "" : message, 5814783
         );
-        return new DiscordMessage("WhereYouAd 알림", List.of(embed)); // TODO: 이름을 하드코딩 할지... 아니면 이것도 사용자에게 입력받을지..?
+        return new DiscordMessage("WhereYouAd 알림", List.of(embed));
     }
 
     public static SlackMessage toSlackMessage(String title, String message) {

@@ -12,10 +12,10 @@ public class NotificationResponse {
             boolean isSlackConnected,
             boolean isDiscordEnabled,
             boolean isDiscordConnected,
-            boolean alertBudget50,
-            boolean alertBudget80,
-            boolean alertBudget100,
-            boolean alertRapidClicks
+            boolean alertClicks,
+            boolean alertReport,
+            boolean orgAlertClicks,
+            boolean orgAlertReport
     ) {}
 
     public record MemberSetting(
