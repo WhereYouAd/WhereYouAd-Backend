@@ -22,8 +22,7 @@ public class NotificationRequest {
 
     // 알림 기준 설정 DTO -> 각 멤버
     public record UpdateAlerts(
-            Boolean alertRapidClicks,
-            Boolean alertBotClicks,
+            Boolean alertClicks,
             Boolean alertReport
     ) {}
 
@@ -36,8 +35,7 @@ public class NotificationRequest {
             Boolean isDiscordEnabled,
             String discordWebhookUrl,
             Boolean disconnectDiscord,
-            Boolean alertRapidClicks,
-            Boolean alertBotClicks,
+            Boolean alertClicks,
             Boolean alertReport
     ) {}
 
