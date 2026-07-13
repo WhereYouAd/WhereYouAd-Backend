@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public class NotificationRequest {
 
@@ -30,9 +31,17 @@ public class NotificationRequest {
     // 외부 채널 웹훅 연결/활성화 + 외부 채널로 내보낼 알림 종류 설정을 하나의 DTO 로 통합
     public record UpdateOrgSettings(
             Boolean isSlackEnabled,
+            @Pattern(
+                    regexp = "^https://hooks\\.slack\\.com/services/.+",
+                    message = "슬랙 웹훅 URL 형식이 올바르지 않습니다."
+            )
             String slackWebhookUrl,
             Boolean disconnectSlack,
             Boolean isDiscordEnabled,
+            @Pattern(
+                    regexp = "^https://(discord|discordapp)\\.com/api/webhooks/.+",
+                    message = "디스코드 웹훅 URL 형식이 올바르지 않습니다."
+            )
             String discordWebhookUrl,
             Boolean disconnectDiscord,
             Boolean alertClicks,
