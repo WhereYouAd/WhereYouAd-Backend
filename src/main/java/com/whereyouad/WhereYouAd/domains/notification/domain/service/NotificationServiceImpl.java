@@ -29,7 +29,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -102,12 +104,14 @@ public class NotificationServiceImpl implements NotificationService {
         if (Boolean.TRUE.equals(request.disconnectSlack())) {
             orgSetting.updateSlackWebhookUrl(null);
         } else if (StringUtils.hasText(request.slackWebhookUrl())) {
+            validateWebhookUrl(request.slackWebhookUrl(), "hooks.slack.com");
             orgSetting.updateSlackWebhookUrl(encryptOrNull(request.slackWebhookUrl()));
         }
 
         if (Boolean.TRUE.equals(request.disconnectDiscord())) {
             orgSetting.updateDiscordWebhookUrl(null);
         } else if (StringUtils.hasText(request.discordWebhookUrl())) {
+            validateWebhookUrl(request.discordWebhookUrl(), "discord.com", "discordapp.com");
             orgSetting.updateDiscordWebhookUrl(encryptOrNull(request.discordWebhookUrl()));
         }
 
@@ -232,6 +236,28 @@ public class NotificationServiceImpl implements NotificationService {
         if (setting.hasDiscord() && setting.isDiscordEnabled()) {
             dispatch(DeliveryChannel.DISCORD, setting.getDiscordWebhookUrl(), orgId,
                     uri -> discordClient.send(uri, NotificationConverter.toDiscordMessage(title, message)));
+        }
+    }
+
+    // 웹훅 URL이 실제 파싱 가능한 https URL이며 허용 host인지 검증
+    private void validateWebhookUrl(String url, String... allowedHosts) {
+        final URI uri;
+        try {
+            uri = new URI(url.trim());   // 형식이 URL이 아니면 URISyntaxException
+        } catch (URISyntaxException e) {
+            throw new NotificationException(NotificationErrorCode.INVALID_CHANNEL_URL);
+        }
+
+        // https + host 존재 확인
+        if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_CHANNEL_URL);
+        }
+
+        // 허용된 host 인지 확인 (slack 또는 discord 가 맞는가?)
+        boolean hostAllowed = Arrays.stream(allowedHosts)
+                .anyMatch(h -> h.equalsIgnoreCase(uri.getHost()));
+        if (!hostAllowed) {
+            throw new NotificationException(NotificationErrorCode.INVALID_CHANNEL_URL);
         }
     }
 
