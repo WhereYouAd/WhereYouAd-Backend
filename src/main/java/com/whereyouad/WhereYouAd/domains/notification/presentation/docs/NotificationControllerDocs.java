@@ -65,7 +65,7 @@ public interface NotificationControllerDocs {
                     "웹훅 URL은 값이 있으면 설정, disconnectSlack/disconnectDiscord=true면 삭제(연결 해제), 둘 다 없으면 변경 없음입니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "변경 성공"),
-            @ApiResponse(responseCode = "400", description = "NOTIFICATION_400_2: URL 없이 알림 활성화\n\n NOTIFICATION_400_3 : 활성화+연결해제 동시 요청"),
+            @ApiResponse(responseCode = "400", description = "NOTIFICATION_400_2: URL 없이 알림 활성화\n\n NOTIFICATION_400_3 : 활성화+연결해제 동시 요청\n\n NOTIFICATION_400_4 : 웹훅 URL 형식이 올바르지 않습니다."),
             @ApiResponse(responseCode = "403", description = "ADMIN 권한이 없습니다."),
             @ApiResponse(responseCode = "404", description = "해당 조직의 멤버가 아닙니다.")
     })
