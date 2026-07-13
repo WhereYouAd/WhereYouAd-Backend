@@ -66,7 +66,7 @@ public class NotificationController implements NotificationControllerDocs {
     public ResponseEntity<DataResponse<Void>> updateOrgSettings(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
-            @RequestBody NotificationRequest.UpdateOrgSettings request
+            @RequestBody @Valid NotificationRequest.UpdateOrgSettings request
     ) {
         notificationService.updateOrgSettings(userId, orgId, request);
         return ResponseEntity.ok(DataResponse.ok());
