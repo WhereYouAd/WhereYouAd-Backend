@@ -81,7 +81,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void updateAlerts(Long userId, Long orgId, NotificationRequest.UpdateAlerts request) {
         OrgMember member = findMember(userId, orgId);
         OrgMemberNotificationSetting setting = findOrCreateSetting(member);
-        setting.updateAlerts(request.alertRapidClicks(), request.alertBotClicks(), request.alertReport());
+        setting.updateAlerts(request.alertClicks(), request.alertReport());
     }
 
     // 조직 단위 알림 트리거 설정 (ADMIN 전용) — 외부 채널로 내보낼 알림 종류 (클릭 급증 / 봇 클릭 감지 / 주,일간 보고서) 설정
@@ -120,7 +120,7 @@ public class NotificationServiceImpl implements NotificationService {
         orgSetting.updateChannelEnabled(request.isSlackEnabled(), request.isDiscordEnabled());
 
         // 외부 채널로 내보낼 알림 종류 설정
-        orgSetting.updateAlerts(request.alertRapidClicks(), request.alertBotClicks(), request.alertReport());
+        orgSetting.updateAlerts(request.alertClicks(), request.alertReport());
     }
 
     @Transactional(readOnly = true)
@@ -238,9 +238,8 @@ public class NotificationServiceImpl implements NotificationService {
     // 알림 종류 입력 받아 실제 조직에서 수신 설정 되어있는지 여부 반환
     private boolean isAlertTypeEnabled(OrgNotificationSetting setting, NotificationType type) {
         return switch (type) {
-            case RAPID_CLICKS -> setting.isAlertRapidClicks();
-            case BOT_CLICKS   -> setting.isAlertBotClicks();
-            case REPORT       -> setting.isAlertReport();
+            case CLICKS -> setting.isAlertClicks();
+            case REPORT -> setting.isAlertReport();
         };
     }
 
