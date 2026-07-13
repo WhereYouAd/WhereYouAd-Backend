@@ -26,11 +26,9 @@ public class NotificationConverter {
                 orgSetting != null && orgSetting.hasSlack(),
                 orgSetting != null && orgSetting.isDiscordEnabled(),
                 orgSetting != null && orgSetting.hasDiscord(),
-                setting.isAlertRapidClicks(),
-                setting.isAlertBotClicks(),
+                setting.isAlertClicks(),
                 setting.isAlertReport(),
-                orgSetting != null && orgSetting.isAlertRapidClicks(),
-                orgSetting != null && orgSetting.isAlertBotClicks(),
+                orgSetting != null && orgSetting.isAlertClicks(),
                 orgSetting != null && orgSetting.isAlertReport()
         );
     }
@@ -56,8 +54,7 @@ public class NotificationConverter {
                 .isMasterEnabled(true)
                 .isBrowserPushEnabled(false)
                 .isEmailEnabled(true)
-                .alertRapidClicks(false)
-                .alertBotClicks(false)
+                .alertClicks(false)
                 .alertReport(false) // TODO : 리포트 알림은 기본값 true 로 하는게 나을지...?
                 .build();
     }
