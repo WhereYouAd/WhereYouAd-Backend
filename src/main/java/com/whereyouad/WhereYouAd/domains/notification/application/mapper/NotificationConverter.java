@@ -55,7 +55,7 @@ public class NotificationConverter {
                 .isBrowserPushEnabled(false)
                 .isEmailEnabled(true)
                 .alertClicks(false)
-                .alertReport(false) // TODO : 리포트 알림은 기본값 true 로 하는게 나을지...?
+                .alertReport(true)
                 .build();
     }
 
