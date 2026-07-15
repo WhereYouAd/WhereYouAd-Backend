@@ -15,14 +15,16 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 public class MetaConverter {
 
     // 구매 대표 action_type 우선순위 (상위 → 하위). 첫 매칭 하나만 사용해 이중집계 방지
-    private static final java.util.List<String> PURCHASE_ACTION_PRIORITY = java.util.List.of(
+    private static final List<String> PURCHASE_ACTION_PRIORITY = List.of(
             "omni_purchase",                       // 픽셀+앱+오프라인 통합(중복 제거) — 최우선
             "purchase",                            // 표준 집계
             "offsite_conversion.fb_pixel_purchase" // 픽셀 단일 소스
@@ -211,7 +213,7 @@ public class MetaConverter {
         if (isoString == null || isoString.isEmpty()) return null;
         try {
             // ISO 타임존 양식 파싱 시도
-            return java.time.OffsetDateTime.parse(isoString, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")).toLocalDate();
+            return OffsetDateTime.parse(isoString, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")).toLocalDate();
         } catch (Exception e) {
             try {
                 // 실패 시 순수 앞 10자리(YYYY-MM-DD)만 잘라서 파싱 (안전 백업)
@@ -228,11 +230,11 @@ public class MetaConverter {
     }
 
     public static MetaResponse.MetaSyncSummary toSyncSummary(int campaignCount, int adGroupCount, int adContentCount, int metricCount) {
-        return new MetaResponse.MetaSyncSummary(campaignCount, adGroupCount, adContentCount, metricCount, java.util.List.of());
+        return new MetaResponse.MetaSyncSummary(campaignCount, adGroupCount, adContentCount, metricCount, List.of());
     }
 
     public static MetaResponse.MetaSyncSummary toSyncSummary(int campaignCount, int adGroupCount, int adContentCount, int metricCount,
-                                                             java.util.List<String> failedAccountIds) {
+                                                             List<String> failedAccountIds) {
         return new MetaResponse.MetaSyncSummary(campaignCount, adGroupCount, adContentCount, metricCount, failedAccountIds);
     }
 
@@ -310,18 +312,18 @@ public class MetaConverter {
     }
 
     // 우선순위에 따라 단일 구매 action 의 value 반환 (없으면 empty)
-    private static java.util.Optional<String> pickPurchaseValue(List<MetaDTO.Action> actions) {
-        if (actions == null) return java.util.Optional.empty();
+    private static Optional<String> pickPurchaseValue(List<MetaDTO.Action> actions) {
+        if (actions == null) return Optional.empty();
 
         for (String type : PURCHASE_ACTION_PRIORITY) {
             for (MetaDTO.Action a : actions) {
                 if (type.equals(a.actionType())) {
-                    return java.util.Optional.ofNullable(a.value());
+                    return Optional.ofNullable(a.value());
                 }
             }
         }
 
-        return java.util.Optional.empty();
+        return Optional.empty();
     }
 
 }
