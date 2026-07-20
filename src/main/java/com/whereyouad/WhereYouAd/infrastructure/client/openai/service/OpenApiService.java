@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.infrastructure.client.openai.service;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.AIResponse;
+import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.WeeklyReportResponse;
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.entity.Timeline;
 import com.whereyouad.WhereYouAd.domains.ai.application.mapper.AIConverter;
 import com.whereyouad.WhereYouAd.domains.ai.exception.AIHandler;
@@ -122,6 +123,58 @@ public class OpenApiService {
 
         // 공백 제거 및 반환
         return content.trim();
+    }
+
+    public WeeklyReportResponse.WeeklyAnalysisResponse generateWeeklyReport(
+            String orgName,
+            String industry,
+            String operationNotes,
+            LocalDate startDate,
+            LocalDate endDate,
+            LocalDate prevStartDate,
+            LocalDate prevEndDate,
+            List<MetricFact> thisWeekMetrics,
+            List<MetricFact> prevWeekMetrics) {
+
+        String systemPrompt = promptBuilder.buildWeeklyReportSystemPrompt();
+        String userPrompt = promptBuilder.buildWeeklyReportUserPrompt(
+                orgName, industry, operationNotes,
+                startDate, endDate, prevStartDate, prevEndDate,
+                thisWeekMetrics, prevWeekMetrics);
+
+        OpenAIRequest.Request request = AIConverter.toOpenAiRequest(model, systemPrompt, userPrompt, 0.3);
+
+        OpenAIResponse.Response response;
+        try {
+            log.info("[generateWeeklyReport] OpenAI 호출 시작. orgName={}, 기간: {} ~ {}, 이번주 레코드={}, 전주 레코드={}",
+                    orgName, startDate, endDate, thisWeekMetrics.size(), prevWeekMetrics.size());
+            response = openAiClient.chatCompletions(request);
+            log.info("[generateWeeklyReport] OpenAI 응답 수신 완료. orgName={}", orgName);
+
+        } catch (FeignException.BadRequest e) {
+            log.error("[generateWeeklyReport] OpenAI 400 Bad Request: {}", extractFeignMessage(e));
+            throw new AIHandler(AIErrorCode.INVALID_OPENAI_REQUEST);
+
+        } catch (FeignException.Unauthorized e) {
+            log.error("[generateWeeklyReport] OpenAI 401 Unauthorized: {}", extractFeignMessage(e));
+            throw new AIHandler(AIErrorCode.INVALID_OPENAI_API_KEY);
+
+        } catch (FeignException.TooManyRequests e) {
+            log.error("[generateWeeklyReport] OpenAI 429 Rate Limit: {}", extractFeignMessage(e));
+            throw new AIHandler(AIErrorCode.OPENAI_RATE_LIMIT);
+
+        } catch (FeignException e) {
+            log.error("[generateWeeklyReport] OpenAI Feign 오류 (status={}): {}", e.status(), extractFeignMessage(e));
+            throw new AIHandler(AIErrorCode.AI_CALL_FAILED);
+        }
+
+        String aiContent = response.getFirstContent();
+        if (aiContent == null || aiContent.isBlank()) {
+            log.error("[generateWeeklyReport] OpenAI 응답 content가 비어있습니다. orgName={}", orgName);
+            throw new AIHandler(AIErrorCode.AI_CALL_FAILED);
+        }
+
+        return AIConverter.toWeeklyAnalysisResponse(aiContent);
     }
 
     // 에러 메시지 추출
