@@ -100,4 +100,16 @@ public interface NotificationControllerDocs {
             @PathVariable Long orgId,
             @RequestBody NotificationRequest.BulkUpdateMembers request
     );
+
+    @Operation(
+            summary = "[테스트] 주간 리포트 이메일 발송",
+            description = "지정된 조직의 주간 광고 리포트를 즉시 생성하여 이메일로 발송합니다. " +
+                    "alertReport=true, isEmailEnabled=true, isMasterEnabled=true인 멤버에게만 발송됩니다. " +
+                    "최근 7일치 MetricFact 데이터가 없으면 발송되지 않습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "발송 시작 성공"),
+            @ApiResponse(responseCode = "404", description = "조직을 찾을 수 없습니다.")
+    })
+    ResponseEntity<DataResponse<String>> testWeeklyReport(@PathVariable Long orgId);
 }
