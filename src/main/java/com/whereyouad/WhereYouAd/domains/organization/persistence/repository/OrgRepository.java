@@ -14,4 +14,6 @@ public interface OrgRepository extends JpaRepository<Organization, Long> {
     @Query("SELECT o FROM Organization o WHERE o.ownerUserId = :ownerUserId AND o.status = :status")
     List<Organization> findAllByOwnerUserIdAndStatus(@Param("ownerUserId") Long ownerUserId,
                                                      @Param("status") OrgStatus status);
+
+    List<Organization> findAllByStatus(OrgStatus status);
 }
