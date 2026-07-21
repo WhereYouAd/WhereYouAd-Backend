@@ -150,7 +150,8 @@ public class AIMailService {
 
         // 푸터
         sb.append("<tr><td style=\"background:#f8f9fa;border-radius:0 0 12px 12px;padding:20px 32px;border-top:1px solid #e8e8e8;\">");
-        sb.append("<p style=\"margin:0;font-size:12px;color:#999;text-align:center;\">이 리포트는 WhereYouAd에서 자동 발송된 주간 광고 성과 분석 이메일입니다.</p>");
+        sb.append("<p style=\"margin:0 0 6px;font-size:12px;color:#999;text-align:center;\">이 리포트는 WhereYouAd에서 자동 발송된 주간 광고 성과 분석 이메일입니다.</p>");
+        sb.append("<p style=\"margin:0;font-size:11px;color:#bbb;text-align:center;\">본 리포트는 AI를 이용한 자동 분석 결과로, 실제 성과 원인과 미세한 차이 또는 오차가 존재할 수 있습니다.</p>");
         sb.append("</td></tr>");
 
         sb.append("</table></td></tr></table>");
