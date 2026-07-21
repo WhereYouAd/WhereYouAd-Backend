@@ -45,9 +45,9 @@ public class AIMailService {
                 helper.setSubject(subject);
                 helper.setText(htmlBody, true);
                 mailSender.send(message);
-                log.info("[MailService] 주간 리포트 발송 성공. to={}, org={}", email, orgName);
+                log.info("[MailService] 주간 리포트 발송 성공. to={}, org={}", maskEmail(email), orgName);
             } catch (Exception e) {
-                log.error("[MailService] 주간 리포트 발송 실패. to={}, error={}", email, e.getMessage());
+                log.error("[MailService] 주간 리포트 발송 실패. to={}, error={}", maskEmail(email), e.getMessage());
             }
         }
     }
@@ -177,6 +177,16 @@ public class AIMailService {
         sb.append(String.format("<p style=\"margin:0 0 4px;font-size:20px;font-weight:700;color:#1a1a2e;\">%s</p>", valueStr));
         sb.append(String.format("<p style=\"margin:0;font-size:12px;color:%s;\">%s %.1f%%</p>", changeColor, changeArrow, Math.abs(metric.changeRate())));
         sb.append("</div></td>");
+    }
+
+    private String maskEmail(String email) {
+        if (email == null) return "(null)";
+        int at = email.indexOf('@');
+        if (at <= 0) return "***";
+        String local = email.substring(0, at);
+        String domain = email.substring(at);
+        String visible = local.length() <= 2 ? local.charAt(0) + "*" : local.substring(0, 2) + "**";
+        return visible + domain;
     }
 
     private String escapeHtml(String text) {
