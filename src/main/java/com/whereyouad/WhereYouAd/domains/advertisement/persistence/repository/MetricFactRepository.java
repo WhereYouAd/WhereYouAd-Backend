@@ -166,7 +166,7 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
            "JOIN FETCH ag.adCampaign camp " +
            "WHERE camp.organization.id = :orgId " +
            "AND m.timeBucket >= :start " +
-           "AND m.timeBucket <= :end " +
+           "AND m.timeBucket < :end " +
            "ORDER BY m.timeBucket ASC")
     List<MetricFact> findAllByDateRangeAndOrgForAiAnalysis(
             @Param("start") LocalDateTime start,

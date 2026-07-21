@@ -67,9 +67,9 @@ public class WeeklyReportNotificationService {
                              LocalDate prevWeekStart, LocalDate prevWeekEnd) {
 
         LocalDateTime thisStart = thisWeekStart.atStartOfDay();
-        LocalDateTime thisEnd   = thisWeekEnd.atTime(23, 59, 59);
+        LocalDateTime thisEnd   = thisWeekEnd.plusDays(1).atStartOfDay();
         LocalDateTime prevStart = prevWeekStart.atStartOfDay();
-        LocalDateTime prevEnd   = prevWeekEnd.atTime(23, 59, 59);
+        LocalDateTime prevEnd   = prevWeekEnd.plusDays(1).atStartOfDay();
 
         // 읽기 전용 트랜잭션 안에서 모든 DB 데이터를 완전히 구체화
         Optional<WeeklyReportData> dataOpt = dataLoader.load(orgId, thisStart, thisEnd, prevStart, prevEnd);
