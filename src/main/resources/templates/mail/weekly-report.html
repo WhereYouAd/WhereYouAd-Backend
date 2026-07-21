@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <td align="center" style="padding:32px 16px;">
+            <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+                <!-- 헤더 -->
+                <tr>
+                    <td style="background:#1a1a2e;border-radius:12px 12px 0 0;padding:32px;">
+                        <p style="margin:0 0 4px;color:#8b9dc3;font-size:13px;letter-spacing:1px;">WHEREYOUAD</p>
+                        <h1 style="margin:0 0 8px;color:#ffffff;font-size:24px;font-weight:700;">주간 광고 리포트</h1>
+                        <p style="margin:0;color:#a0b0c8;font-size:14px;">
+                            <span th:text="${orgName}"></span> | <span th:text="${weekStartStr}"></span> ~ <span th:text="${weekEndStr}"></span>
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- weekSummary 배너 -->
+                <tr>
+                    <td style="background:#2a52be;padding:16px 32px;">
+                        <p style="margin:0;color:#ffffff;font-size:15px;font-weight:600;">📊 <span th:text="${analysis.weekSummary}"></span></p>
+                    </td>
+                </tr>
+
+                <!-- 본문 -->
+                <tr>
+                    <td style="background:#ffffff;padding:32px;">
+
+                        <!-- KPI 요약 -->
+                        <th:block th:if="${analysis.kpiOverview != null}">
+                            <h2 style="margin:0 0 16px;font-size:16px;color:#1a1a2e;border-bottom:2px solid #f0f0f0;padding-bottom:8px;">이번 주 핵심 지표</h2>
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <!-- totalSpend -->
+                                    <td width="33%" style="padding:0 4px;">
+                                        <th:block th:if="${analysis.kpiOverview.totalSpend != null}" th:with="m=${analysis.kpiOverview.totalSpend}">
+                                            <div style="background:#f8f9fa;border-radius:8px;padding:16px;text-align:center;">
+                                                <p style="margin:0 0 4px;font-size:12px;color:#666;">총 광고비</p>
+                                                <p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#1a1a2e;"
+                                                   th:text="${#numbers.formatDecimal(m.thisWeek, 1, 'COMMA', 0, 'POINT') + '원'}"></p>
+                                                <p style="margin:0;font-size:12px;"
+                                                   th:style="|color:${m.changeRate >= 0 ? '#28a745' : '#dc3545'}|"
+                                                   th:text="${(m.changeRate >= 0 ? '▲' : '▼') + ' ' + #numbers.formatDecimal(m.changeRate >= 0 ? m.changeRate : -m.changeRate, 1, 'POINT', 1, 'POINT') + '%'}"></p>
+                                            </div>
+                                        </th:block>
+                                        <div th:unless="${analysis.kpiOverview.totalSpend != null}"
+                                             style="background:#f8f9fa;border-radius:8px;padding:16px;text-align:center;">
+                                            <p style="margin:0;font-size:12px;color:#666;">총 광고비</p>
+                                        </div>
+                                    </td>
+                                    <!-- totalConversions -->
+                                    <td width="33%" style="padding:0 4px;">
+                                        <th:block th:if="${analysis.kpiOverview.totalConversions != null}" th:with="m=${analysis.kpiOverview.totalConversions}">
+                                            <div style="background:#f8f9fa;border-radius:8px;padding:16px;text-align:center;">
+                                                <p style="margin:0 0 4px;font-size:12px;color:#666;">총 전환수</p>
+                                                <p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#1a1a2e;"
+                                                   th:text="${#numbers.formatDecimal(m.thisWeek, 1, 'COMMA', 0, 'POINT') + '건'}"></p>
+                                                <p style="margin:0;font-size:12px;"
+                                                   th:style="|color:${m.changeRate >= 0 ? '#28a745' : '#dc3545'}|"
+                                                   th:text="${(m.changeRate >= 0 ? '▲' : '▼') + ' ' + #numbers.formatDecimal(m.changeRate >= 0 ? m.changeRate : -m.changeRate, 1, 'POINT', 1, 'POINT') + '%'}"></p>
+                                            </div>
+                                        </th:block>
+                                        <div th:unless="${analysis.kpiOverview.totalConversions != null}"
+                                             style="background:#f8f9fa;border-radius:8px;padding:16px;text-align:center;">
+                                            <p style="margin:0;font-size:12px;color:#666;">총 전환수</p>
+                                        </div>
+                                    </td>
+                                    <!-- blendedRoas -->
+                                    <td width="33%" style="padding:0 4px;">
+                                        <th:block th:if="${analysis.kpiOverview.blendedRoas != null}" th:with="m=${analysis.kpiOverview.blendedRoas}">
+                                            <div style="background:#f8f9fa;border-radius:8px;padding:16px;text-align:center;">
+                                                <p style="margin:0 0 4px;font-size:12px;color:#666;">통합 ROAS</p>
+                                                <p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#1a1a2e;"
+                                                   th:text="${#numbers.formatDecimal(m.thisWeek, 1, 'POINT', 1, 'POINT') + '%'}"></p>
+                                                <p style="margin:0;font-size:12px;"
+                                                   th:style="|color:${m.changeRate >= 0 ? '#28a745' : '#dc3545'}|"
+                                                   th:text="${(m.changeRate >= 0 ? '▲' : '▼') + ' ' + #numbers.formatDecimal(m.changeRate >= 0 ? m.changeRate : -m.changeRate, 1, 'POINT', 1, 'POINT') + '%'}"></p>
+                                            </div>
+                                        </th:block>
+                                        <div th:unless="${analysis.kpiOverview.blendedRoas != null}"
+                                             style="background:#f8f9fa;border-radius:8px;padding:16px;text-align:center;">
+                                            <p style="margin:0;font-size:12px;color:#666;">통합 ROAS</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </th:block>
+
+                        <!-- 성과 분석 -->
+                        <th:block th:if="${analysis.highlights != null and not #lists.isEmpty(analysis.highlights)}">
+                            <h2 style="margin:24px 0 16px;font-size:16px;color:#1a1a2e;border-bottom:2px solid #f0f0f0;padding-bottom:8px;">성과 분석</h2>
+                            <div th:each="highlight : ${analysis.highlights}"
+                                 th:style="|border-left:4px solid ${highlight.type == 'POSITIVE' ? '#28a745' : '#dc3545'};padding:16px;margin-bottom:16px;background:#fafafa;border-radius:0 8px 8px 0;|">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                    <span th:style="|font-size:11px;font-weight:600;color:${highlight.type == 'POSITIVE' ? '#28a745' : '#dc3545'}|"
+                                          th:text="${highlight.type == 'POSITIVE' ? '✅ 긍정' : '⚠️ 주의'}"></span>
+                                    <span th:style="|font-size:11px;color:${highlight.confidence == 'HIGH' ? '#28a745' : (highlight.confidence == 'MEDIUM' ? '#fd7e14' : '#6c757d')}|"
+                                          th:text="'신뢰도: ' + ${highlight.confidence}"></span>
+                                </div>
+                                <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#1a1a2e;" th:text="${highlight.title}"></p>
+                                <p style="margin:0 0 6px;font-size:14px;color:#333;"><strong>무슨 일:</strong> <span th:text="${highlight.what}"></span></p>
+                                <p style="margin:0 0 6px;font-size:14px;color:#333;"><strong>원인 분석:</strong> <span th:text="${highlight.why}"></span></p>
+                                <p th:if="${highlight.evidence != null and not highlight.evidence.isBlank()}"
+                                   style="margin:0 0 6px;font-size:13px;color:#666;background:#f0f0f0;padding:6px 10px;border-radius:4px;">
+                                    📌 근거: <span th:text="${highlight.evidence}"></span>
+                                </p>
+                                <p style="margin:0;font-size:14px;color:#2a52be;"><strong>👉 다음 주 액션:</strong> <span th:text="${highlight.action}"></span></p>
+                            </div>
+                        </th:block>
+
+                        <!-- 플랫폼별 현황 -->
+                        <th:block th:if="${analysis.platformInsights != null and not #lists.isEmpty(analysis.platformInsights)}">
+                            <h2 style="margin:24px 0 16px;font-size:16px;color:#1a1a2e;border-bottom:2px solid #f0f0f0;padding-bottom:8px;">플랫폼별 현황</h2>
+                            <div th:each="insight : ${analysis.platformInsights}"
+                                 style="padding:12px 16px;margin-bottom:8px;border:1px solid #e8e8e8;border-radius:8px;">
+                                <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#2a52be;" th:text="${insight.platform}"></p>
+                                <p style="margin:0 0 4px;font-size:14px;color:#333;" th:text="${insight.oneLineSummary}"></p>
+                                <p style="margin:0;font-size:13px;color:#666;" th:text="${insight.keyObservation}"></p>
+                            </div>
+                        </th:block>
+
+                        <!-- 다음 주 집중 포인트 -->
+                        <div th:if="${analysis.nextWeekFocus != null}"
+                             style="background:#eef2ff;border-radius:8px;padding:20px;margin-top:24px;">
+                            <h2 style="margin:0 0 12px;font-size:15px;color:#2a52be;">🎯 다음 주 집중 포인트</h2>
+                            <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#1a1a2e;" th:text="${analysis.nextWeekFocus.focus}"></p>
+                            <p style="margin:0 0 6px;font-size:14px;color:#333;">이유: <span th:text="${analysis.nextWeekFocus.reason}"></span></p>
+                            <p style="margin:0;font-size:14px;color:#555;">기대 효과: <span th:text="${analysis.nextWeekFocus.expectedOutcome}"></span></p>
+                        </div>
+
+                        <!-- 데이터 해석 주의사항 -->
+                        <div th:if="${analysis.dataCaveats != null and not #lists.isEmpty(analysis.dataCaveats)}"
+                             style="margin-top:20px;padding:12px 16px;background:#fff8e1;border-radius:6px;">
+                            <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#e6a817;">⚠️ 데이터 해석 주의사항</p>
+                            <p th:each="caveat : ${analysis.dataCaveats}"
+                               style="margin:2px 0;font-size:13px;color:#666;"
+                               th:text="'• ' + ${caveat}"></p>
+                        </div>
+
+                    </td>
+                </tr>
+
+                <!-- 푸터 -->
+                <tr>
+                    <td style="background:#f8f9fa;border-radius:0 0 12px 12px;padding:20px 32px;border-top:1px solid #e8e8e8;">
+                        <p style="margin:0 0 6px;font-size:12px;color:#999;text-align:center;">이 리포트는 WhereYouAd에서 자동 발송된 주간 광고 성과 분석 이메일입니다.</p>
+                        <p style="margin:0;font-size:11px;color:#bbb;text-align:center;">본 리포트는 AI를 이용한 자동 분석 결과로, 실제 성과 원인과 미세한 차이 또는 오차가 존재할 수 있습니다.</p>
+                    </td>
+                </tr>
+
+            </table>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>
