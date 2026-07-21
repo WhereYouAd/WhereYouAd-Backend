@@ -174,7 +174,9 @@ public class OpenApiService {
             throw new AIHandler(AIErrorCode.AI_CALL_FAILED);
         }
 
-        return AIConverter.toWeeklyAnalysisResponse(aiContent);
+        WeeklyReportResponse.KpiOverview kpiOverview =
+                promptBuilder.calculateKpiOverview(thisWeekMetrics, prevWeekMetrics);
+        return AIConverter.toWeeklyAnalysisResponse(aiContent, kpiOverview);
     }
 
     // 에러 메시지 추출
