@@ -7,7 +7,6 @@ import com.whereyouad.WhereYouAd.domains.timeline.persistence.entity.Timeline;
 import com.whereyouad.WhereYouAd.domains.ai.application.mapper.AIConverter;
 import com.whereyouad.WhereYouAd.domains.ai.exception.AIHandler;
 import com.whereyouad.WhereYouAd.domains.ai.exception.code.AIErrorCode;
-import com.whereyouad.WhereYouAd.infrastructure.client.openai.client.OpenAIClient;
 import com.whereyouad.WhereYouAd.infrastructure.client.openai.prompt.PromptBuilder;
 import com.whereyouad.WhereYouAd.infrastructure.client.openai.dto.request.OpenAIRequest;
 import com.whereyouad.WhereYouAd.infrastructure.client.openai.dto.response.OpenAIResponse;
@@ -25,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OpenApiService {
 
-    private final OpenAIClient openAiClient;
+    private final RetryableOpenAiCaller retryableOpenAiCaller;
     private final PromptBuilder promptBuilder;
 
     @Value("${openai.model}")
@@ -49,7 +48,7 @@ public class OpenApiService {
         try {
             log.info("[generateAnalysis] OpenAI 호출 시작. provider: {}, 기간: {} ~ {}, 레코드 수: {}",
                     provider, startDate, endDate, metrics.size());
-            response = openAiClient.chatCompletions(request);
+            response = retryableOpenAiCaller.call(request);
             log.info("[generateAnalysis] OpenAI 응답 수신 완료.");
 
         } catch (FeignException.BadRequest e) {
@@ -94,7 +93,7 @@ public class OpenApiService {
         OpenAIResponse.Response response;
         try {
             log.info("[generateTimelineSummary] OpenAI 호출 시작. timelineId={}, 레코드 수={}", timeline.getId(), facts.size());
-            response = openAiClient.chatCompletions(request);
+            response = retryableOpenAiCaller.call(request);
             log.info("[generateTimelineSummary] OpenAI 응답 수신 완료.");
 
         } catch (FeignException.BadRequest e) {
@@ -148,7 +147,7 @@ public class OpenApiService {
         try {
             log.info("[generateWeeklyReport] OpenAI 호출 시작. orgName={}, 기간: {} ~ {}, 이번주 레코드={}, 전주 레코드={}",
                     orgName, startDate, endDate, thisWeekMetrics.size(), prevWeekMetrics.size());
-            response = openAiClient.chatCompletions(request);
+            response = retryableOpenAiCaller.call(request);
             log.info("[generateWeeklyReport] OpenAI 응답 수신 완료. orgName={}", orgName);
 
         } catch (FeignException.BadRequest e) {
