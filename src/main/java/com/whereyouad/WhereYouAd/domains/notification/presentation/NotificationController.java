@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.notification.presentation;
 import com.whereyouad.WhereYouAd.domains.notification.application.dto.request.NotificationRequest;
 import com.whereyouad.WhereYouAd.domains.notification.application.dto.response.NotificationResponse;
 import com.whereyouad.WhereYouAd.domains.notification.domain.service.NotificationService;
+import com.whereyouad.WhereYouAd.domains.notification.domain.service.WeeklyReportNotificationService;
 import com.whereyouad.WhereYouAd.domains.notification.presentation.docs.NotificationControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class NotificationController implements NotificationControllerDocs {
 
     private final NotificationService notificationService;
+    private final WeeklyReportNotificationService weeklyReportNotificationService;
 
     @GetMapping("/settings/{orgId}")
     @Override
@@ -92,6 +94,15 @@ public class NotificationController implements NotificationControllerDocs {
     ) {
         notificationService.updateMemberSettings(userId, orgId, request);
         return ResponseEntity.ok(DataResponse.ok());
+    }
+
+    @PostMapping("/org/{orgId}/weekly-report/test")
+    @Override
+    public ResponseEntity<DataResponse<String>> testWeeklyReport(
+            @PathVariable Long orgId
+    ) {
+        weeklyReportNotificationService.sendWeeklyReportForOrg(orgId);
+        return ResponseEntity.ok(DataResponse.from("주간 리포트 이메일 발송을 시작했습니다."));
     }
 
     @Hidden
