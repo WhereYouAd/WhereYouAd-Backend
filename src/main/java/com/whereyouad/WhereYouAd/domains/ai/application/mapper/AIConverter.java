@@ -76,7 +76,8 @@ public class AIConverter {
         }
     }
 
-    public static WeeklyReportResponse.WeeklyAnalysisResponse toWeeklyAnalysisResponse(String content) {
+    public static WeeklyReportResponse.WeeklyAnalysisResponse toWeeklyAnalysisResponse(
+            String content, WeeklyReportResponse.KpiOverview kpiOverview) {
         try {
             String cleaned = content
                     .replaceAll("(?s)```json\\s*", "")
@@ -84,12 +85,6 @@ public class AIConverter {
                     .trim();
 
             JsonNode root = objectMapper.readTree(cleaned);
-
-            WeeklyReportResponse.KpiOverview kpiOverview = WeeklyReportResponse.KpiOverview.builder()
-                    .totalSpend(parseKpiMetric(root.path("kpiOverview").path("totalSpend")))
-                    .totalConversions(parseKpiMetric(root.path("kpiOverview").path("totalConversions")))
-                    .blendedRoas(parseKpiMetric(root.path("kpiOverview").path("blendedRoas")))
-                    .build();
 
             List<WeeklyReportResponse.Highlight> highlights = new ArrayList<>();
             root.path("highlights").forEach(h -> highlights.add(
@@ -135,14 +130,6 @@ public class AIConverter {
             log.error("[AIConverter] 주간 리포트 JSON 파싱 실패: {}", e.getMessage());
             throw new AIHandler(AIErrorCode.AI_CALL_FAILED);
         }
-    }
-
-    private static WeeklyReportResponse.KpiMetric parseKpiMetric(JsonNode node) {
-        return WeeklyReportResponse.KpiMetric.builder()
-                .thisWeek(node.path("thisWeek").asDouble())
-                .prevWeek(node.path("prevWeek").asDouble())
-                .changeRate(node.path("changeRate").asDouble())
-                .build();
     }
 
     // AI 분석 요청 값 entity PENDING 상태로 저장

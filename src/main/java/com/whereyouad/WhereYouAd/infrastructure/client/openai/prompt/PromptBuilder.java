@@ -8,6 +8,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCamp
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdGroup;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
+import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.WeeklyReportResponse;
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.entity.Timeline;
 import org.springframework.stereotype.Component;
 
@@ -283,20 +284,12 @@ public class PromptBuilder {
                - platformInsights는 이번 주 지출이 발생한 플랫폼만 포함합니다.
                - 모든 수치는 입력 데이터에서 계산 가능한 값만 사용하고, 인용 시 반올림 기준을 통일합니다
                  (비율은 소수 둘째 자리, 금액은 원 단위).
-               - kpiOverview의 changeRate는 부호를 포함한 숫자(number) 타입으로 출력합니다.
-                 양수=상승, 음수=하락, 단위는 %이지만 % 기호나 + 기호를 붙인 문자열로 만들지 마세요.
-                 (예: 전주 대비 12.5% 상승이면 12.5, 8% 하락이면 -8.0)
                - 전문 용어는 첫 등장 시 괄호로 간략 설명을 병기합니다.
 
                ## 출력 JSON 스키마
 
                {
                  "weekSummary": "이번 주 전체를 한 줄로 요약. 이메일 제목으로 쓸 수 있도록 40자 이내, 핵심 수치 1개 포함",
-                 "kpiOverview": {
-                   "totalSpend": { "thisWeek": 0, "prevWeek": 0, "changeRate": 0.0 },
-                   "totalConversions": { "thisWeek": 0, "prevWeek": 0, "changeRate": 0.0 },
-                   "blendedRoas": { "thisWeek": 0, "prevWeek": 0, "changeRate": 0.0 }
-                 },
                  "highlights": [
                    {
                      "type": "POSITIVE | NEGATIVE",
@@ -379,6 +372,39 @@ public class PromptBuilder {
         sb.append("운영 메모에 기록된 변경 사항이 있다면 지표 변화와의 연관성을 최우선으로 검토해주세요.");
 
         return sb.toString();
+    }
+
+    public WeeklyReportResponse.KpiOverview calculateKpiOverview(
+            List<MetricFact> thisWeek, List<MetricFact> prevWeek) {
+
+        BigDecimal thisSpend = sumDecimal(thisWeek, m -> m.getSpend() != null ? m.getSpend() : BigDecimal.ZERO);
+        BigDecimal prevSpend = sumDecimal(prevWeek, m -> m.getSpend() != null ? m.getSpend() : BigDecimal.ZERO);
+        long thisConversions = sum(thisWeek, m -> m.getConversions() != null ? m.getConversions() : 0L);
+        long prevConversions = sum(prevWeek, m -> m.getConversions() != null ? m.getConversions() : 0L);
+        BigDecimal thisRevenue = sumDecimal(thisWeek, m -> m.getRevenue() != null ? m.getRevenue() : BigDecimal.ZERO);
+        BigDecimal prevRevenue = sumDecimal(prevWeek, m -> m.getRevenue() != null ? m.getRevenue() : BigDecimal.ZERO);
+
+        double thisRoas = thisSpend.compareTo(BigDecimal.ZERO) > 0
+                ? thisRevenue.divide(thisSpend, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0;
+        double prevRoas = prevSpend.compareTo(BigDecimal.ZERO) > 0
+                ? prevRevenue.divide(prevSpend, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0;
+
+        return WeeklyReportResponse.KpiOverview.builder()
+                .totalSpend(buildKpiMetric(thisSpend.doubleValue(), prevSpend.doubleValue()))
+                .totalConversions(buildKpiMetric((double) thisConversions, (double) prevConversions))
+                .blendedRoas(buildKpiMetric(thisRoas, prevRoas))
+                .build();
+    }
+
+    private WeeklyReportResponse.KpiMetric buildKpiMetric(double thisVal, double prevVal) {
+        double changeRate = prevVal > 0
+                ? Math.round((thisVal - prevVal) / prevVal * 10000.0) / 100.0
+                : (thisVal > 0 ? 100.0 : 0.0);
+        return WeeklyReportResponse.KpiMetric.builder()
+                .thisWeek(thisVal)
+                .prevWeek(prevVal)
+                .changeRate(changeRate)
+                .build();
     }
 
     private void appendWeeklyAggregatedSummary(StringBuilder sb,
