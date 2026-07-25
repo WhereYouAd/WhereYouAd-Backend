@@ -107,7 +107,9 @@ public class NaverDTO {
             Long clkCnt,
             Long salesAmt,
             Double ctr,
-            Double cpc
+            Double cpc,
+            Long ccnt,
+            Long convAmt
     ) {}
 
     // 상세 보고서 응답 (Metric_fact)

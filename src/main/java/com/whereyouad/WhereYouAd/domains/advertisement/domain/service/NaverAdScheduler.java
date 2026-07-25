@@ -49,9 +49,7 @@ public class NaverAdScheduler {
 
             for (String statDate : targetDates) {
                 try {
-                    // Metric_fact 동기화 서비스 실행
                     naverAdSyncService.syncBasicStats(connectionId, statDate);
-                    naverAdSyncService.syncConversionReports(connectionId, statDate);
                 } catch (Exception e) {
                     log.error("connectionId: {} / date: {} 동기화 실패: {}", connectionId, statDate, e.getMessage(), e);
                 }

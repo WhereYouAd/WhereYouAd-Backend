@@ -123,22 +123,13 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
                 naverAdSyncService.syncAllForOrg(orgId, request.startDate(), request.endDate())));
     }
 
-    // DAILY MetricFact 동기화 (전환 리포트는 /sync/conversions 엔드포인트에서 별도 실행)
+    // DAILY MetricFact 동기화 (기본 지표 + 전환 지표 통합)
     @PostMapping("/sync/stats")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
             @PathVariable Long connectionId,
             @RequestParam("statDate") String statDate
     ) {
         return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncBasicStats(connectionId, statDate)));
-    }
-
-    // 전환 리포트 동기화만 단독 실행
-    @PostMapping("/sync/conversions")
-    public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncConversions(
-            @PathVariable Long connectionId,
-            @RequestParam("statDate") String statDate
-    ) {
-        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncConversionReports(connectionId, statDate)));
     }
 
     // 캠페인 예산 수정
