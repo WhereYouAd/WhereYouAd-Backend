@@ -232,6 +232,7 @@ public class NaverAdSyncService {
                 long clkCnt = stat.clkCnt() != null ? stat.clkCnt() : 0L;
                 BigDecimal salesAmt = stat.salesAmt() != null
                         ? BigDecimal.valueOf(stat.salesAmt()) : BigDecimal.ZERO;
+                boolean hasConversionData = stat.ccnt() != null || stat.convAmt() != null;
                 long ccnt = stat.ccnt() != null ? stat.ccnt() : 0L;
                 BigDecimal convAmt = stat.convAmt() != null
                         ? BigDecimal.valueOf(stat.convAmt()) : BigDecimal.ZERO;
@@ -244,7 +245,9 @@ public class NaverAdSyncService {
                             .orElseGet(() -> AdvertisementConverter.createMetricFact(
                                     adContent, dailyTimeBucket, Grain.DAILY, Provider.NAVER));
                     dailyFact.updateBasicMetrics(impCnt, clkCnt, salesAmt);
-                    dailyFact.updateConversionMetrics(ccnt, convAmt);
+                    if (hasConversionData) {
+                        dailyFact.updateConversionMetrics(ccnt, convAmt);
+                    }
                     metricFactRepository.save(dailyFact);
                     return null;
                 });
