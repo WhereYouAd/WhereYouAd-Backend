@@ -310,7 +310,7 @@ public class NaverAdApiService {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("GET", "/stats"));
 
-            String fields = "[\"impCnt\",\"clkCnt\",\"salesAmt\",\"ctr\",\"cpc\"]";
+            String fields = "[\"impCnt\",\"clkCnt\",\"salesAmt\",\"ctr\",\"cpc\",\"ccnt\",\"convAmt\"]";
             String timeRange = String.format("{\"since\":\"%s\",\"until\":\"%s\"}", since, until);
             NaverDTO.StatListResponse result = naverClient.getStats(headers, id, fields, timeRange, null, null);
             return result != null && result.data() != null ? result.data() : List.of();

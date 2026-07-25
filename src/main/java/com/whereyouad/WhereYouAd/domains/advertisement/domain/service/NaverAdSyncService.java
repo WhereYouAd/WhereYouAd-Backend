@@ -35,9 +35,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -234,6 +232,10 @@ public class NaverAdSyncService {
                 long clkCnt = stat.clkCnt() != null ? stat.clkCnt() : 0L;
                 BigDecimal salesAmt = stat.salesAmt() != null
                         ? BigDecimal.valueOf(stat.salesAmt()) : BigDecimal.ZERO;
+                boolean hasConversionData = stat.ccnt() != null || stat.convAmt() != null;
+                long ccnt = stat.ccnt() != null ? stat.ccnt() : 0L;
+                BigDecimal convAmt = stat.convAmt() != null
+                        ? BigDecimal.valueOf(stat.convAmt()) : BigDecimal.ZERO;
 
                 LocalDateTime dailyTimeBucket = LocalDate.parse(statDate).atStartOfDay();
 
@@ -243,6 +245,9 @@ public class NaverAdSyncService {
                             .orElseGet(() -> AdvertisementConverter.createMetricFact(
                                     adContent, dailyTimeBucket, Grain.DAILY, Provider.NAVER));
                     dailyFact.updateBasicMetrics(impCnt, clkCnt, salesAmt);
+                    if (hasConversionData) {
+                        dailyFact.updateConversionMetrics(ccnt, convAmt);
+                    }
                     metricFactRepository.save(dailyFact);
                     return null;
                 });
@@ -256,163 +261,6 @@ public class NaverAdSyncService {
         log.info("NAVER Basic Stats 동기화 완료 - connectionId: {}, date: {}, processed: {}",
                 connectionId, statDate, processedCount);
         return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDate, processedCount);
-    }
-
-    // 전환 리포트 요청/다운로드
-    public AdvertisementResponse.NaverStatSyncResponse syncConversionReports(Long connectionId, String statDate) {
-        log.info("NAVER Conversion Report 동기화 시작 - connectionId: {}, date: {}", connectionId, statDate);
-        PlatformConnection connection = platformConnectionRepository.findWithAccountAndOrgById(connectionId)
-                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
-
-        PlatformAccount platformAccount = connection.getPlatformAccount();
-        log.info("NAVER 광고 플랫폼 계정 확인: {}", platformAccount.getProvider());
-
-        try {
-            // 1. 전환 리포트 생성 요청
-            String statDtForApi = LocalDate.parse(statDate, DateTimeFormatter.ISO_LOCAL_DATE)
-                    .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-            NaverDTO.StatReportResponse reportInit = naverAdApiService.requestAdConversionReport(connectionId,
-                    statDtForApi);
-
-            // 리포트 자체가 없으면 종료 (광고 승인이 아직 안된 경우)
-            if (reportInit == null || reportInit.reportJobId() == null) {
-                log.info("NAVER 성과 리포트 미발행(지표 없음 등). statDate={}", statDate);
-                return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDate, 0);
-            }
-
-            String reportJobId = reportInit.reportJobId();
-            String downloadUrl = null;
-
-            // 2. 리포트 생성 완료될 때까지 polling
-            for (int i = 0; i < 24; i++) {
-
-                NaverDTO.StatReportResponse statusRes = naverAdApiService.getReportStatus(connectionId, reportJobId);
-
-                if ("BUILT".equals(statusRes.status())) {
-                    downloadUrl = statusRes.downloadUrl();
-                    break;
-                } else if ("ERROR".equals(statusRes.status()) || "NONE".equals(statusRes.status())) {
-                    log.error("NAVER 리포트 생성 실패 상태: {}", statusRes.status());
-                    return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDate, 0);
-                }
-
-                Thread.sleep(5000);
-            }
-
-            if (downloadUrl == null) {
-                log.error("NAVER 리포트 대기 시간 초과 - reportJobId: {}", reportJobId);
-                return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDate, 0);
-            }
-
-            // 3. 리포트 다운로드 후 파싱/반영
-            NaverDTO.RawReportResponse rawReport = naverAdApiService.downloadReport(connectionId, downloadUrl);
-            int processedCount = parseAndUpsertConversions(rawReport.rawContent(), statDate, platformAccount);
-
-            return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDate, processedCount);
-
-        } catch (Exception e) {
-            log.error("NAVER Conversion Report 동기화 전체 로직 오류: {}", e.getMessage(), e);
-            return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDate, 0);
-        }
-    }
-
-    // 다운받은 리포트(TSV 파일)를 파싱해서 전환값 반영
-    private int parseAndUpsertConversions(String rawContent, String statDate,
-            PlatformAccount platformAccount) {
-        if (rawContent == null || rawContent.isEmpty())
-            return 0;
-
-        // 1. TSV 리포트를 줄 단위로 분리
-        String[] lines = rawContent.split("\n");
-        if (lines.length <= 1)
-            return 0;
-
-        // 2. 헤더 위치 파악
-        String[] headers = lines[0].split("\t");
-        int adIdIdx = -1, convIdx = -1, revIdx = -1;
-
-        for (int i = 0; i < headers.length; i++) {
-            String header = headers[i].trim().replaceAll("\"", "");
-            if (header.contains("광고 ID") || header.equalsIgnoreCase("Ad ID"))
-                adIdIdx = i;
-            if (header.contains("전환수") || header.equalsIgnoreCase("Conversions") || header.equalsIgnoreCase("ccnt")
-                    || header.equalsIgnoreCase("convCnt"))
-                convIdx = i;
-            if (header.contains("전환매출액") || header.equalsIgnoreCase("Conversion Amount")
-                    || header.equalsIgnoreCase("convAmt") || header.equalsIgnoreCase("Revenue"))
-                revIdx = i;
-        }
-
-        // 광고 ID, 전환수 컬럼은 필수
-        if (adIdIdx == -1 || convIdx == -1) {
-            log.warn("NAVER 리포트 필수 헤더 매핑 실패. (adIdIdx={}, convIdx={})", adIdIdx, convIdx);
-            return 0;
-        }
-
-        // 3. 하루 합계 계산용 Map
-        Map<String, Long> dailyConversionsMap = new HashMap<>();
-        Map<String, BigDecimal> dailyRevenueMap = new HashMap<>();
-
-        int processedCount = 0;
-        // 4. 각 라인을 읽어서 일별 합계 누적
-        for (int i = 1; i < lines.length; i++) {
-            String line = lines[i];
-            if (line == null || line.trim().isEmpty())
-                continue;
-            String[] cols = line.split("\t");
-
-            try {
-                if (cols.length <= adIdIdx)
-                    continue;
-                String externalAdId = cols[adIdIdx].trim().replaceAll("\"", "");
-
-                String convStr = cols.length > convIdx ? cols[convIdx].trim().replaceAll("\"", "").replaceAll(",", "")
-                        : "0";
-                String revStr = revIdx != -1 && cols.length > revIdx
-                        ? cols[revIdx].trim().replaceAll("\"", "").replaceAll(",", "")
-                        : "0";
-
-                Long conversions = Long.parseLong(convStr.isEmpty() ? "0" : convStr);
-                BigDecimal revenue = new BigDecimal(revStr.isEmpty() ? "0" : revStr);
-
-                dailyConversionsMap.put(
-                        externalAdId,
-                        dailyConversionsMap.getOrDefault(externalAdId, 0L) + conversions);
-                dailyRevenueMap.put(
-                        externalAdId,
-                        dailyRevenueMap.getOrDefault(externalAdId, BigDecimal.ZERO).add(revenue));
-
-                processedCount++;
-            } catch (Exception e) {
-                log.warn("NAVER 리포트 라인 파싱 오류: {}", e.getMessage());
-            }
-        }
-
-        // 5. 누적값으로 DAILY 전환값 반영
-        LocalDateTime dailyTimeBucket = LocalDate.parse(statDate).atStartOfDay();
-
-        for (String extAdId : dailyConversionsMap.keySet()) {
-            final Long dailyConv = dailyConversionsMap.get(extAdId);
-            final BigDecimal dailyRev = dailyRevenueMap.get(extAdId);
-
-            try {
-                txTemplate.execute(status -> {
-                    adContentRepository.findByExternalAdIdAndPlatformAccount(extAdId, platformAccount)
-                            .ifPresent(adContent -> {
-                                metricFactRepository
-                                        .findByAdContentAndTimeBucketAndGrain(adContent, dailyTimeBucket, Grain.DAILY)
-                                        .ifPresent(dailyFact -> {
-                                            dailyFact.updateConversionMetrics(dailyConv, dailyRev);
-                                            metricFactRepository.save(dailyFact);
-                                        });
-                            });
-                    return null;
-                });
-            } catch (Exception e) {
-                log.warn("NAVER Daily 전환 리포트 업데이트 오류 (ID:{}): {}", extAdId, e.getMessage());
-            }
-        }
-        return processedCount;
     }
 
     // orgId + 날짜 범위 기반 수동 동기화 (분산락 적용)
@@ -449,8 +297,7 @@ public class NaverAdSyncService {
                     for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
                         String statDate = d.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                         AdvertisementResponse.NaverStatSyncResponse stats = syncBasicStats(conn.getId(), statDate);
-                        AdvertisementResponse.NaverStatSyncResponse conv  = syncConversionReports(conn.getId(), statDate);
-                        totalMetrics += stats.processedAdContentCount() + conv.processedAdContentCount();
+                        totalMetrics += stats.processedAdContentCount();
                     }
                 } catch (Exception e) {
                     log.warn("[NAVER] 연결 ID {} 동기화 실패", conn.getId(), e);
