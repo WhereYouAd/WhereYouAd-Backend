@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.notification.domain.service;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.MetricFact;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.notification.application.dto.WeeklyReportData;
+import com.whereyouad.WhereYouAd.domains.notification.domain.constant.NotificationType;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgMemberNotificationSetting;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.repository.OrgMemberNotificationSettingRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
@@ -29,6 +30,7 @@ public class WeeklyReportDataLoader {
     private final OrgMemberRepository orgMemberRepository;
     private final OrgMemberNotificationSettingRepository settingRepository;
     private final MetricFactRepository metricFactRepository;
+    private final NotificationService notificationService;
 
     /**
      * 단일 조직의 주간 리포트 발송에 필요한 데이터를 트랜잭션 안에서 완전히 구체화한다.
@@ -61,9 +63,13 @@ public class WeeklyReportDataLoader {
                 .toList();
 
         if (recipients.isEmpty()) {
-            log.info("[WeeklyReport] 조직={} 이메일 수신자 없음. 건너뜀", orgId);
-            return Optional.empty();
+            if (!notificationService.isExternalAlarmActive(orgId, NotificationType.REPORT)) {
+                log.info("[WeeklyReport] 조직={} 이메일 수신자/외부 채널 모두 없음. 건너뜀", orgId);
+                return Optional.empty();
+            }
+            log.info("[WeeklyReport] 조직={} 이메일 수신자는 없으나 외부 채널 수신 활성화됨. 알림 전송 진행", orgId);
         }
+        // ===================================================================
 
         // findAllByDateRangeAndOrgForAiAnalysis 는 adContent/adGroup/adCampaign 을 JOIN FETCH
         List<MetricFact> thisWeekMetrics = metricFactRepository
