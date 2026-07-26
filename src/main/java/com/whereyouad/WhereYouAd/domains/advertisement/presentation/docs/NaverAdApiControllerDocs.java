@@ -168,27 +168,13 @@ public interface NaverAdApiControllerDocs {
     );
 
     @Hidden
-    @Operation(summary = "api 통신 test용: 네이버 전체 통계 동기화", description = "일별(DAILY) 기본 지표와 전환 리포트를 동기화합니다.")
+    @Operation(summary = "api 통신 test용: 네이버 통계 동기화", description = "일별(DAILY) 기본 지표와 전환 지표를 /stats API 단일 호출로 동기화합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 광고소재 수 반환"),
             @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
             @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
     })
     ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
-            @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
-            @PathVariable Long connectionId,
-            @Parameter(description = "통계 대상 날짜 (yyyy-MM-dd, 예: 2026-04-08)", required = true)
-            @RequestParam("statDate") String statDate
-    );
-
-    @Hidden
-    @Operation(summary = "api 통신 test용: 네이버 전환 리포트만 동기화", description = "전환 데이터만 단독으로 동기화합니다. (기본 Stats 동기화 없이)")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 전환 행 수 반환"),
-            @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
-            @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
-    })
-    ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncConversions(
             @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
             @PathVariable Long connectionId,
             @Parameter(description = "통계 대상 날짜 (yyyy-MM-dd, 예: 2026-04-08)", required = true)
