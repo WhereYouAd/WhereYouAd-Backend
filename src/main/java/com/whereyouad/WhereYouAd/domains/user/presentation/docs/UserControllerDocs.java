@@ -146,7 +146,6 @@ public interface UserControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "404_1", description = "USER_404_1 : 해당 사용자 존재하지 않음"),
-            @ApiResponse(responseCode = "400_9", description = "USER_400_9 : 다른 멤버가 속한 조직의 소유자는 탈퇴할 수 없음 (소유권 위임 후 재시도 필요)")
             @ApiResponse(responseCode = "400_9", description = "USER_400_9 : 다른 멤버가 속한 조직의 소유자는 탈퇴할 수 없음 (소유권 위임 후 재시도 필요)"),
             @ApiResponse(responseCode = "400_10", description = "USER_400_10 : 연동된 광고 플랫폼이 존재하여 탈퇴할 수 없음 (모든 연동 해제 후 재시도 필요)"),
             @ApiResponse(responseCode = "409", description = "USER_409_1 : 저장된 소셜 인증 정보가 없어 소셜 재로그인 필요"),
