@@ -11,10 +11,14 @@ import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +28,15 @@ public class UserController implements UserControllerDocs {
     private final UserService userService;
     private final EmailService emailService;
     private final SmsService smsService;
+
+    @Value("${cookie.secure}")
+    private boolean cookieSecure;
+
+    @Value("${cookie.domain:}")
+    private String cookieDomain;
+
+    @Value("${cookie.same-site}")
+    private String cookieSameSite;
 
     @PostMapping("/signup")
     public ResponseEntity<DataResponse<SignUpResponse>> signUp(@RequestBody @Valid SignUpRequest request) {
@@ -117,6 +130,29 @@ public class UserController implements UserControllerDocs {
     {
         userService.deleteUser(userId);
 
-        return ResponseEntity.ok(DataResponse.from("탈퇴가 정상적으로 처리되었습니다"));
+        ResponseCookie expiredRefresh = baseCookie("refresh_token", "")
+                .httpOnly(true)
+                .maxAge(0)
+                .build();
+        ResponseCookie expiredAccess = baseCookie("access_token", "")
+                .httpOnly(false)
+                .maxAge(0)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, expiredRefresh.toString())
+                .header(HttpHeaders.SET_COOKIE, expiredAccess.toString())
+                .body(DataResponse.from("탈퇴가 정상적으로 처리되었습니다"));
+    }
+
+    private ResponseCookie.ResponseCookieBuilder baseCookie(String name, String value) {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(cookieSameSite);
+        if (StringUtils.hasText(cookieDomain)) {
+            builder.domain(cookieDomain);
+        }
+        return builder;
     }
 }

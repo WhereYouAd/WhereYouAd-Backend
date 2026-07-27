@@ -87,6 +87,9 @@ public class AuthService {
 
         //새로운 토큰 생성을 위해 유저 최신 정보 조회
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+        if (!userDetails.isEnabled()) {
+            throw new AppException(AuthErrorCode.ACCOUNT_NOT_ACTIVE);
+        }
 
         // Spring Security 인증 객체 생성
         UsernamePasswordAuthenticationToken authentication =
