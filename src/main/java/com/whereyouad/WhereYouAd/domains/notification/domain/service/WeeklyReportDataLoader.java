@@ -63,13 +63,13 @@ public class WeeklyReportDataLoader {
                 .toList();
 
         if (recipients.isEmpty()) {
+            // 알림 대상자가 없는 경우 검증에서 외부 채널 알림도 미수신인지 검증 로직 추가
             if (!notificationService.isExternalAlarmActive(orgId, NotificationType.REPORT)) {
                 log.info("[WeeklyReport] 조직={} 이메일 수신자/외부 채널 모두 없음. 건너뜀", orgId);
                 return Optional.empty();
             }
             log.info("[WeeklyReport] 조직={} 이메일 수신자는 없으나 외부 채널 수신 활성화됨. 알림 전송 진행", orgId);
         }
-        // ===================================================================
 
         // findAllByDateRangeAndOrgForAiAnalysis 는 adContent/adGroup/adCampaign 을 JOIN FETCH
         List<MetricFact> thisWeekMetrics = metricFactRepository
