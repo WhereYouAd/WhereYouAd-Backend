@@ -87,6 +87,9 @@ public class WeeklyReportNotificationService {
         }
         WeeklyReportData data = dataOpt.get();
 
+        // 디스코드 / 슬랙 리포트 작성 알림 발송
+        sendExternalChannelAlarm(orgId, data.orgName(), thisWeekStart, thisWeekEnd);
+
         // 이메일 수신자가 0명이면 리포트를 쓸 곳이 없으므로 OpenAI 호출 자체를 건너뛴다.
         // (생성된 리포트는 DB에 저장되지 않고 메일 본문으로만 소비되기 때문)
         if (!data.recipients().isEmpty()) {
@@ -99,9 +102,6 @@ public class WeeklyReportNotificationService {
             mailService.sendWeeklyReport(data.recipients(), analysis, data.orgName(), thisWeekStart, thisWeekEnd);
             log.info("[WeeklyReport] 조직={} 이메일 리포트 발송 완료. 수신자={}명", orgId, data.recipients().size());
         }
-
-        // 디스코드 / 슬랙 리포트 작성 알림 발송
-        sendExternalChannelAlarm(orgId, data.orgName(), thisWeekStart, thisWeekEnd);
     }
 
     // 조직에 연결된 디스코드 / 슬랙 채널로 "주간 리포트 작성 시간" 알림 발송 메서드
