@@ -7,12 +7,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface AuthProviderAccountRepository extends JpaRepository<AuthProviderAccount, Long> {
     AuthProviderAccount findByProviderId(String username);
 
     @Query("select apa from AuthProviderAccount apa where apa.user.email = :email")
     List<AuthProviderAccount> findByUserEmail(@Param(value = "email") String email);
+
+    Optional<AuthProviderAccount> findByUser_EmailAndProvider(
+            String email,
+            com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider provider
+    );
+
+    List<AuthProviderAccount> findByUser_IdAndUnlinkedAtIsNull(Long userId);
 
     // userId 기준 AuthProviderAccount 일괄 Hard Delete (User Hard Delete 정리용)
     @Modifying

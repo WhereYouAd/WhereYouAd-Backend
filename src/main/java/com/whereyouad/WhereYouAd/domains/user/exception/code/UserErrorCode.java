@@ -8,6 +8,10 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 public enum UserErrorCode implements BaseErrorCode {
+    USER_WITHDRAWN(HttpStatus.FORBIDDEN, "USER_403_1", "탈퇴 처리된 회원입니다."),
+    SOCIAL_REAUTH_REQUIRED(HttpStatus.CONFLICT, "USER_409_1", "소셜 로그인을 다시 진행한 뒤 탈퇴해 주세요."),
+    SOCIAL_TOKEN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "USER_500_2", "소셜 로그인 인증 정보 처리에 실패했습니다."),
+    SOCIAL_UNLINK_FAILED(HttpStatus.BAD_GATEWAY, "USER_502_1", "소셜 로그인 연동 해제에 실패했습니다. 잠시 후 다시 시도해 주세요."),
     // 400
     USER_EMAIL_DUPLICATE(HttpStatus.BAD_REQUEST, "USER_400_1", "이미 사용중인 이메일 입니다."),
     USER_EMAIL_NOT_VALID(HttpStatus.BAD_REQUEST, "USER_400_2", "해당 이메일로 메일 전송에 실패했습니다."),
