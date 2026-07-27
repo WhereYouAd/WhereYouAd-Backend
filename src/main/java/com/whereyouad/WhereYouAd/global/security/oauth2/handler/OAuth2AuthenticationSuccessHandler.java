@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.entity.RefreshToken;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.RefreshTokenRepository;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.oauth.SocialOAuthTokenService;
 import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
+import com.whereyouad.WhereYouAd.global.security.cookie.AuthCookieFactory;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtTokenProvider;
 import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.CustomOAuth2User;
@@ -20,7 +21,6 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 
@@ -33,19 +33,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final RefreshTokenRepository refreshTokenRepository;
     private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
     private final SocialOAuthTokenService socialOAuthTokenService;
+    private final AuthCookieFactory authCookieFactory;
 
     // TODO: 연동 시 프론트 주소로 변경(일단 스웨거로 redirect)
     @Value("${oauth2.redirect-url:http://localhost:8080/swagger-ui/index.html}")
     private String redirectUrl;
-
-    @Value("${cookie.secure}")
-    private boolean cookieSecure;
-
-    @Value("${cookie.domain:}")
-    private String cookieDomain;
-
-    @Value("${cookie.same-site}")
-    private String cookieSameSite;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -92,16 +84,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         refreshTokenRepository.save(refreshToken);
 
         // Access Token 쿠키 설정(httpOnly: false)
-        ResponseCookie accessTokenCookie = baseCookie("access_token", tokenResponse.accessToken())
-                .httpOnly(false)
-                .maxAge(60 * 60) // 1시간
-                .build();
+        ResponseCookie accessTokenCookie = authCookieFactory.createAccessTokenCookie(
+                tokenResponse.accessToken(), 60 * 60); // 1시간
 
         // Refresh Token을 HttpOnly 쿠키로 설정
-        ResponseCookie refreshTokenCookie = baseCookie("refresh_token", tokenResponse.refreshToken())
-                .httpOnly(true)
-                .maxAge(60 * 60 * 24 * 7) // 7일
-                .build();
+        ResponseCookie refreshTokenCookie = authCookieFactory.createRefreshTokenCookie(
+                tokenResponse.refreshToken(), 60 * 60 * 24 * 7); // 7일
 
         response.addHeader("Set-Cookie", accessTokenCookie.toString());
         response.addHeader("Set-Cookie", refreshTokenCookie.toString());
@@ -110,15 +98,4 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 
-    // 환경 설정(cookie.secure / cookie.domain / cookie.same-site)을 반영한 쿠키 빌더
-    private ResponseCookie.ResponseCookieBuilder baseCookie(String name, String value) {
-        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
-                .secure(cookieSecure)
-                .path("/")
-                .sameSite(cookieSameSite);
-        if (StringUtils.hasText(cookieDomain)) {
-            builder.domain(cookieDomain);
-        }
-        return builder;
-    }
 }
