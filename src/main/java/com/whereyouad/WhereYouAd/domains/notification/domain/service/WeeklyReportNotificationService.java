@@ -90,9 +90,9 @@ public class WeeklyReportNotificationService {
         // 디스코드 / 슬랙 리포트 작성 알림 발송
         sendExternalChannelAlarm(orgId, data.orgName(), thisWeekStart, thisWeekEnd);
 
-        // 이메일 수신자가 0명이면 리포트를 쓸 곳이 없으므로 OpenAI 호출 자체를 건너뛴다.
+        // 이메일 수신자가 0명이거나 이번주 데이터가 없으면 리포트를 쓸 수 없으므로 OpenAI 호출 자체를 건너뛴다.
         // (생성된 리포트는 DB에 저장되지 않고 메일 본문으로만 소비되기 때문)
-        if (!data.recipients().isEmpty()) {
+        if (!data.recipients().isEmpty() && !data.thisWeekMetrics().isEmpty()) {
             // DB 트랜잭션 없는 상태에서 외부 호출 — 커넥션 풀 점유 없음
             WeeklyReportResponse.WeeklyAnalysisResponse analysis = openApiService.generateWeeklyReport(
                     data.orgName(), null, null,
