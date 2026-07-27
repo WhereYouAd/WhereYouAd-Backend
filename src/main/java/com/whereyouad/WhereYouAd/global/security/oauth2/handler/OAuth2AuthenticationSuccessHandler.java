@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.global.security.oauth2.handler;
 
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.RefreshToken;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.RefreshTokenRepository;
+import com.whereyouad.WhereYouAd.domains.user.domain.service.oauth.SocialOAuthTokenService;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtTokenProvider;
 import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.CustomOAuth2User;
@@ -12,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -24,6 +28,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
+    private final SocialOAuthTokenService socialOAuthTokenService;
 
     // TODO: 연동 시 프론트 주소로 변경(일단 스웨거로 redirect)
     @Value("${oauth2.redirect-url:http://localhost:8080/swagger-ui/index.html}")
@@ -44,6 +50,20 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // CustomOAuth2User에서 사용자 정보 추출
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+
+        OAuth2AuthenticationToken oAuth2Authentication = (OAuth2AuthenticationToken) authentication;
+        OAuth2AuthorizedClient authorizedClient = oAuth2AuthorizedClientService.loadAuthorizedClient(
+                oAuth2Authentication.getAuthorizedClientRegistrationId(),
+                oAuth2Authentication.getName()
+        );
+        if (authorizedClient != null) {
+            socialOAuthTokenService.saveTokens(
+                    oAuth2User.getEmail(),
+                    oAuth2User.getProvider(),
+                    authorizedClient.getAccessToken(),
+                    authorizedClient.getRefreshToken()
+            );
+        }
         // 토큰 제작을 위한 이메일 추출
         String email = oAuth2User.getEmail();
 

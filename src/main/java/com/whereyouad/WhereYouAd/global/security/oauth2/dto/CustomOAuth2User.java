@@ -35,7 +35,7 @@ public class CustomOAuth2User implements OAuth2User {
 
     @Override
     public String getName() {
-        return authUserDTO.getName();
+        return authUserDTO.getProviderId();
     }
 
     public String getProviderId() {
