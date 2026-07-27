@@ -51,11 +51,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // CustomOAuth2User에서 사용자 정보 추출
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
+        // 성공 Handler에서는 AuthorizedClient를 통해 UserService 단계에 없던 RefreshToken까지 조회할 수 있다.
         OAuth2AuthenticationToken oAuth2Authentication = (OAuth2AuthenticationToken) authentication;
         OAuth2AuthorizedClient authorizedClient = oAuth2AuthorizedClientService.loadAuthorizedClient(
                 oAuth2Authentication.getAuthorizedClientRegistrationId(),
                 oAuth2Authentication.getName()
         );
+        // AuthorizedClient가 정상적으로 저장된 경우 연동 해제에 사용할 최신 OAuth 토큰을 보관한다.
         if (authorizedClient != null) {
             socialOAuthTokenService.saveTokens(
                     oAuth2User.getEmail(),
@@ -64,6 +66,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                     authorizedClient.getRefreshToken()
             );
         }
+
         // 토큰 제작을 위한 이메일 추출
         String email = oAuth2User.getEmail();
 

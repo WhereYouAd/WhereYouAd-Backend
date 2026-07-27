@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 public enum AuthErrorCode implements BaseErrorCode {
+    // 탈퇴·정지 등 비활성 회원의 기존 JWT 및 RefreshToken 사용 차단
     ACCOUNT_NOT_ACTIVE(HttpStatus.UNAUTHORIZED, "AUTH_401_5", "활성 상태가 아닌 회원입니다."),
     //토큰 관련
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_401_2", "토큰이 만료되었습니다."),

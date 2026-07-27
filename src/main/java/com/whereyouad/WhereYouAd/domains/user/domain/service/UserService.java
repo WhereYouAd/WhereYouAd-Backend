@@ -219,6 +219,7 @@ public class UserService {
         // 속한 Organization 중에 "해당 회원이 owner 인데 다른 회원이 멤버로 속한 Organization" 이 존재하는가? -> 존재 시 오류
         // 광고 플랫폼 연동 존재 여부가 회원 탈퇴를 막지 않음 -> UserDeleteScheduler 가 Hard Delete 시점에 자동 해제
         handleOrganizationsOwnedByUser(userId);
+        // 내부 탈퇴 처리 전에 모든 소셜 제공자의 연동 해제가 완료되어야 한다.
         socialOAuthUnlinkService.unlinkAll(userId);
 
         // 2) 즉시 정리 단계

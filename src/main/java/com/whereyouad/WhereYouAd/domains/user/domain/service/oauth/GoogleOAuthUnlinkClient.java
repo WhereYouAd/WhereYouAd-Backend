@@ -31,6 +31,7 @@ public class GoogleOAuthUnlinkClient implements SocialOAuthUnlinkClient {
 
     @Override
     public void unlink(SocialOAuthCredential credential) {
+        // Google은 AccessToken과 RefreshToken 모두 revoke API에 전달할 수 있다.
         String token = resolveRevocationToken(credential);
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("token", token);
@@ -49,12 +50,14 @@ public class GoogleOAuthUnlinkClient implements SocialOAuthUnlinkClient {
     }
 
     private String resolveRevocationToken(SocialOAuthCredential credential) {
+        // 만료되지 않은 AccessToken을 우선 사용하고, 만료된 경우 RefreshToken으로 연동을 해제한다.
         if (credential.hasUsableAccessToken()) {
             return credential.accessToken();
         }
         if (credential.refreshToken() != null && !credential.refreshToken().isBlank()) {
             return credential.refreshToken();
         }
+        // 사용할 수 있는 토큰이 없다면 재로그인으로 OAuth 자격증명을 다시 받아야 한다.
         throw new UserHandler(UserErrorCode.SOCIAL_REAUTH_REQUIRED);
     }
 }

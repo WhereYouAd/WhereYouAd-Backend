@@ -43,10 +43,12 @@ public class KakaoOAuthUnlinkClient implements SocialOAuthUnlinkClient {
     @Override
     public void unlink(SocialOAuthCredential credential) {
         try {
+            // 카카오는 AccessToken으로만 연결을 끊을 수 있어 만료 시 RefreshToken으로 재발급한다.
             String accessToken = credential.hasUsableAccessToken()
                     ? credential.accessToken()
                     : refreshAccessToken(credential.refreshToken());
 
+            // 재발급을 포함해 사용할 수 있는 AccessToken을 Bearer 인증으로 전달한다.
             restClient.post()
                     .uri(UNLINK_URL)
                     .headers(headers -> headers.setBearerAuth(accessToken))
@@ -60,6 +62,7 @@ public class KakaoOAuthUnlinkClient implements SocialOAuthUnlinkClient {
 
     private String refreshAccessToken(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
+            // 토큰을 갱신할 수 없으므로 재로그인 후 다시 탈퇴를 요청해야 한다.
             throw new UserHandler(UserErrorCode.SOCIAL_REAUTH_REQUIRED);
         }
 
@@ -76,6 +79,7 @@ public class KakaoOAuthUnlinkClient implements SocialOAuthUnlinkClient {
                 .retrieve()
                 .body(KakaoTokenResponse.class);
 
+        // HTTP 요청이 성공해도 AccessToken이 없으면 정상적으로 갱신된 것으로 볼 수 없다.
         if (response == null || response.accessToken() == null || response.accessToken().isBlank()) {
             throw new UserHandler(UserErrorCode.SOCIAL_UNLINK_FAILED);
         }

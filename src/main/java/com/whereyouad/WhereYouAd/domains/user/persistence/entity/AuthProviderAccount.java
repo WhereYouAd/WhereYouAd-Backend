@@ -30,6 +30,7 @@ public class AuthProviderAccount {
     @Column(name = "provider_id", nullable = false)
     private String providerId;
 
+    // OAuth 토큰 원문은 저장하지 않고 버전이 포함된 암호문만 보관한다.
     @Column(name = "oauth_access_token", length = 4096)
     private String oauthAccessToken;
 
@@ -72,6 +73,7 @@ public class AuthProviderAccount {
             LocalDateTime accessTokenExpiresAt
     ) {
         this.oauthAccessToken = encryptedAccessToken;
+        // 제공자가 새 RefreshToken을 주지 않은 경우 기존 토큰을 유지한다.
         if (encryptedRefreshToken != null) {
             this.oauthRefreshToken = encryptedRefreshToken;
         }
@@ -83,6 +85,7 @@ public class AuthProviderAccount {
         this.unlinkRetryCount = 0;
     }
 
+    // 외부 연동 해제 요청 직전에 시도 시각과 횟수를 기록한다.
     public void markUnlinking() {
         this.unlinkStatus = OAuthUnlinkStatus.UNLINKING;
         this.unlinkAttemptedAt = LocalDateTime.now();
@@ -95,6 +98,7 @@ public class AuthProviderAccount {
         this.unlinkFailureCode = failureCode;
     }
 
+    // 연동 해제가 완료되면 OAuth 토큰을 삭제하고 완료 시각을 기록한다.
     public void clearOAuthTokens() {
         this.oauthAccessToken = null;
         this.oauthRefreshToken = null;

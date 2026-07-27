@@ -35,6 +35,7 @@ public class CustomOAuth2User implements OAuth2User {
 
     @Override
     public String getName() {
+        // AuthorizedClient 저장·조회에 사용할 수 있도록 변하지 않는 소셜 계정 식별자를 반환한다.
         return authUserDTO.getProviderId();
     }
 

@@ -130,6 +130,7 @@ public class UserController implements UserControllerDocs {
     {
         userService.deleteUser(userId);
 
+        // 로그인 때 사용한 경로·도메인 설정과 동일한 만료 쿠키를 내려 브라우저의 인증 정보를 제거한다.
         ResponseCookie expiredRefresh = baseCookie("refresh_token", "")
                 .httpOnly(true)
                 .maxAge(0)
@@ -145,6 +146,7 @@ public class UserController implements UserControllerDocs {
                 .body(DataResponse.from("탈퇴가 정상적으로 처리되었습니다"));
     }
 
+    // 로그인 쿠키와 같은 보안 설정을 적용해야 기존 쿠키를 정확히 만료시킬 수 있다.
     private ResponseCookie.ResponseCookieBuilder baseCookie(String name, String value) {
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .secure(cookieSecure)

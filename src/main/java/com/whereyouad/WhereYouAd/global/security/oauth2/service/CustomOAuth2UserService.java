@@ -99,10 +99,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         // 공통: OAuth2UserInfo 생성 및 반환
+        // 탈퇴 처리된 기존 소셜 계정이면 서비스 JWT가 발급되기 전에 로그인을 차단한다.
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new UserHandler(UserErrorCode.USER_WITHDRAWN);
         }
 
+        // 이 단계에서는 AccessToken을 먼저 저장하고 RefreshToken은 로그인 성공 Handler에서 보완한다.
         socialOAuthTokenService.saveTokens(
                 user.getEmail(),
                 provider,

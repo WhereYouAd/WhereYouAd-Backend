@@ -42,6 +42,7 @@ public class NaverOAuthUnlinkClient implements SocialOAuthUnlinkClient {
     @Override
     public void unlink(SocialOAuthCredential credential) {
         try {
+            // 네이버는 AccessToken으로만 연결을 끊을 수 있어 만료 시 RefreshToken으로 재발급한다.
             String accessToken = credential.hasUsableAccessToken()
                     ? credential.accessToken()
                     : refreshAccessToken(credential.refreshToken());
@@ -54,6 +55,7 @@ public class NaverOAuthUnlinkClient implements SocialOAuthUnlinkClient {
 
     private String refreshAccessToken(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
+            // 토큰을 갱신할 수 없으므로 재로그인 후 다시 탈퇴를 요청해야 한다.
             throw new UserHandler(UserErrorCode.SOCIAL_REAUTH_REQUIRED);
         }
 
@@ -68,6 +70,7 @@ public class NaverOAuthUnlinkClient implements SocialOAuthUnlinkClient {
                 .retrieve()
                 .body(NaverTokenResponse.class);
 
+        // HTTP 요청이 성공해도 AccessToken이 없으면 정상적으로 갱신된 것으로 볼 수 없다.
         if (response == null || response.accessToken() == null || response.accessToken().isBlank()) {
             throw new UserHandler(UserErrorCode.SOCIAL_UNLINK_FAILED);
         }
@@ -75,6 +78,7 @@ public class NaverOAuthUnlinkClient implements SocialOAuthUnlinkClient {
     }
 
     private void deleteAccessToken(String accessToken) {
+        // 네이버는 토큰 API에 grant_type=delete를 전달하여 앱과 사용자 계정의 연동을 해제한다.
         MultiValueMap<String, String> form = baseForm();
         form.add("grant_type", "delete");
         form.add("access_token", accessToken);
@@ -87,12 +91,14 @@ public class NaverOAuthUnlinkClient implements SocialOAuthUnlinkClient {
                 .retrieve()
                 .body(NaverDeleteResponse.class);
 
+        // 응답 상태뿐 아니라 result 값이 success인지 확인해야 실제 해제 완료를 보장할 수 있다.
         if (response == null || !"success".equalsIgnoreCase(response.result())) {
             throw new UserHandler(UserErrorCode.SOCIAL_UNLINK_FAILED);
         }
     }
 
     private MultiValueMap<String, String> baseForm() {
+        // 토큰 갱신과 연동 해제 요청에서 공통으로 사용하는 앱 인증 정보
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("client_id", clientId);
         form.add("client_secret", clientSecret);
