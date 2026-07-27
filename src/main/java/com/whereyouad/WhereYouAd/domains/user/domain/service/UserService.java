@@ -8,6 +8,7 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.Org
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.request.UserInfoModifyRequest;
+import com.whereyouad.WhereYouAd.domains.user.domain.service.oauth.SocialOAuthUnlinkService;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyOrgResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.MyPageResponse;
 import com.whereyouad.WhereYouAd.domains.user.application.dto.response.UserInfoModifiedResponse;
@@ -48,6 +49,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final RedisUtil redisUtil;
     private final S3UploadService s3UploadService;
+    private final SocialOAuthUnlinkService socialOAuthUnlinkService;
 
     //회원가입 메서드
     public SignUpResponse signUpUser(SignUpRequest request) {
@@ -221,6 +223,7 @@ public class UserService {
         // 속한 Organization 중에 "해당 회원이 owner 인데 다른 회원이 멤버로 속한 Organization" 이 존재하는가? -> 존재 시 오류
         validateNoPlatformConnections(userId);
         handleOrganizationsOwnedByUser(userId);
+        socialOAuthUnlinkService.unlinkAll(userId);
 
         // 2) 즉시 정리 단계
         // 해당 회원 이메일로 발송된 pending OrgInvitation 정리
