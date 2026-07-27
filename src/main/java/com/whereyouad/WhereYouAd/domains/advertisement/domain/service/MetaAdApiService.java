@@ -1,6 +1,8 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.AdvertisementRequest;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.meta.MetaAuthService;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.meta.MetaBudgetService;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.meta.MetaSyncService;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
@@ -19,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
 
 @Slf4j
 @Service
@@ -31,6 +32,7 @@ public class MetaAdApiService {
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final RedisUtil redisUtil;
+    private final MetaBudgetService metaBudgetService;
 
     // 사용자 갱신 버튼 기본 범위(7일)
     private static final int USER_REFRESH_DEFAULT_DAYS = 7;
@@ -123,6 +125,20 @@ public class MetaAdApiService {
             redisUtil.deleteData(lockKey);
             redisUtil.setDataExpire(cooldownKey, "1", USER_REFRESH_COOLDOWN_SECONDS);
         }
+    }
+
+    // 캠페인 예산 변경
+    public MetaResponse.BudgetUpdateResponse updateCampaignBudget(
+            Long userId, Long adCampaignId, AdvertisementRequest.MetaBudgetUpdateRequest request) {
+
+        return metaBudgetService.updateCampaignBudget(userId, adCampaignId, request);
+    }
+
+    // 광고그룹 예산 변경
+    public MetaResponse.BudgetUpdateResponse updateAdGroupBudget(
+            Long userId, Long adGroupId, AdvertisementRequest.MetaBudgetUpdateRequest request) {
+
+        return metaBudgetService.updateAdGroupBudget(userId, adGroupId, request);
     }
 
 }

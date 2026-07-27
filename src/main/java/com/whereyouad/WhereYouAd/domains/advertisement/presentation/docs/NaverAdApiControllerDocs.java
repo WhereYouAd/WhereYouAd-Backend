@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.request.A
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.AdvertisementResponse;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.infrastructure.client.naver.dto.NaverDTO;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +18,7 @@ import java.util.List;
 
 public interface NaverAdApiControllerDocs {
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 광고 캠페인 목록 조회", description = "연동된 네이버 광고 계정의 캠페인 목록을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "캠페인 목록 반환"),
@@ -28,6 +30,7 @@ public interface NaverAdApiControllerDocs {
             @PathVariable Long connectionId
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 광고 그룹 목록 조회", description = "특정 캠페인의 광고 그룹 목록을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "광고 그룹 목록 반환"),
@@ -41,6 +44,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("nccCampaignId") String nccCampaignId
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 광고 소재 목록 조회", description = "특정 광고 그룹의 광고 소재 목록을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "광고 소재 목록 반환"),
@@ -54,6 +58,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("nccAdgroupId") String nccAdgroupId
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 키워드 원문 조회", description = "광고 그룹에 설정된 키워드 목록을 원문으로 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "키워드 목록 반환"),
@@ -66,6 +71,8 @@ public interface NaverAdApiControllerDocs {
             @Parameter(description = "네이버 광고 그룹 ID", required = true)
             @RequestParam("nccAdgroupId") String nccAdgroupId
     );
+
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 AD 리포트 생성 요청", description = "특정 일자의 AD 리포트 생성을 네이버에 요청합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "리포트 생성 요청됨(상태 확인 필요)"),
@@ -78,6 +85,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("statDt") String statDt
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 AD_CONVERSION 리포트 생성 요청", description = "특정 일자의 AD_CONVERSION 리포트 생성을 네이버에 요청합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "리포트 생성 요청됨(상태 확인 필요)"),
@@ -90,6 +98,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("statDt") String statDt
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 대용량 보고서 상태 조회", description = "생성 요청한 보고서의 상태를 확인합니다. (BUILT 상태가 되면 다운로드 가능)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "상태 및 다운로드 URL 반환"),
@@ -102,6 +111,7 @@ public interface NaverAdApiControllerDocs {
             @PathVariable String reportJobId
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 대용량 보고서 다운로드", description = "보고서 다운로드 URL을 통해 원문(TSV 등) 데이터를 가져옵니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "보고서 데이터 원문 반환"),
@@ -114,6 +124,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("url") String downloadUrl
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 일별 통계 직접 조회", description = "/stats API를 이용하여 특정 대상의 일별 기본 지표를 가져옵니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "일별 통계 반환"),
@@ -130,6 +141,7 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("until") String until
     );
 
+    @Hidden
     @Operation(summary = "api 통신 test용: 네이버 메타데이터 동기화", description = "연동된 네이버 계정의 캠페인/광고그룹/광고소재를 가져와 DB에 upsert합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 캠페인/그룹/소재 수 반환"),
@@ -153,7 +165,8 @@ public interface NaverAdApiControllerDocs {
             @RequestBody AdvertisementRequest.ManualSyncRequest request
     );
 
-    @Operation(summary = "api 통신 test용: 네이버 전체 통계 동기화", description = "일별(DAILY) 기본 지표와 전환 리포트를 동기화합니다.")
+    @Hidden
+    @Operation(summary = "api 통신 test용: 네이버 통계 동기화", description = "일별(DAILY) 기본 지표와 전환 지표를 /stats API 단일 호출로 동기화합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 광고소재 수 반환"),
             @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
@@ -166,16 +179,37 @@ public interface NaverAdApiControllerDocs {
             @RequestParam("statDate") String statDate
     );
 
-    @Operation(summary = "api 통신 test용: 네이버 전환 리포트만 동기화", description = "전환 데이터만 단독으로 동기화합니다. (기본 Stats 동기화 없이)")
+    @Operation(summary = "네이버 캠페인 예산 수정", description = "캠페인의 일일 예산 및 예산 사용 여부를 수정합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "동기화 완료 - 처리된 전환 행 수 반환"),
-            @ApiResponse(responseCode = "404", description = "커넥션 정보 없음"),
-            @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
+            @ApiResponse(responseCode = "200", description = "수정된 캠페인 정보 반환"),
+            @ApiResponse(responseCode = "400", description = "예산이 10의 배수가 아님"),
+            @ApiResponse(responseCode = "403", description = "조직 미가입 또는 ADMIN 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "플랫폼 연결 정보 없음"),
+            @ApiResponse(responseCode = "500", description = "네이버 API 호출 실패")
     })
-    ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncConversions(
+    ResponseEntity<DataResponse<NaverDTO.CampaignResponse>> updateCampaignBudget(
+            @Parameter(hidden = true) Long userId,
             @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
             @PathVariable Long connectionId,
-            @Parameter(description = "통계 대상 날짜 (yyyy-MM-dd, 예: 2026-04-08)", required = true)
-            @RequestParam("statDate") String statDate
+            @Parameter(description = "수정할 캠페인 ID", required = true)
+            @PathVariable String campaignId,
+            @RequestBody NaverDTO.UpdateCampaignBudgetRequest request
+    );
+
+    @Operation(summary = "네이버 광고그룹 예산 수정", description = "광고그룹의 일일 예산, 예산 사용 여부, 입찰가를 수정합니다. bidAmt가 null이면 입찰가는 수정하지 않습니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정된 광고그룹 정보 반환"),
+            @ApiResponse(responseCode = "400", description = "예산 또는 입찰가가 10의 배수가 아님"),
+            @ApiResponse(responseCode = "403", description = "조직 미가입 또는 ADMIN 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "플랫폼 연결 정보 없음"),
+            @ApiResponse(responseCode = "500", description = "네이버 API 호출 실패")
+    })
+    ResponseEntity<DataResponse<NaverDTO.AdGroupResponse>> updateAdGroupBudget(
+            @Parameter(hidden = true) Long userId,
+            @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
+            @PathVariable Long connectionId,
+            @Parameter(description = "수정할 광고그룹 ID", required = true)
+            @PathVariable String adgroupId,
+            @RequestBody NaverDTO.UpdateAdGroupBudgetRequest request
     );
 }

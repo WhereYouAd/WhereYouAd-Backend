@@ -1,13 +1,13 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.BudgetHistory;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 import com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response.DashboardResponse;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-
-import java.math.BigDecimal;
 
 public class DashboardConverter {
 
@@ -53,10 +53,30 @@ public class DashboardConverter {
         return new DashboardResponse.OngoingPlatformAdCountResponse(startDate, endDate, totalCount, providerCount);
     }
 
+    public static List<DashboardResponse.BudgetHistoryItem> toBudgetHistoryItems(List<BudgetHistory> histories) {
+        return histories.stream().map(bh -> {
+            String targetName = bh.getAdCampaign() != null
+                    ? bh.getAdCampaign().getName()
+                    : bh.getAdGroup().getName();
+            return new DashboardResponse.BudgetHistoryItem(
+                    bh.getFieldType(),
+                    targetName,
+                    bh.getPreviousValue(),
+                    bh.getNewValue(),
+                    bh.getCreatedAt(),
+                    bh.getProvider()
+            );
+        }).toList();
+    }
+
     //Data -> DTO
     public static DashboardResponse.RealTimeGraphResponse toRealTimeGraphResponse(
-            List<ClickResponse.RealtimeClickCount> timeSeriesData, String mode, Boolean hasSuspect, DashboardResponse.SuspectDetail suspectDetail)
+            String provider,
+            List<ClickResponse.RealtimeClickCount> timeSeriesData,
+            String mode,
+            Boolean hasSuspect,
+            DashboardResponse.SuspectDetail suspectDetail)
     {
-        return new DashboardResponse.RealTimeGraphResponse(timeSeriesData, mode, hasSuspect, suspectDetail);
+        return new DashboardResponse.RealTimeGraphResponse(provider ,timeSeriesData, mode, hasSuspect, suspectDetail);
     }
 }

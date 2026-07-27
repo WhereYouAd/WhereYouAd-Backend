@@ -10,6 +10,7 @@ import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgStatus;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.projection.RoasProjection;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,10 +29,12 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     BigDecimal sumSpendsByUserIdAndOrgIdAndProvider(@Param("userId") Long userId, @Param("orgId") Long orgId,
             @Param("provider") Provider provider);
 
-    //전체 지표 조회 로직에서 사용
-    // 해당 프로젝트의 가장 최신 데이터 날짜를 가져오는 쿼리
-    @Query("SELECT MAX(m.timeBucket) FROM MetricFact m")
-    Optional<LocalDateTime> findLatestTimeBucket();
+    // 전체 지표 조회 로직에서 사용
+    // 해당 조직(orgId)의 가장 최신 timeBucket을 가져오는 쿼리
+    @Query("SELECT MAX(m.timeBucket) FROM MetricFact m " +
+            "JOIN m.project p " +
+            "WHERE p.organization.id = :orgId")
+    Optional<LocalDateTime> findLatestTimeBucketByOrgId(@Param("orgId") Long orgId);
 
     // orgId에 속한 모든 프로젝트의 지표중 해당 MetricFact 가 속한 AdCampaign 의 status 가 ON_GOING 인 지표를 지정된 기간 범위 합산
     @Query("SELECT " +
@@ -161,9 +164,9 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
            "JOIN FETCH m.adContent ac " +
            "JOIN FETCH ac.adGroup ag " +
            "JOIN FETCH ag.adCampaign camp " +
-           "WHERE m.project.organization.id = :orgId " +
+           "WHERE camp.organization.id = :orgId " +
            "AND m.timeBucket >= :start " +
-           "AND m.timeBucket <= :end " +
+           "AND m.timeBucket < :end " +
            "ORDER BY m.timeBucket ASC")
     List<MetricFact> findAllByDateRangeAndOrgForAiAnalysis(
             @Param("start") LocalDateTime start,
@@ -227,4 +230,17 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     );
 
     Optional<MetricFact> findByPlatformAccount_IdAndAdContent_IdAndTimeBucket(Long platformAccountId, Long adContentId, LocalDateTime timeBucket);
+
+    // PlatformAccount 연동 해제 시 청크 단위 정리용
+    @Modifying
+    @Query(value = "DELETE FROM metric_fact " +
+            "WHERE platform_account_id = :platformAccountId " +
+            "LIMIT :batchSize",
+            nativeQuery = true)
+    int deleteByPlatformAccountIdInBatch(
+            @Param("platformAccountId") Long platformAccountId,
+            @Param("batchSize") int batchSize
+    );
+
+    long countByProject_Id(Long projectId);
 }

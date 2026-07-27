@@ -44,15 +44,24 @@ public class ClickConsumer {
 
         Long currentClickCount = redisUtil.incrementDataExpire(clickKey, REDIS_TTL_SECONDS);
 
-        // 조직 단위 통합 집계 추가
+        // 조직 단위 통합 집계
         if (event.getOrgId() != null) {
+            // 통합 대시보드용 - 조직 단위 집계
             String orgClickKey = String.format("click:%s:org:%s:%s", mode, event.getOrgId(), currentMinute);
             redisUtil.incrementDataExpire(orgClickKey, REDIS_TTL_SECONDS);
-        } else { //orgId 가 null 인 이벤트 들어올 시 로그 처리
+
+            // 플랫폼별 대시보드용 - provider 단위 통합 집계 추가
+            if (event.getProvider() != null) {
+                String providerClickKey = String.format("click:%s:org:%s:provider:%s:%s", mode, event.getOrgId(), event.getProvider().name(), currentMinute);
+                redisUtil.incrementDataExpire(providerClickKey, REDIS_TTL_SECONDS);
+            } else { // provider null 이벤트 로그 처리
+                log.warn("provider 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
+            }
+        } else { //orgId null 이벤트 로그 처리
             log.warn("orgId 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
         }
 
-        log.info("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
+        log.debug("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
                 clickKey, event.getUserAgent(), event.getIpAddress(), currentClickCount);
     }
 
@@ -109,6 +118,13 @@ public class ClickConsumer {
                 String detailJson = objectMapper.writeValueAsString(suspectDetail);
                 redisUtil.setDataExpire(alertKey, detailJson, 60);
 
+                // 플랫폼 지정 구독용 키 추가 (read 쪽 provider 분기와 정합)
+                if (event.getProvider() != null) {
+                    String providerAlertKey = String.format("click:suspect:alert:org:%s:provider:%s",
+                            event.getOrgId(), event.getProvider().name());
+                    redisUtil.setDataExpire(providerAlertKey, detailJson, 60);
+                }
+
                 log.info(" 봇 감지 : 실제 데이터 매핑 완료 및 Redis 적재: {}", alertKey);
             } catch (Exception e) {
                 log.error("봇 알림 JSON 변환/저장 실패", e);
@@ -119,7 +135,7 @@ public class ClickConsumer {
 
         clickLogRepository.save(clickLog);
 
-        log.info("[DB저장] adId={}, ip={}, isSuspect={}",
+        log.debug("[DB저장] adId={}, ip={}, isSuspect={}",
                 event.getAdContentId(), event.getIpAddress(), isSuspect);
     }
 }

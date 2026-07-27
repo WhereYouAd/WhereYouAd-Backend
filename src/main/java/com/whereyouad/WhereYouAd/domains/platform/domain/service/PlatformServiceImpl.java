@@ -8,6 +8,8 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.platform.application.dto.request.PlatformRequest;
 import com.whereyouad.WhereYouAd.domains.platform.application.dto.response.PlatformResponse;
 import com.whereyouad.WhereYouAd.domains.platform.application.mapper.PlatformConverter;
+import com.whereyouad.WhereYouAd.domains.platform.domain.constant.PlatformStatus;
+import com.whereyouad.WhereYouAd.domains.platform.domain.service.scheduler.PlatformDataCleanupExecutor;
 import com.whereyouad.WhereYouAd.domains.platform.exception.PlatformHandler;
 import com.whereyouad.WhereYouAd.domains.platform.exception.code.PlatformErrorCode;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
@@ -27,6 +29,7 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -42,6 +45,7 @@ public class PlatformServiceImpl implements PlatformService {
     private final OrgMemberRepository orgMemberRepository;
     private final PlatformAccountRepository platformAccountRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
+    private final PlatformDataCleanupExecutor platformDataCleanupExecutor;
     private final NaverClient naverClient;
     private final NaverAdAuthStrategy naverAdAuthStrategy;
 
@@ -102,7 +106,7 @@ public class PlatformServiceImpl implements PlatformService {
             throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
         }
 
-        // userId, orgId 기반 PlatformConnection 모두 조회
+        // userId, orgId 기반 PlatformConnection 조회 (삭제 대기(DISCONNECTED) 계정도 조회 가능
         List<PlatformConnection> connections = platformConnectionRepository.findByUserIdAndOrgId(userId, orgId);
 
         // DTO 로 변환 및 반환
@@ -144,10 +148,105 @@ public class PlatformServiceImpl implements PlatformService {
         return PlatformConverter.toPlatformAccountResponse(platformAccount);
     }
 
+    // 광고 플랫폼 연동 해제 (수동 요청)
+    // 권한/소유자 검증 후 상태만 DISCONNECTED 로 변경하고 즉시 반환, 실제 데이터 삭제는 PlatformAccountCleanupScheduler 에서 비동기 진행
     @Override
     public void disconnectPlatform(Long userId, Long orgId, Long accountId) {
-        // TODO: 관련된 PlatformConnection, PlatformAccount, 광고 도메인 엔티티 제거 로직 개발
-        return;
+        // 검증 로직
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ORG_MEMBER_NOT_FOUND));
+
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
+        }
+
+        PlatformAccount platformAccount = platformAccountRepository.findById(accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
+
+        if (!platformAccount.getOrganization().getId().equals(orgId)) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_BELONG_TO_ORG);
+        }
+
+        // 계정 소유자(연동 주인) 검증
+        platformConnectionRepository.findByUserIdAndPlatformAccountId(userId, accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_NOT_ACCOUNT_OWNER));
+
+        // 멱등성: 이미 삭제 대기 상태면 그대로 반환
+        if (platformAccount.getStatus() == PlatformStatus.DISCONNECTED) {
+            return;
+        }
+
+        // 상태만 DISCONNECTED 로 변경
+        platformAccount.softDelete();
+    }
+
+    @Override
+    public void reconnectPlatform(Long userId, Long orgId, Long accountId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(UserErrorCode.USER_NOT_FOUND));
+
+        OrgMember orgMember = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ORG_MEMBER_NOT_FOUND));
+
+        if (orgMember.getRole() != OrgRole.ADMIN) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_FORBIDDEN);
+        }
+
+        // 계정 소유자(연동 주인) 검증
+        platformConnectionRepository.findByUserIdAndPlatformAccountId(userId, accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_NOT_ACCOUNT_OWNER));
+
+        PlatformAccount platformAccount = platformAccountRepository.findById(accountId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_FOUND));
+
+        if (platformAccount.getStatus() != PlatformStatus.DISCONNECTED) {
+            throw new PlatformHandler(PlatformErrorCode.NOT_DISCONNECTED_ACCOUNT);
+        }
+
+        if (!platformAccount.getOrganization().getId().equals(orgId)) {
+            throw new PlatformHandler(PlatformErrorCode.PLATFORM_ACCOUNT_NOT_BELONG_TO_ORG);
+        }
+
+        platformAccount.reconnect();
+    }
+
+    // 시스템 내부 호출용 플랫폼 연동 해제 — 권한 검증 없이 계정 단위로 실제 데이터를 정리
+    // 호출처: 회원 탈퇴 스케줄러(UserDeleteScheduler), 수동 연동 해제 정리 스케줄러(PlatformAccountCleanupScheduler)
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void disconnectAccountBySystem(Long accountId) {
+        List<Long> projectIds = platformDataCleanupExecutor.collectProjectIds(accountId);
+        cleanupAccount(accountId, projectIds);
+    }
+
+    // 계정 단위 데이터 정리 메서드화
+    // ClickLog / MetricFact 청크 삭제 → AdCampaign + PlatformConnection + PlatformAccount 삭제 → 빈 Project 삭제
+    // 대규모 엔티티 삭제를 위해 별도 처리 클래스 (PlatformDataCleanupExecutor) 에서 Chunk 단위 삭제 처리
+    private void cleanupAccount(Long accountId, List<Long> projectIds) {
+        int chunkDeleted; // 하나의 청크 당 삭제 갯수
+        long totalClickLogDeleted = 0L; // ClickLog 전체 삭제 갯수
+        long totalMetricFactDeleted = 0L; // MetricFact 전체 삭제 갯수
+
+        // ClickLog 청크 정리 (REQUIRES_NEW)
+        do {
+            chunkDeleted = platformDataCleanupExecutor.deleteClickLogChunk(accountId);
+            totalClickLogDeleted += chunkDeleted;
+        } while (chunkDeleted > 0);
+        log.info("ClickLog 삭제 완료 - platformAccountId={}, totalCount={}", accountId, totalClickLogDeleted);
+
+        // MetricFact 청크 정리 (REQUIRES_NEW) — Project 삭제 단계에서 FK 위반 방지
+        do {
+            chunkDeleted = platformDataCleanupExecutor.deleteMetricFactChunk(accountId);
+            totalMetricFactDeleted += chunkDeleted;
+        } while (chunkDeleted > 0);
+        log.info("MetricFact 삭제 완료 - platformAccountId={}, totalCount={}", accountId, totalMetricFactDeleted);
+
+        // AdCampaign + PlatformConnection + PlatformAccount + 비어있는 Project 삭제 진행
+        // PlatformAccount 가 가장 마지막에 삭제됨 & 삭제 실패 시 전체 롤백되어 다음 회차에 재시도
+        platformDataCleanupExecutor.deleteAccountAndRelations(accountId, projectIds);
     }
 
     private void validateNaverCredentials(String customerId, String encryptedApiKey, String encryptedSecretKey) {

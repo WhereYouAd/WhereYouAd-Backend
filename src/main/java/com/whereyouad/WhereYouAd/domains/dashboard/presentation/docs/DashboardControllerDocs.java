@@ -116,9 +116,30 @@ public interface DashboardControllerDocs {
     );
 
     @Operation(
+            summary = "대시보드 - 예산 변경 이력 조회 API",
+            description = "조직 내 캠페인 및 광고그룹의 예산/입찰가 변경 이력을 기간별로 조회합니다.\n\n" +
+                          "fieldType: CAMPAIGN_BUDGET(캠페인 예산), AD_GROUP_BUDGET(광고그룹 예산), BID_AMOUNT(입찰가)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "403", description = "해당 조직에 대한 접근 권한이 없는 경우"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 조직")
+    })
+    ResponseEntity<DataResponse<DashboardResponse.BudgetHistoryListResponse>> getBudgetHistory(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @Parameter(description = "조직 ID", required = true, example = "1") @PathVariable Long orgId,
+            @Parameter(description = "조회 시작일 (YYYY-MM-DD)", required = true, example = "2025-01-01") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "조회 종료일 (YYYY-MM-DD)", required = true, example = "2025-12-31") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    );
+
+    @Operation(
             summary = "대시보드 - 실시간 클릭수 스트림 출력 API",
             description = "해당 조직의 최근 60분간 실시간 클릭수 추이와 이상 징후(봇) 감지 여부를 스트림으로 보내주는 API입니다.\n\n" +
                     "파라미터로 `mode`를 받아 `dummy`이면 서버 내에서 생성하는 가상 트래픽을, `real`일 경우 실제 수집된 클릭 데이터를 기반으로 반환합니다.\n\n" +
+                    "조회 플랫폼 단위 추가 (`providerType`)\n" +
+                    "* **`providerType` 생략 시(null):** 해당 조직의 **모든 플랫폼 합산** 클릭수를 반환합니다. (응답의 `provider` 필드는 `null`)\n" +
+                    "* **`providerType` 지정 시(GOOGLE/NAVER/META):** 해당 **플랫폼 한 곳**의 클릭수만 반환합니다. (응답의 `provider` 필드에 해당 플랫폼명)\n" +
+                    "* 같은 조직이라도 `providerType` 값에 따라 **독립된 스트림 채널**로 구독됩니다. 조직 전체 그래프와 플랫폼별 그래프를 동시에 띄우려면 각각 별도 connection으로 구독하세요.\n\n" +
                     "SSE(Server-Sent-Events) 방식을 사용하므로 한 번 연결되면 **1초마다 60분치 전체 시계열 데이터(Snapshot)가 지속적으로 푸시**됩니다. " +
                     "프론트엔드에서는 복잡한 계산 없이, 전달받은 배열을 그대로 차트 데이터 상태(State)로 덮어씌워 렌더링하시면 됩니다.\n\n" +
                     "### 🚨 프론트엔드 연동 시 주의사항\n" +
@@ -127,6 +148,7 @@ public interface DashboardControllerDocs {
                     "2. **이벤트 리스너 등록:** 일반 메세지가 아닌 특정 이벤트 명으로 발송되므로 `addEventListener('org-click-update', callback)` 형태로 수신해야 합니다.\n\n" +
                     "---\n" +
                     "### 📦 응답 데이터 규격 (Event Name: `org-click-update`)\n" +
+                    "* **`provider`**: 현재 스트림의 대상 플랫폼 (GOOGLE/NAVER/META). 조직 전체 합산 조회(providerType 생략) 시 null\n" +
                     "* **`timeSeriesData`**: 최근 60분간의 분 단위 클릭수 배열 `[{minute: '202603221439', count: 16}, ...]` (차트 렌더링용)\n" +
                     "* **`mode`**: 현재 응답 트래픽 모드 (`real` or `dummy`)\n" +
                     "* **`hasSuspect`**: 이상 징후(봇 의심) 트래픽 발생 여부 (`true` / `false`)\n" +
@@ -134,6 +156,8 @@ public interface DashboardControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "400", description = "DASH_400_1 : providerType 에 올바르지 않은 값이 입력되었습니다.\n\n" +
+                    "DASH_400_3 : 실시간 클릭수 집계에서 mode 변수값이 잘못되었습니다. (dummy/real 만 허용)"),
             @ApiResponse(responseCode = "404", description = "ORG_404_1 : 해당 id 의 조직이 존재하지 않습니다. \n\n" +
                     "ORG_404_2 : 해당 멤버가 조직에 존재하지 않습니다.")
     })
@@ -141,6 +165,7 @@ public interface DashboardControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestParam(required = false, defaultValue = "dummy") String mode,
+            @RequestParam(required = false) String providerType,
             @Parameter(hidden = true) HttpServletResponse response
     );
 }

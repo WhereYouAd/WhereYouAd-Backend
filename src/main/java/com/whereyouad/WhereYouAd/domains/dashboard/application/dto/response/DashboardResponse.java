@@ -1,9 +1,11 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.application.dto.response;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetFieldType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class DashboardResponse {
@@ -62,6 +64,7 @@ public class DashboardResponse {
 
     // 실시간 클릭수 스트림 반환 응답
     public record RealTimeGraphResponse(
+            String provider,   // 추가: 대상 플랫폼 (GOOGLE/NAVER/META). 조직 전체 조회면 null
             List<ClickResponse.RealtimeClickCount> timeSeriesData, // 최근 N분간의 클릭수 배열 (차트 X, Y축 데이터)
             String mode,  // 현재 데이터 모드 ("real" 또는 "dummy")
             Boolean hasSuspect,  // 이상 징후 발생 여부 (빨간 점 트리거)
@@ -96,5 +99,20 @@ public class DashboardResponse {
             LocalDate endDate,
             DailyMetricFactResponse total,              // 기간 전체 합계 지표
             List<DailyMetricFactResponse> dailyMetrics  // 일자별 지표 리스트
+    ) {}
+
+    public record BudgetHistoryItem(
+            BudgetFieldType fieldType,
+            String targetName,
+            Long previousValue,
+            Long newValue,
+            LocalDateTime changedAt,
+            Provider provider
+    ) {}
+
+    public record BudgetHistoryListResponse(
+            LocalDate startDate,
+            LocalDate endDate,
+            List<BudgetHistoryItem> histories
     ) {}
 }

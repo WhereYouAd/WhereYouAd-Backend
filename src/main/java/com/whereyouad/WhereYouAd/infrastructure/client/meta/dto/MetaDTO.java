@@ -66,6 +66,7 @@ public class MetaDTO {
             String name,
             String status,
             @JsonProperty("daily_budget") String dailyBudget,
+            @JsonProperty("lifetime_budget") String lifetimeBudget,
             @JsonProperty("targeting") Targeting targeting,
             @JsonProperty("billing_event") String billingEvent,
             @JsonProperty("optimization_goal") String optimizationGoal
@@ -118,12 +119,13 @@ public class MetaDTO {
             @JsonProperty("campaign_id") String campaignId,
             @JsonProperty("adset_id") String adSetId,
             String impressions,
-            String clicks,
-            String conversions,
+            @JsonProperty("inline_link_clicks") String inlineLinkClicks, // 실제 링크 클릭수를 집계
             String spend,
             @JsonProperty("date_start") String dateStart,
             @JsonProperty("date_stop") String dateStop,
-            List<Action> actions
+            List<Action> actions,
+            // 전환 가치(매출) 집계용 배열
+            @JsonProperty("action_values") List<Action> actionValues
     ) {}
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Action(
@@ -149,5 +151,12 @@ public class MetaDTO {
     public record Cursors(
             String before,
             String after
+    ) {}
+
+    // 추가 : 예산 변경
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record UpdateResponse(
+            Boolean success,
+            String id
     ) {}
 }

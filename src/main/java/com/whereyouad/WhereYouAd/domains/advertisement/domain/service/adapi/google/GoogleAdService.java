@@ -10,6 +10,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Ad
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.application.dto.response.GoogleAdResponse;
+import com.whereyouad.WhereYouAd.domains.platform.domain.constant.PlatformStatus;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.project.persistence.entity.Project;
@@ -20,6 +21,7 @@ import com.whereyouad.WhereYouAd.infrastructure.client.google.GoogleAdWebClient;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.converter.GoogleConverter;
 import com.whereyouad.WhereYouAd.infrastructure.client.google.dto.GoogleDTO;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformAccountRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +51,8 @@ public class GoogleAdService {
     private final ObjectMapper objectMapper;
 
     private final PlatformConnectionRepository platformConnectionRepository;
+    
+    private final PlatformAccountRepository platformAccountRepository;
 
     @Transactional
     public GoogleAdResponse.GoogleAdCreateResponse createAllAdInfos(Long userId) {
@@ -58,13 +62,18 @@ public class GoogleAdService {
 
         for (PlatformConnection connection : connections) {
             String customerId = connection.getPlatformAccount().getExternalAccountId();
-            try {
-                syncAdCampaigns(customerId, connection, emptyRequest);
-                syncAdGroups(customerId, connection, emptyRequest);
-                syncAdContents(customerId, connection, emptyRequest);
-                syncMetricFacts(customerId, connection, emptyRequest);
-            } catch (Exception e) {
-                log.warn("계정 [{}]의 구글 광고 데이터 연동 중 오류가 발생했습니다. (광고가 없는 계정이거나 권한 문제일 수 있습니다.) 사유: {}", customerId, e.getMessage());
+            List<PlatformAccount> clientAccounts = fetchAccessibleClientAccounts(customerId, connection, emptyRequest);
+
+            for (PlatformAccount clientAccount : clientAccounts) {
+                try {
+                    syncAdCampaigns(clientAccount, connection, emptyRequest);
+                    syncAdGroups(clientAccount, connection, emptyRequest);
+                    syncAssetGroups(clientAccount, connection, emptyRequest); // 애셋 그룹 추가
+                    syncAdContents(clientAccount, connection, emptyRequest);
+                    syncMetricFacts(clientAccount, connection, emptyRequest);
+                } catch (Exception e) {
+                    log.warn("계정 [{}]의 구글 광고 데이터 연동 중 오류가 발생했습니다. (광고가 없는 계정이거나 권한 문제일 수 있습니다.) 사유: {}", clientAccount.getExternalAccountId(), e.getMessage());
+                }
             }
         }
 
@@ -78,23 +87,73 @@ public class GoogleAdService {
 
         for (PlatformConnection connection : connections) {
             String customerId = connection.getPlatformAccount().getExternalAccountId();
-            try {
-                syncAdCampaigns(customerId, connection, emptyRequest);
-                syncAdGroups(customerId, connection, emptyRequest);
-                syncAdContents(customerId, connection, emptyRequest);
-                syncMetricFacts(customerId, connection, emptyRequest);
-            } catch (Exception e) {
-                log.warn("계정 [{}]의 구글 광고 데이터 동기화 중 오류가 발생했습니다. 사유: {}", customerId, e.getMessage());
+            List<PlatformAccount> clientAccounts = fetchAccessibleClientAccounts(customerId, connection, emptyRequest);
+
+            for (PlatformAccount clientAccount : clientAccounts) {
+                try {
+                    syncAdCampaigns(clientAccount, connection, emptyRequest);
+                    syncAdGroups(clientAccount, connection, emptyRequest);
+                    syncAssetGroups(clientAccount, connection, emptyRequest); // 애셋 그룹 추가
+                    syncAdContents(clientAccount, connection, emptyRequest);
+                    syncMetricFacts(clientAccount, connection, emptyRequest);
+                } catch (Exception e) {
+                    log.warn("계정 [{}]의 구글 광고 데이터 동기화 중 오류가 발생했습니다. 사유: {}", clientAccount.getExternalAccountId(), e.getMessage());
+                }
             }
         }
     }
 
-    private void syncAdCampaigns(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
-        String jsonResponse = googleAdWebClient.searchAllCampaigns(customerId, platformConnection, request).block();
+    private List<PlatformAccount> fetchAccessibleClientAccounts(String customerId, PlatformConnection connection, AdAuthRequest request) {
+        try {
+            String jsonResponse = googleAdWebClient.getAccessibleClientAccounts(customerId, connection, request).block();
+            if (jsonResponse == null || jsonResponse.isBlank()) return List.of();
+
+            GoogleDTO.AdCustomerClientResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AdCustomerClientResponse.class);
+            if (response != null && response.getResults() != null && !response.getResults().isEmpty()) {
+                PlatformAccount parentAccount = connection.getPlatformAccount();
+                
+                return response.getResults().stream()
+                        .filter(result -> result.getCustomerClient() != null)
+                        .filter(result -> Boolean.FALSE.equals(result.getCustomerClient().getManager()))
+                        .map(result -> {
+                            String clientId = result.getCustomerClient().getId();
+                            String descriptiveName = result.getCustomerClient().getDescriptiveName();
+                            String accountName = (descriptiveName != null && !descriptiveName.isBlank()) 
+                                    ? descriptiveName 
+                                    : "Sub-Account: " + clientId;
+                            
+                            // 하위 계정 PlatformAccount UPSERT
+                            return platformAccountRepository.findByExternalAccountIdAndProvider(clientId, Provider.GOOGLE)
+                                    .map(existing -> {
+                                        // 필요하다면 여기서 accountName 업데이트
+                                        return existing;
+                                    })
+                                    .orElseGet(() -> {
+                                        PlatformAccount newAccount = PlatformAccount.builder()
+                                                .externalAccountId(clientId)
+                                                .accountName(accountName)
+                                                .provider(Provider.GOOGLE)
+                                                .parentAccount(parentAccount)
+                                                .organization(parentAccount.getOrganization())
+                                                .status(PlatformStatus.ACTIVE)
+                                                .build();
+                                        return platformAccountRepository.save(newAccount);
+                                    });
+                        })
+                        .toList();
+            }
+        } catch (Exception e) {
+            log.warn("하위 클라이언트 계정 조회 중 오류 발생: {}", e.getMessage());
+        }
+        return List.of(); // 실패하거나 비어있으면 빈 리스트 반환 (MCC가 자체 통계를 조회하는 오류 방지)
+    }
+
+    private void syncAdCampaigns(PlatformAccount clientAccount, PlatformConnection platformConnection, AdAuthRequest request) {
+        String jsonResponse = googleAdWebClient.searchAllCampaigns(clientAccount.getExternalAccountId(), platformConnection, request).block();
 
         if (jsonResponse == null || jsonResponse.isBlank()) return;
 
-        PlatformAccount currentAccount = platformConnection.getPlatformAccount(); // 현재 연동된 계정
+        PlatformAccount currentAccount = clientAccount; // 하위 계정(clientAccount)에 묶이도록 수정
 
         try {
             GoogleDTO.AdCampaignResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AdCampaignResponse.class);
@@ -116,6 +175,7 @@ public class GoogleAdService {
                                 newCampaign.getEndDate(),
                                 newCampaign.getDescription()
                         );
+                        existing.get().applyBudgetType(newCampaign.getBudgetType());
                     } else {
                         adCampaignRepository.save(newCampaign);
                     }
@@ -127,12 +187,12 @@ public class GoogleAdService {
         }
     }
 
-    private void syncAdGroups(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
-        String jsonResponse = googleAdWebClient.searchAllAdGroups(customerId, platformConnection, request).block();
+    private void syncAdGroups(PlatformAccount clientAccount, PlatformConnection platformConnection, AdAuthRequest request) {
+        String jsonResponse = googleAdWebClient.searchAllAdGroups(clientAccount.getExternalAccountId(), platformConnection, request).block();
 
         if (jsonResponse == null || jsonResponse.isBlank()) return;
 
-        PlatformAccount currentAccount = platformConnection.getPlatformAccount(); // 현재 연동된 계정
+        PlatformAccount currentAccount = clientAccount; // 하위 계정(clientAccount)에 묶이도록 수정
 
         try {
             GoogleDTO.AdGroupResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AdGroupResponse.class);
@@ -165,12 +225,51 @@ public class GoogleAdService {
         }
     }
 
-    private void syncAdContents(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
-        String jsonResponse = googleAdWebClient.searchAllAdContents(customerId, platformConnection, request).block();
+    private void syncAssetGroups(PlatformAccount clientAccount, PlatformConnection platformConnection, AdAuthRequest request) {
+        String jsonResponse = googleAdWebClient.searchAllAssetGroups(clientAccount.getExternalAccountId(), platformConnection, request).block();
 
         if (jsonResponse == null || jsonResponse.isBlank()) return;
 
-        PlatformAccount currentAccount = platformConnection.getPlatformAccount();
+        PlatformAccount currentAccount = clientAccount;
+
+        try {
+            GoogleDTO.AssetGroupResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AssetGroupResponse.class);
+
+            if (response != null && response.getResults() != null) {
+                for (GoogleDTO.AssetGroupResult result : response.getResults()) {
+                    String externalCampaignId = result.getCampaign().getId();
+                    AdCampaign adCampaign = adCampaignRepository.findByPlatformAccountAndExternalCampaignId(currentAccount, externalCampaignId).orElse(null);
+
+                    if (adCampaign == null) continue;
+
+                    String externalGroupId = result.getAssetGroup().getId();
+                    Optional<AdGroup> existing = adGroupRepository.findByAdCampaignAndExternalGroupId(adCampaign, externalGroupId);
+                    AdGroup newGroup = googleConverter.toAssetGroup(result, adCampaign);
+
+                    if (existing.isPresent()) {
+                        existing.get().update(
+                                newGroup.getName(), 
+                                newGroup.getStatus(), 
+                                existing.get().getTargetingInfo()
+                        );
+                    } else {
+                        adGroupRepository.save(newGroup);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("애셋 그룹 JSON 파싱 및 저장 실패", e);
+            // 애셋 그룹 조회를 지원하지 않는 계정일 수도 있으므로 에러를 던지지 않고 경고 로그만 남김 (PMax 캠페인이 없는 등)
+            log.warn("해당 계정에서 애셋 그룹 동기화를 건너뜁니다: {}", e.getMessage());
+        }
+    }
+
+    private void syncAdContents(PlatformAccount clientAccount, PlatformConnection platformConnection, AdAuthRequest request) {
+        String jsonResponse = googleAdWebClient.searchAllAdContents(clientAccount.getExternalAccountId(), platformConnection, request).block();
+
+        if (jsonResponse == null || jsonResponse.isBlank()) return;
+
+        PlatformAccount currentAccount = clientAccount;
 
         try {
             GoogleDTO.AdContentResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.AdContentResponse.class);
@@ -204,12 +303,12 @@ public class GoogleAdService {
         }
     }
 
-    private void syncMetricFacts(String customerId, PlatformConnection platformConnection, AdAuthRequest request) {
-        String jsonResponse = googleAdWebClient.searchGoogleAdsData(customerId, platformConnection, request).block();
+    private void syncMetricFacts(PlatformAccount clientAccount, PlatformConnection platformConnection, AdAuthRequest request) {
+        String jsonResponse = googleAdWebClient.searchGoogleAdsData(clientAccount.getExternalAccountId(), platformConnection, request).block();
 
         if (jsonResponse == null || jsonResponse.isBlank()) return;
 
-        PlatformAccount currentAccount = platformConnection.getPlatformAccount();
+        PlatformAccount currentAccount = clientAccount;
 
         try {
             GoogleDTO.MetricFactResponse response = objectMapper.readValue(jsonResponse, GoogleDTO.MetricFactResponse.class);

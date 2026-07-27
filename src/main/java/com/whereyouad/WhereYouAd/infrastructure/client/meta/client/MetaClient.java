@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(
@@ -67,6 +68,15 @@ public interface MetaClient {
             @RequestParam("level") String level,
             @RequestParam("time_range") String timeRange,
             @RequestParam("time_increment") String timeIncrement,
+            // 어트리뷰션 윈도우 명시 (전환/매출 수치 재현성 확보)
+            @RequestParam(value = "action_attribution_windows", required = false) String actionAttributionWindows,
             @RequestParam(value = "after", required = false) String afterCursor);
 
+    @PostMapping("/{nodeId}")
+    MetaDTO.UpdateResponse updateBudget(
+            @PathVariable("nodeId") String nodeId,
+            @RequestParam("access_token") String accessToken,
+            @RequestParam(value = "daily_budget", required = false) Long dailyBudget,
+            @RequestParam(value = "lifetime_budget", required = false) Long lifetimeBudget
+    );
 }

@@ -10,6 +10,7 @@ import com.whereyouad.WhereYouAd.infrastructure.client.naver.dto.NaverDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -122,7 +123,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
                 naverAdSyncService.syncAllForOrg(orgId, request.startDate(), request.endDate())));
     }
 
-    // DAILY MetricFact 동기화 (전환 리포트는 /sync/conversions 엔드포인트에서 별도 실행)
+    // DAILY MetricFact 동기화 (기본 지표 + 전환 지표 통합)
     @PostMapping("/sync/stats")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
             @PathVariable Long connectionId,
@@ -131,12 +132,27 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
         return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncBasicStats(connectionId, statDate)));
     }
 
-    // 전환 리포트 동기화만 단독 실행
-    @PostMapping("/sync/conversions")
-    public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncConversions(
+    // 캠페인 예산 수정
+    @PutMapping("/campaigns/{campaignId}/budget")
+    public ResponseEntity<DataResponse<NaverDTO.CampaignResponse>> updateCampaignBudget(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long connectionId,
-            @RequestParam("statDate") String statDate
+            @PathVariable String campaignId,
+            @RequestBody NaverDTO.UpdateCampaignBudgetRequest request
     ) {
-        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncConversionReports(connectionId, statDate)));
+        return ResponseEntity.ok(DataResponse.from(
+                naverAdApiService.updateCampaignBudget(userId, connectionId, campaignId, request)));
+    }
+
+    // 광고그룹 예산 수정
+    @PutMapping("/adgroups/{adgroupId}/budget")
+    public ResponseEntity<DataResponse<NaverDTO.AdGroupResponse>> updateAdGroupBudget(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long connectionId,
+            @PathVariable String adgroupId,
+            @RequestBody NaverDTO.UpdateAdGroupBudgetRequest request
+    ) {
+        return ResponseEntity.ok(DataResponse.from(
+                naverAdApiService.updateAdGroupBudget(userId, connectionId, adgroupId, request)));
     }
 }

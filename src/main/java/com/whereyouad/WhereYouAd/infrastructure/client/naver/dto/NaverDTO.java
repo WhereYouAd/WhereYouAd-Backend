@@ -107,7 +107,9 @@ public class NaverDTO {
             Long clkCnt,
             Long salesAmt,
             Double ctr,
-            Double cpc
+            Double cpc,
+            Long ccnt,
+            Long convAmt
     ) {}
 
     // 상세 보고서 응답 (Metric_fact)
@@ -132,5 +134,33 @@ public class NaverDTO {
     public record StatReportRequest(
             String reportTp,
             String statDt
+    ) {}
+
+    // 캠페인 예산 수정 요청 (컨트롤러 입력용, ID X)
+    public record UpdateCampaignBudgetRequest(
+            Boolean useDailyBudget,
+            Long dailyBudget
+    ) {}
+
+    // 캠페인 예산 수정 body (네이버 API 전송용, ID O)
+    public record UpdateCampaignBudgetBody(
+            String nccCampaignId,
+            Boolean useDailyBudget,
+            Long dailyBudget
+    ) {}
+
+    // 광고그룹 예산 수정 요청 (컨트롤러 입력용, ID X)
+    public record UpdateAdGroupBudgetRequest(
+            Boolean useDailyBudget,
+            Long dailyBudget,
+            Long bidAmt
+    ) {}
+
+    // 광고그룹 예산 수정 body (네이버 API 전송용, ID O)
+    public record UpdateAdGroupBudgetBody(
+            String nccAdgroupId,
+            Boolean useDailyBudget,
+            Long dailyBudget,
+            Long bidAmt
     ) {}
 }

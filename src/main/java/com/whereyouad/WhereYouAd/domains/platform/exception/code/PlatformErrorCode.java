@@ -11,9 +11,12 @@ public enum PlatformErrorCode implements BaseErrorCode {
 
     // 400
     NAVER_API_AUTH_FAILED(HttpStatus.BAD_REQUEST, "PLATFORM_400_1", "네이버 광고 API키 등록에 실패했습니다."),
+    NOT_DISCONNECTED_ACCOUNT(HttpStatus.BAD_REQUEST, "PLATFORM_400_2", "DISCONNECTED 된 광고 계정이 아닙니다."),
 
     // 403
     PLATFORM_FORBIDDEN(HttpStatus.FORBIDDEN, "PLATFORM_403_1", "API키 등록은 ADMIN 권한이 필요합니다."),
+    PLATFORM_ACCOUNT_NOT_BELONG_TO_ORG(HttpStatus.FORBIDDEN, "PLATFORM_403_2", "해당 광고 계정은 요청한 조직 소속이 아닙니다."),
+    PLATFORM_NOT_ACCOUNT_OWNER(HttpStatus.FORBIDDEN, "PLATFORM_403_3", "본인이 등록한 광고 계정만 연동 해제 또는 재등록 할 수 있습니다."),
 
     // 404
     PLATFORM_CONNECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PLATFORM_404_1", "조직과 연결된 인증 정보를 찾을 수 없습니다."),

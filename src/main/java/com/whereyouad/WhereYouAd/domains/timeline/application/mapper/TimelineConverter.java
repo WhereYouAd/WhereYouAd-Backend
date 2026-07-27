@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.timeline.application.mapper;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.BudgetHistory;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.timeline.application.dto.request.TimelineRequest.TimelineCreateDto;
 import com.whereyouad.WhereYouAd.domains.timeline.application.dto.response.TimelineResponse;
@@ -30,6 +31,7 @@ public class TimelineConverter {
                 .useRoas(dto.metrics().contains(MetricType.ROAS))
                 .comparisonStartDate(comparisonStartDate)
                 .comparisonEndDate(comparisonEndDate)
+                .comparisonPeriodType(dto.comparisonPeriodType())
                 .createdBy(userId)
                 .organization(organization)
                 .build();
@@ -57,7 +59,8 @@ public class TimelineConverter {
             Timeline timeline,
             List<MetricType> metrics,
             List<TimelineResponse.DailyMetricDTO> dailyTrend,
-            List<TimelineResponse.PlatformContributionDTO> platformContributions
+            List<TimelineResponse.PlatformContributionDTO> platformContributions,
+            List<TimelineResponse.BudgetHistoryItem> budgetHistories
     ) {
         return new TimelineResponse.TimelineDetailDTO(
                 timeline.getId(),
@@ -65,11 +68,29 @@ public class TimelineConverter {
                 timeline.getStartDate(),
                 timeline.getEndDate(),
                 timeline.getPerformanceStatus(),
+                timeline.getComparisonPeriodType(),
                 metrics,
                 timeline.getSummary(),
                 dailyTrend,
-                platformContributions
+                platformContributions,
+                budgetHistories
         );
+    }
+
+    public static List<TimelineResponse.BudgetHistoryItem> toBudgetHistoryItems(List<BudgetHistory> histories) {
+        return histories.stream().map(bh -> {
+            String targetName = bh.getAdCampaign() != null
+                    ? bh.getAdCampaign().getName()
+                    : bh.getAdGroup().getName();
+            return new TimelineResponse.BudgetHistoryItem(
+                    bh.getFieldType(),
+                    targetName,
+                    bh.getPreviousValue(),
+                    bh.getNewValue(),
+                    bh.getCreatedAt(),
+                    bh.getProvider()
+            );
+        }).toList();
     }
 
     // entity -> dto

@@ -107,6 +107,30 @@ public class MetaAdApiController implements MetaAdApiControllerDocs {
         );
     }
 
+    // 5. 캠페인 예산 변경
+    @PatchMapping("/campaigns/{adCampaignId}/budget")
+    public ResponseEntity<DataResponse<MetaResponse.BudgetUpdateResponse>> updateCampaignBudget(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long adCampaignId,
+            @RequestBody @Valid AdvertisementRequest.MetaBudgetUpdateRequest request)
+    {
+        MetaResponse.BudgetUpdateResponse response =
+                metaAdApiService.updateCampaignBudget(userId, adCampaignId, request);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
+
+    // 6. 광고그룹 예산 변경
+    @PatchMapping("/adgroups/{adGroupId}/budget")
+    public ResponseEntity<DataResponse<MetaResponse.BudgetUpdateResponse>> updateAdGroupBudget(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long adGroupId,
+            @RequestBody @Valid AdvertisementRequest.MetaBudgetUpdateRequest request)
+    {
+        MetaResponse.BudgetUpdateResponse response =
+                metaAdApiService.updateAdGroupBudget(userId, adGroupId, request);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
+
     //===내부 편의 메서드===
     //콜백 실패시 프론트 리다이렉트 메서드
     private ResponseEntity<Void> redirectToFrontend(String status, String detail) {
