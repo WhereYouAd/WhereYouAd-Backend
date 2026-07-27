@@ -64,6 +64,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             } catch (UserHandler e) {
                 log.error("소셜 OAuth 토큰 저장 실패: email={}, provider={}, errorCode={}",
                         oAuth2User.getEmail(), oAuth2User.getProvider(), e.getErrorCode().getCode(), e);
+            } catch (RuntimeException e) {
+                log.error("소셜 OAuth 토큰 저장 중 예상하지 못한 오류: email={}, provider={}",
+                        oAuth2User.getEmail(), oAuth2User.getProvider(), e);
             }
         }
 
