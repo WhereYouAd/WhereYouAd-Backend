@@ -6,6 +6,8 @@ import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.global.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -28,6 +30,7 @@ public class SocialOAuthUnlinkService {
     }
 
     // 회원과 연결된 모든 소셜 계정의 연동을 순서대로 해제한다.
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void unlinkAll(Long userId) {
         // 이미 해제된 계정은 제외하므로 이메일 회원은 빈 목록으로 종료된다.
         List<SocialOAuthCredential> credentials = socialOAuthTokenService.getCredentialsForWithdrawal(userId);
