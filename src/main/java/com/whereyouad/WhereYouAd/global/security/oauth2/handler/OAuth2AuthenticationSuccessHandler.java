@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.global.security.oauth2.handler;
 import com.whereyouad.WhereYouAd.domains.user.persistence.entity.RefreshToken;
 import com.whereyouad.WhereYouAd.domains.user.persistence.repository.RefreshTokenRepository;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.oauth.SocialOAuthTokenService;
+import com.whereyouad.WhereYouAd.domains.user.exception.handler.UserHandler;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtTokenProvider;
 import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
 import com.whereyouad.WhereYouAd.global.security.oauth2.dto.CustomOAuth2User;
@@ -10,6 +11,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -24,6 +26,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -59,12 +62,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         );
         // AuthorizedClient가 정상적으로 저장된 경우 연동 해제에 사용할 최신 OAuth 토큰을 보관한다.
         if (authorizedClient != null) {
-            socialOAuthTokenService.saveTokens(
-                    oAuth2User.getEmail(),
-                    oAuth2User.getProvider(),
-                    authorizedClient.getAccessToken(),
-                    authorizedClient.getRefreshToken()
-            );
+            try {
+                socialOAuthTokenService.saveTokens(
+                        oAuth2User.getEmail(),
+                        oAuth2User.getProvider(),
+                        authorizedClient.getAccessToken(),
+                        authorizedClient.getRefreshToken()
+                );
+            } catch (UserHandler e) {
+                log.error("소셜 OAuth 토큰 저장 실패: email={}, provider={}, errorCode={}",
+                        oAuth2User.getEmail(), oAuth2User.getProvider(), e.getErrorCode().getCode(), e);
+            }
         }
 
         // 토큰 제작을 위한 이메일 추출
