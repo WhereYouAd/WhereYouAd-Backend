@@ -35,8 +35,12 @@ public class WeeklyReportNotificationService {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("M월 d일");
 
     // 외부 채널에는 리포트 본문을 담지 않고 안내 문구만 발송
-    private static final String CHANNEL_MESSAGE =
+    // 조직 내 이메일로 리포트 수신하는 회원이 존재할 경우 안내 문구
+    private static final String CHANNEL_MESSAGE_WITH_EMAIL =
             "오늘은 주간 리포트 작성일 입니다! 자세한 내용은 이메일 또는 WhereYouAd 대시보드에서 확인해주세요.";
+    // 조직 내 이메일로 리포트 수신하는 회원이 존재하지 않을 경우 안내 문구
+    private static final String CHANNEL_MESSAGE_WITHOUT_EMAIL =
+            "오늘은 주간 리포트 작성일 입니다! WhereYouAd 대시보드 내용을 기반으로 리포트를 작성해보세요.";
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendWeeklyReportForOrg(Long orgId) {
@@ -88,7 +92,7 @@ public class WeeklyReportNotificationService {
         WeeklyReportData data = dataOpt.get();
 
         // 디스코드 / 슬랙 리포트 작성 알림 발송
-        sendExternalChannelAlarm(orgId, data.orgName(), thisWeekStart, thisWeekEnd);
+        sendExternalChannelAlarm(orgId, data.orgName(), thisWeekStart, thisWeekEnd, !data.recipients().isEmpty());
 
         // 이메일 수신자가 0명이거나 이번주 데이터가 없으면 리포트를 쓸 수 없으므로 OpenAI 호출 자체를 건너뛴다.
         // (생성된 리포트는 DB에 저장되지 않고 메일 본문으로만 소비되기 때문)
@@ -107,14 +111,18 @@ public class WeeklyReportNotificationService {
     // 조직에 연결된 디스코드 / 슬랙 채널로 "주간 리포트 작성 시간" 알림 발송 메서드
     // 리포트 본문은 이메일로만 전송, 외부 채널에는 안내 문구만 전송
     private void sendExternalChannelAlarm(Long orgId, String orgName,
-                                          LocalDate weekStart, LocalDate weekEnd) {
+                                          LocalDate weekStart, LocalDate weekEnd,
+                                          boolean hasEmailRecipients) {
         try {
             String title = String.format("[%s] 주간 광고 리포트 (%s ~ %s)",
                     orgName, weekStart.format(DATE_FMT), weekEnd.format(DATE_FMT));
 
+            // 이메일로 리포트를 수신하는 회원이 없으면 이메일 안내 문구를 뺀 메세지를 사용
+            String message = hasEmailRecipients ? CHANNEL_MESSAGE_WITH_EMAIL : CHANNEL_MESSAGE_WITHOUT_EMAIL;
+
             // 실제 발송 조건 판정(웹훅 등록 여부 / 채널 수신 토글 ON / alertReport ON)과
             // 채널별 실패 격리는 NotificationService.sendApiAlarmToOrg() 내부 처리
-            notificationService.sendApiAlarmToOrg(orgId, NotificationType.REPORT, title, CHANNEL_MESSAGE);
+            notificationService.sendApiAlarmToOrg(orgId, NotificationType.REPORT, title, message);
         } catch (Exception e) {
             log.error("[WeeklyReport] 조직={} 외부 채널(슬랙/디스코드) 리포트 알림 발송 실패: {}", orgId, e.getMessage(), e);
         }
