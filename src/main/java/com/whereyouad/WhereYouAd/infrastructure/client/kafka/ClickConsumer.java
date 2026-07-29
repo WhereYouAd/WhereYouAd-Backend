@@ -8,6 +8,9 @@ import com.whereyouad.WhereYouAd.domains.click.application.mapper.ClickConverter
 import com.whereyouad.WhereYouAd.domains.click.domain.service.BotDetector;
 import com.whereyouad.WhereYouAd.domains.click.persistence.entity.ClickLog;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickLogRepository;
+import com.whereyouad.WhereYouAd.domains.notification.application.dto.NotificationAlertEvent;
+import com.whereyouad.WhereYouAd.domains.notification.domain.constant.NotificationType;
+import com.whereyouad.WhereYouAd.domains.notification.domain.service.NotificationEventProducer;
 import com.whereyouad.WhereYouAd.global.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +31,7 @@ public class ClickConsumer {
     private final AdContentRepository adContentRepository;
     private final ClickLogRepository clickLogRepository;
     private final BotDetector botDetector;
+    private final NotificationEventProducer notificationEventProducer;
 
     private static final DateTimeFormatter MINUTE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
     private static final long REDIS_TTL_SECONDS = 7200L; // 2시간
@@ -93,6 +97,7 @@ public class ClickConsumer {
                 String providerStr = "알 수 없는 플랫폼";
                 String campaignNameStr = "알 수 없는 캠페인";
                 String adNameStr = (adContent.getName() != null) ? adContent.getName() : "알 수 없는 광고";
+                String alertMessage = "비정상적인 트래픽(Bot)이 감지되었습니다. (IP: " + event.getIpAddress() + ")";
 
                 // 연관관계를 타고 올라가며 실제 값 추출 및 적용
                 if (adContent.getAdGroup() != null && adContent.getAdGroup().getAdCampaign() != null) {
@@ -112,7 +117,7 @@ public class ClickConsumer {
                 suspectDetail.put("provider", providerStr);
                 suspectDetail.put("campaignName", campaignNameStr);
                 suspectDetail.put("adName", adNameStr);
-                suspectDetail.put("message", "비정상적인 트래픽(Bot)이 감지되었습니다. (IP: " + event.getIpAddress() + ")");
+                suspectDetail.put("message", alertMessage);
 
                 // JSON 변환 후 Redis 저장 (수명 60초)
                 String detailJson = objectMapper.writeValueAsString(suspectDetail);
@@ -126,6 +131,14 @@ public class ClickConsumer {
                 }
 
                 log.info(" 봇 감지 : 실제 데이터 매핑 완료 및 Redis 적재: {}", alertKey);
+
+                // 디스코드/슬랙 등 외부 채널 알림을 위한 Kafka 이벤트 발행
+                notificationEventProducer.produce(NotificationAlertEvent.builder()
+                        .orgId(event.getOrgId())
+                        .type(NotificationType.CLICKS)
+                        .title("[" + campaignNameStr + "] 비정상 클릭 감지")
+                        .message(alertMessage)
+                        .build());
             } catch (Exception e) {
                 log.error("봇 알림 JSON 변환/저장 실패", e);
             }
