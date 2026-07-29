@@ -7,6 +7,7 @@ import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "User API", description = "회원가입 및 탈퇴, 비번 재설정 및 마이페이지 관련 API")
 public interface UserControllerDocs {
     @Operation(
             summary = "단순 회원가입 API",

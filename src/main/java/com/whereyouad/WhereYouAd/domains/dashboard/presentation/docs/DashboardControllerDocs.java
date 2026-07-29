@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDate;
 
+@Tag(name = "Dashboard API", description = "대시보드 관련 API")
 public interface DashboardControllerDocs {
 
     @Operation(
