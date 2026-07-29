@@ -6,11 +6,13 @@ import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
+@Tag(name = "Auth API", description = "로그인, 로그아웃 API")
 public interface AuthControllerDocs {
     @Operation(
             summary = "로그인 API",
