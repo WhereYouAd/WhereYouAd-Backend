@@ -8,9 +8,12 @@ import com.whereyouad.WhereYouAd.domains.user.domain.service.SmsService;
 import com.whereyouad.WhereYouAd.domains.user.domain.service.UserService;
 import com.whereyouad.WhereYouAd.domains.user.presentation.docs.UserControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import com.whereyouad.WhereYouAd.global.security.cookie.AuthCookieFactory;
 import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +27,7 @@ public class UserController implements UserControllerDocs {
     private final UserService userService;
     private final EmailService emailService;
     private final SmsService smsService;
+    private final AuthCookieFactory authCookieFactory;
 
     @PostMapping("/signup")
     public ResponseEntity<DataResponse<SignUpResponse>> signUp(@RequestBody @Valid SignUpRequest request) {
@@ -117,6 +121,14 @@ public class UserController implements UserControllerDocs {
     {
         userService.deleteUser(userId);
 
-        return ResponseEntity.ok(DataResponse.from("탈퇴가 정상적으로 처리되었습니다"));
+        // 로그인 때 사용한 경로·도메인 설정과 동일한 만료 쿠키를 내려 브라우저의 인증 정보를 제거한다.
+        ResponseCookie expiredRefresh = authCookieFactory.createRefreshTokenCookie("", 0);
+        ResponseCookie expiredAccess = authCookieFactory.createAccessTokenCookie("", 0);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, expiredRefresh.toString())
+                .header(HttpHeaders.SET_COOKIE, expiredAccess.toString())
+                .body(DataResponse.from("탈퇴가 정상적으로 처리되었습니다"));
     }
+
 }
