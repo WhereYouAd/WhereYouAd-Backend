@@ -32,14 +32,14 @@ public class NotificationRequest {
     public record UpdateOrgSettings(
             Boolean isSlackEnabled,
             @Pattern(
-                    regexp = "^https://hooks\\.slack\\.com/services/.+",
+                    regexp = "^\\s*$|^https://hooks\\.slack\\.com/services/.+",
                     message = "슬랙 웹훅 URL 형식이 올바르지 않습니다."
             )
             String slackWebhookUrl,
             Boolean disconnectSlack,
             Boolean isDiscordEnabled,
             @Pattern(
-                    regexp = "^https://(discord|discordapp)\\.com/api/webhooks/.+",
+                    regexp = "^\\s*$|^https://(discord|discordapp)\\.com/api/webhooks/.+",
                     message = "디스코드 웹훅 URL 형식이 올바르지 않습니다."
             )
             String discordWebhookUrl,
