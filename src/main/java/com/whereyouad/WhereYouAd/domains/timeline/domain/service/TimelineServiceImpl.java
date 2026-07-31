@@ -13,6 +13,7 @@ import com.whereyouad.WhereYouAd.domains.timeline.application.mapper.TimelineCon
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.ComparisonPeriodType;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.MetricType;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.PerformanceStatus;
+import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.TimelineSortType;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.util.TimelineUtil;
 import com.whereyouad.WhereYouAd.domains.timeline.exception.TimelineException;
 import com.whereyouad.WhereYouAd.domains.timeline.exception.code.TimelineErrorCode;
@@ -26,6 +27,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Me
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.repository.TimelineRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -208,7 +210,14 @@ public class TimelineServiceImpl implements TimelineService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TimelineResponse.TimelineSummaryDTO> getTimelines(Long userId, Long orgId) {
+    public List<TimelineResponse.TimelineSummaryDTO> getTimelines(
+            Long userId,
+            Long orgId,
+            TimelineRequest.TimelineListQuery query
+    ) {
+        PerformanceStatus status = parsePerformanceStatus(query.status());
+        TimelineSortType sortType = parseTimelineSortType(query.sort());
+
         // 조직이 없는 경우
         orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
@@ -217,8 +226,42 @@ public class TimelineServiceImpl implements TimelineService {
         orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_READ_FORBIDDEN));
 
-        List<Timeline> timelines = timelineRepository.findByOrganizationIdOrderByEndDateDesc(orgId);
+        Sort sort = buildTimelineSort(sortType);
+        List<Timeline> timelines = status == null
+                ? timelineRepository.findAllByOrganizationId(orgId, sort)
+                : timelineRepository.findAllByOrganizationIdAndPerformanceStatus(orgId, status, sort);
         return TimelineConverter.toTimelineSummaryList(timelines);
+    }
+
+    private PerformanceStatus parsePerformanceStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return PerformanceStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_STATUS_FILTER);
+        }
+    }
+
+    private TimelineSortType parseTimelineSortType(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return TimelineSortType.LATEST;
+        }
+
+        try {
+            return TimelineSortType.valueOf(sort);
+        } catch (IllegalArgumentException e) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_SORT_TYPE);
+        }
+    }
+
+    private Sort buildTimelineSort(TimelineSortType sortType) {
+        Sort.Direction direction = sortType == TimelineSortType.LATEST
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+        return Sort.by(direction, "endDate", "id");
     }
 
     @Override

@@ -25,9 +25,12 @@ public class TimelineController implements TimelineControllerDocs {
     @GetMapping
     public ResponseEntity<DataResponse<List<TimelineResponse.TimelineSummaryDTO>>> getTimelines(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable Long orgId
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = "LATEST") String sort
     ) {
-        return ResponseEntity.ok(DataResponse.from(timelineService.getTimelines(userId, orgId)));
+        TimelineRequest.TimelineListQuery query = new TimelineRequest.TimelineListQuery(status, sort);
+        return ResponseEntity.ok(DataResponse.from(timelineService.getTimelines(userId, orgId, query)));
     }
 
     @GetMapping("/{timelineId}")
