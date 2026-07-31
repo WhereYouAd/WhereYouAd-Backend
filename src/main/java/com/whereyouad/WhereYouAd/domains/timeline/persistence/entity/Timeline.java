@@ -32,6 +32,10 @@ public class Timeline extends BaseEntity {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
+    @Column(name = "display_order", nullable = false)
+    @ColumnDefault("0")
+    private int displayOrder;
+
     @Column(name = "use_click", nullable = false)
     @ColumnDefault("false")
     private boolean useClick;
@@ -79,6 +83,10 @@ public class Timeline extends BaseEntity {
 
     public void updateSummary(String summary) {
         this.summary = summary;
+    }
+
+    public void updateDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
     }
 
     public void update(String name,
