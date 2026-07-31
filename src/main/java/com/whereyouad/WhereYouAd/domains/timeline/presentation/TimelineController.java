@@ -27,7 +27,7 @@ public class TimelineController implements TimelineControllerDocs {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false, defaultValue = "LATEST") String sort
+            @RequestParam(required = false, defaultValue = "DISPLAY_ORDER") String sort
     ) {
         TimelineRequest.TimelineListQuery query = new TimelineRequest.TimelineListQuery(status, sort);
         return ResponseEntity.ok(DataResponse.from(timelineService.getTimelines(userId, orgId, query)));
@@ -60,6 +60,16 @@ public class TimelineController implements TimelineControllerDocs {
             @Valid @RequestBody TimelineRequest.TimelineCreateDto dto
     ) {
         return ResponseEntity.ok(DataResponse.from(timelineService.updateTimeline(userId, orgId, timelineId, dto)));
+    }
+
+    @PatchMapping("/order")
+    public ResponseEntity<DataResponse<Void>> updateTimelineOrder(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @Valid @RequestBody TimelineRequest.TimelineOrderUpdateDto dto
+    ) {
+        timelineService.updateTimelineOrder(userId, orgId, dto);
+        return ResponseEntity.ok(DataResponse.ok());
     }
 
     @DeleteMapping("/{timelineId}")

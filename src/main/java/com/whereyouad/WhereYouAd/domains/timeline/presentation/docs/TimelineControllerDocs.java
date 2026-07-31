@@ -39,8 +39,8 @@ public interface TimelineControllerDocs {
 
     @Operation(
             summary = "타임라인 목록 조회 API",
-            description = "조직의 타임라인 목록을 성과 상태로 필터링하고 종료일 기준으로 정렬해 조회합니다. " +
-                    "필터를 생략하면 전체를, 정렬을 생략하면 최신순으로 조회합니다."
+            description = "조직의 타임라인 목록을 성과 상태로 필터링하고 지정한 기준으로 정렬해 조회합니다. " +
+                    "필터를 생략하면 전체를, 정렬을 생략하면 사용자 지정 순서로 조회합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -58,10 +58,10 @@ public interface TimelineControllerDocs {
             )
             @RequestParam(required = false) String status,
             @Parameter(
-                    description = "종료일 기준 정렬 (LATEST, OLDEST)",
-                    example = "LATEST"
+                    description = "정렬 기준 (DISPLAY_ORDER, LATEST, OLDEST)",
+                    example = "DISPLAY_ORDER"
             )
-            @RequestParam(required = false, defaultValue = "LATEST") String sort
+            @RequestParam(required = false, defaultValue = "DISPLAY_ORDER") String sort
     );
 
     @Operation(
@@ -95,6 +95,23 @@ public interface TimelineControllerDocs {
             @PathVariable Long orgId,
             @PathVariable Long timelineId,
             @Valid @RequestBody TimelineRequest.TimelineCreateDto dto
+    );
+
+    @Operation(
+            summary = "타임라인 순서 변경 API",
+            description = "조직의 전체 타임라인 ID를 화면에 표시할 순서대로 전달합니다. " +
+                    "목록의 첫 번째 타임라인에 가장 큰 displayOrder를 부여하고 내림차순으로 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "순서 변경 성공"),
+            @ApiResponse(responseCode = "400_7", description = "중복, 누락 또는 다른 조직의 타임라인 ID가 포함된 경우"),
+            @ApiResponse(responseCode = "403_3", description = "순서 변경 권한 없음"),
+            @ApiResponse(responseCode = "404_1", description = "조직을 찾을 수 없는 경우")
+    })
+    ResponseEntity<DataResponse<Void>> updateTimelineOrder(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @Valid @RequestBody TimelineRequest.TimelineOrderUpdateDto dto
     );
 
     @Operation(
