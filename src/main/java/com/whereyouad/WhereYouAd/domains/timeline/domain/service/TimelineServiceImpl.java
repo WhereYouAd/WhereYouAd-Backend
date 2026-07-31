@@ -120,8 +120,8 @@ public class TimelineServiceImpl implements TimelineService {
 
     @Override
     public TimelineResponse.CreateResponseDTO updateTimeline(Long userId, Long orgId, Long timelineId, TimelineRequest.TimelineCreateDto dto) {
-        // 1. 조직 검증
-        orgRepository.findById(orgId)
+        // 1. 동일 조직의 타임라인 쓰기 작업을 직렬화하도록 조직 행 잠금
+        orgRepository.findByIdForUpdate(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         // 2. 타임라인 검증
@@ -196,6 +196,10 @@ public class TimelineServiceImpl implements TimelineService {
 
     @Override
     public void deleteTimeline(Long userId, Long orgId, Long timelineId) {
+
+        // 동일 조직의 타임라인 쓰기 작업을 직렬화하도록 조직 행 잠금
+        orgRepository.findByIdForUpdate(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         // 타임라인이 없는 경우
         Timeline timeline = timelineRepository.findById(timelineId)
