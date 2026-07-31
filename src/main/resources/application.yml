@@ -6,6 +6,8 @@ spring:
     name: WhereYouAd
     # 서버 기본 주소
     base-url: ${BASE_URL:http://localhost:8080}
+    # 프론트엔드 기본 주소 (이메일 내 링크 등에 사용)
+    frontend-url: ${FRONTEND_URL:http://localhost:3000}
 
   # 1. 데이터베이스 설정
   datasource:
