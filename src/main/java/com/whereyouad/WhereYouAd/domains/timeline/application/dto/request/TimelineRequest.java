@@ -11,6 +11,11 @@ import java.util.List;
 
 public class TimelineRequest {
 
+    public record TimelineListQuery(
+            String status,
+            String sort
+    ) {}
+
     public record TimelineCreateDto(
             @NotBlank(message = "타임라인 이름은 필수입니다.") String name,
             @NotNull(message = "시작일은 필수입니다.") LocalDate startDate,
