@@ -40,6 +40,9 @@ public class EmailService {
     @Value("${spring.application.base-url}")
     private String baseUrl;
 
+    @Value("${spring.application.frontend-url}")
+    private String frontendUrl;
+
     // 인증코드 이메일 발송 로직 (최초 회원가입 시)
     public EmailSentResponse sendEmail(String toEmail) {
         if (userRepository.existsByEmail(toEmail)) { // 이미 해당 이메일로 생성한 계정이 있으면
@@ -86,7 +89,7 @@ public class EmailService {
             message.setTo(toEmail);
 
             message.setSubject("[Where You Ad] 조직 " + orgName + "에 초대 되었습니다.");
-            message.setText(baseUrl + "/api/org/invitations/" + token);
+            message.setText(frontendUrl + "/invite/" + token);
             message.setFrom(senderEmail);
 
             emailSender.send(message);
