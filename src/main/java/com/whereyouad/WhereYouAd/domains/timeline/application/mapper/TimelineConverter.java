@@ -51,7 +51,8 @@ public class TimelineConverter {
                 timeline.getName(),
                 timeline.getStartDate(),
                 timeline.getEndDate(),
-                timeline.getPerformanceStatus()
+                timeline.getPerformanceStatus(),
+                timeline.getDisplayOrder()
         );
     }
 
