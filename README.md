@@ -49,7 +49,7 @@ WhereYouAd Backend는 Spring Boot 기반의 2026 캡스톤 졸업 프로젝트�
 - [Getting Started](#-getting-started)
 - [Scripts](#-scripts)
 - [Project Structure](#-project-structure)
-- [CI/CD](#-cicd)
+- [CI/CD](#-ci--cd)
 - [Conventions](#-conventions)
 - [Contributors](#-contributors)
 
