@@ -15,5 +15,6 @@ public interface TimelineService {
             TimelineRequest.TimelineListQuery query
     );
     TimelineResponse.TimelineDetailDTO getTimelineDetail(Long userId, Long orgId, Long timelineId);
+    void updateTimelineOrder(Long userId, Long orgId, TimelineRequest.TimelineOrderUpdateDto dto);
     void requestTimelineSummary(Long userId, Long orgId, Long timelineId);
 }

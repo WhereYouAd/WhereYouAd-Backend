@@ -39,8 +39,10 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -103,6 +105,10 @@ public class TimelineServiceImpl implements TimelineService {
 
         // 입력받은 DTO를 타임라인 엔티티로 변환
         Timeline timeline = TimelineConverter.toTimeline(dto, organization, userId, comparisonDates.start(), comparisonDates.end());
+        orgRepository.findByIdForUpdate(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+        int nextDisplayOrder = timelineRepository.findMaxDisplayOrderByOrganizationId(orgId) + 1;
+        timeline.updateDisplayOrder(nextDisplayOrder);
 
         // 성과 상태 - PerformanceStatus 계산 및 판별 로직 호출 및 저장 (초안)
         PerformanceStatus status = timelineUtil.calculatePerformanceStatus(timeline, currentFacts, pastFacts);
@@ -209,6 +215,43 @@ public class TimelineServiceImpl implements TimelineService {
     }
 
     @Override
+    public void updateTimelineOrder(Long userId, Long orgId, TimelineRequest.TimelineOrderUpdateDto dto) {
+        // 동일 조직에서 생성 또는 순서 변경이 동시에 수행되지 않도록 조직 행 잠금
+        orgRepository.findByIdForUpdate(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 조직에 소속된 회원만 공용 타임라인 순서 변경 가능
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_UPDATE_FORBIDDEN));
+
+        // 순서 변경 중 다른 트랜잭션이 대상 타임라인을 변경하지 못하도록 전체 행 잠금
+        List<Timeline> timelines = timelineRepository.findAllByOrganizationIdForUpdate(orgId);
+        List<Long> requestedIds = dto.timelineIds();
+
+        // 요청 ID의 중복 여부와 조직에 실제로 존재하는 전체 타임라인 ID인지 검증
+        Set<Long> uniqueRequestedIds = new HashSet<>(requestedIds);
+        Set<Long> organizationTimelineIds = timelines.stream()
+                .map(Timeline::getId)
+                .collect(Collectors.toSet());
+
+        boolean invalidOrder = requestedIds.size() != timelines.size()
+                || uniqueRequestedIds.size() != requestedIds.size()
+                || !uniqueRequestedIds.equals(organizationTimelineIds);
+        if (invalidOrder) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_DISPLAY_ORDER);
+        }
+
+        // ID로 엔티티를 빠르게 찾을 수 있도록 변환한 뒤 요청 배열의 순서대로 재배치
+        Map<Long, Timeline> timelineById = timelines.stream()
+                .collect(Collectors.toMap(Timeline::getId, timeline -> timeline));
+        for (int index = 0; index < requestedIds.size(); index++) {
+            // displayOrder 내림차순 조회 시 요청의 첫 번째 타임라인이 최상단에 위치
+            int displayOrder = requestedIds.size() - index - 1;
+            timelineById.get(requestedIds.get(index)).updateDisplayOrder(displayOrder);
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<TimelineResponse.TimelineSummaryDTO> getTimelines(
             Long userId,
@@ -247,7 +290,7 @@ public class TimelineServiceImpl implements TimelineService {
 
     private TimelineSortType parseTimelineSortType(String sort) {
         if (sort == null || sort.isBlank()) {
-            return TimelineSortType.LATEST;
+            return TimelineSortType.DISPLAY_ORDER;
         }
 
         try {
@@ -258,10 +301,12 @@ public class TimelineServiceImpl implements TimelineService {
     }
 
     private Sort buildTimelineSort(TimelineSortType sortType) {
-        Sort.Direction direction = sortType == TimelineSortType.LATEST
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        return Sort.by(direction, "endDate", "id");
+        return switch (sortType) {
+            case DISPLAY_ORDER -> Sort.by(Sort.Direction.DESC, "displayOrder")
+                    .and(Sort.by(Sort.Direction.DESC, "endDate", "id"));
+            case LATEST -> Sort.by(Sort.Direction.DESC, "endDate", "id");
+            case OLDEST -> Sort.by(Sort.Direction.ASC, "endDate", "id");
+        };
     }
 
     @Override
