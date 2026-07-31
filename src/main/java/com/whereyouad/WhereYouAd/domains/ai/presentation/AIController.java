@@ -38,6 +38,16 @@ public class AIController implements AIControllerDocs {
         return ResponseEntity.ok(DataResponse.from(response));
     }
 
+    @GetMapping("/organizations/{orgId}/reports")
+    public ResponseEntity<DataResponse<AIResponse.ReportListResponse>> getReportSummaries(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size) {
+        AIResponse.ReportListResponse response = aiService.getReportSummaries(userId, orgId, cursor, size);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
+
     @PatchMapping("/reports/{accessToken}/share")
     public ResponseEntity<DataResponse<String>> updateShareStatus(
             @AuthenticationPrincipal CustomUserDetails userDetails,
