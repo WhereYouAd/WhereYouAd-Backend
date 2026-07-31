@@ -2,9 +2,11 @@ package com.whereyouad.WhereYouAd.domains.ai.presentation.docs;
 
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.request.AIRequest;
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.AIResponse;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -88,14 +90,20 @@ public interface AIControllerDocs {
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "목록 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "지원하지 않는 리포트 유형"),
+            @ApiResponse(responseCode = "400_3", description = "아직 지원하지 않는 플랫폼 (UNSUPPORTED_REPORT_PROVIDER)"),
             @ApiResponse(responseCode = "403_1", description = "해당 조직에 가입되지 않은 사용자 (AI_ACCESS_FORBIDDEN)"),
             @ApiResponse(responseCode = "404_1", description = "해당 조직이 존재하지 않음 (ORG_NOT_FOUND)")
     })
     ResponseEntity<DataResponse<AIResponse.ReportListResponse>> getReportSummaries(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @Parameter(description = "조직 ID", required = true) @PathVariable Long orgId,
-            @Parameter(description = "리포트 유형 (ALL, GOOGLE, NAVER, META, KAKAO)", example = "GOOGLE")
-            @RequestParam(required = false) String reportType,
+            @Parameter(
+                    description = "리포트 유형",
+                    example = "GOOGLE",
+                    schema = @Schema(allowableValues = {"GOOGLE", "NAVER", "META"})
+            )
+            @RequestParam(required = false) Provider reportType,
             @Parameter(description = "다음 페이지 커서") @RequestParam(required = false) String cursor,
             @Parameter(description = "조회 개수 (기본 20, 최대 50)", example = "20")
             @RequestParam(required = false) Integer size

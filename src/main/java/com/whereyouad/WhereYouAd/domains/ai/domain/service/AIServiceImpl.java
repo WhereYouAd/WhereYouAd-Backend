@@ -150,7 +150,7 @@ public class AIServiceImpl implements AIService {
     @Override
     @Transactional(readOnly = true)
     public AIResponse.ReportListResponse getReportSummaries(
-            Long userId, Long orgId, String reportType, String encodedCursor, Integer size) {
+            Long userId, Long orgId, Provider reportType, String encodedCursor, Integer size) {
 
         orgRepository.findById(orgId)
                 .orElseThrow(() -> new AIHandler(OrgErrorCode.ORG_NOT_FOUND));
@@ -158,14 +158,15 @@ public class AIServiceImpl implements AIService {
         orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN));
 
+        validateReportProvider(reportType);
         int pageSize = resolvePageSize(size);
-        String normalizedReportType = normalizeReportType(reportType);
+        String reportTypeName = reportType != null ? reportType.name() : null;
         Long cursor = encodedCursor != null && !encodedCursor.isBlank()
                 ? CursorUtil.decodeToId(encodedCursor)
                 : null;
 
         Slice<AIReportSummaryProjection> reportSlice = reportRepository.findSummariesByOrganizationId(
-                orgId, normalizedReportType, cursor, PageRequest.of(0, pageSize));
+                orgId, reportTypeName, cursor, PageRequest.of(0, pageSize));
 
         List<AIResponse.ReportSummaryResponse> reports = reportSlice.getContent().stream()
                 .map(this::toReportSummaryResponse)
@@ -208,11 +209,10 @@ public class AIServiceImpl implements AIService {
         return Math.min(size, MAX_REPORT_LIST_SIZE);
     }
 
-    private String normalizeReportType(String reportType) {
-        if (reportType == null || reportType.isBlank()) {
-            return null;
+    private void validateReportProvider(Provider reportType) {
+        if (reportType == Provider.KAKAO) {
+            throw new AIHandler(AIErrorCode.UNSUPPORTED_REPORT_PROVIDER);
         }
-        return reportType.trim().toUpperCase(Locale.ROOT);
     }
 
     private AIResponse.ReportSummaryResponse toReportSummaryResponse(AIReportSummaryProjection report) {
