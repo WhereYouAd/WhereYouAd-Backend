@@ -14,6 +14,8 @@ public enum TimelineErrorCode implements BaseErrorCode {
     TIMELINE_NO_COMPARISON_DATA(HttpStatus.BAD_REQUEST, "TIMELINE_400_2", "비교 기간에 해당하는 성과 데이터가 존재하지 않습니다."),
     TIMELINE_NO_METRIC_DATA(HttpStatus.BAD_REQUEST, "TIMELINE_400_3", "해당 타임라인 기간의 광고 데이터가 없습니다."),
     TIMELINE_NO_CURRENT_DATA(HttpStatus.BAD_REQUEST, "TIMELINE_400_4", "선택한 기간에 해당하는 성과 데이터가 존재하지 않습니다."),
+    TIMELINE_INVALID_STATUS_FILTER(HttpStatus.BAD_REQUEST, "TIMELINE_400_5", "올바르지 않은 타임라인 성과 상태입니다."),
+    TIMELINE_INVALID_SORT_TYPE(HttpStatus.BAD_REQUEST, "TIMELINE_400_6", "올바르지 않은 타임라인 정렬 기준입니다."),
 
     // 403
     TIMELINE_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "TIMELINE_403_1", "타임라인을 삭제할 권한이 없습니다."),
