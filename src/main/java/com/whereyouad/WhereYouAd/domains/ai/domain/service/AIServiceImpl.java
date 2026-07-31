@@ -150,7 +150,7 @@ public class AIServiceImpl implements AIService {
     @Override
     @Transactional(readOnly = true)
     public AIResponse.ReportListResponse getReportSummaries(
-            Long userId, Long orgId, String encodedCursor, Integer size) {
+            Long userId, Long orgId, String reportType, String encodedCursor, Integer size) {
 
         orgRepository.findById(orgId)
                 .orElseThrow(() -> new AIHandler(OrgErrorCode.ORG_NOT_FOUND));
@@ -159,12 +159,13 @@ public class AIServiceImpl implements AIService {
                 .orElseThrow(() -> new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN));
 
         int pageSize = resolvePageSize(size);
+        String normalizedReportType = normalizeReportType(reportType);
         Long cursor = encodedCursor != null && !encodedCursor.isBlank()
                 ? CursorUtil.decodeToId(encodedCursor)
                 : null;
 
         Slice<AIReportSummaryProjection> reportSlice = reportRepository.findSummariesByOrganizationId(
-                orgId, cursor, PageRequest.of(0, pageSize));
+                orgId, normalizedReportType, cursor, PageRequest.of(0, pageSize));
 
         List<AIResponse.ReportSummaryResponse> reports = reportSlice.getContent().stream()
                 .map(this::toReportSummaryResponse)
@@ -205,6 +206,13 @@ public class AIServiceImpl implements AIService {
             return DEFAULT_REPORT_LIST_SIZE;
         }
         return Math.min(size, MAX_REPORT_LIST_SIZE);
+    }
+
+    private String normalizeReportType(String reportType) {
+        if (reportType == null || reportType.isBlank()) {
+            return null;
+        }
+        return reportType.trim().toUpperCase(Locale.ROOT);
     }
 
     private AIResponse.ReportSummaryResponse toReportSummaryResponse(AIReportSummaryProjection report) {

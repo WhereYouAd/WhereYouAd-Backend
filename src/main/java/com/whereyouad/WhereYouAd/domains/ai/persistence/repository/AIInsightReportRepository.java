@@ -26,11 +26,13 @@ public interface AIInsightReportRepository extends JpaRepository<AIInsightReport
                    r.createdAt AS createdAt
             FROM AIInsightReport r
             WHERE r.organization.id = :orgId
+              AND (:reportType IS NULL OR UPPER(r.reportType) = :reportType)
               AND (:cursor IS NULL OR r.id < :cursor)
             ORDER BY r.id DESC
             """)
     Slice<AIReportSummaryProjection> findSummariesByOrganizationId(
             @Param("orgId") Long orgId,
+            @Param("reportType") String reportType,
             @Param("cursor") Long cursor,
             Pageable pageable
     );

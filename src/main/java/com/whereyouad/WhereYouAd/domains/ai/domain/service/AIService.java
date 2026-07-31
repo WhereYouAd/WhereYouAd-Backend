@@ -13,7 +13,8 @@ public interface AIService {
     AIResponse.ReportStatusResponse getReportByAccessToken(Long userId, String accessToken);
 
     // 조직에 속한 AI 분석 리포트 목록 반환 메서드
-    AIResponse.ReportListResponse getReportSummaries(Long userId, Long orgId, String cursor, Integer size);
+    AIResponse.ReportListResponse getReportSummaries(
+            Long userId, Long orgId, String reportType, String cursor, Integer size);
 
     // 공유 상태 변경 메서드
     void updateShareStatus(Long userId, String accessToken, boolean isShared);

@@ -82,6 +82,7 @@ public interface AIControllerDocs {
             로그인한 사용자가 속한 조직의 AI 분석 리포트를 최신순으로 조회합니다.
             목록에서는 AI 분석 결과 본문을 제외하고 리포트 ID, 접근 토큰, 제목, 상태, 공유 여부, 생성일시만 반환합니다.
 
+            `reportType`을 전달하면 해당 유형의 리포트만 조회하며, 생략하면 전체 유형을 조회합니다.
             `cursor`를 생략하면 첫 페이지를 조회하며, 응답의 `nextCursor`를 다음 요청에 전달해 다음 페이지를 조회합니다.
             `size`의 기본값은 20이고 최대 50입니다.
             """)
@@ -93,6 +94,8 @@ public interface AIControllerDocs {
     ResponseEntity<DataResponse<AIResponse.ReportListResponse>> getReportSummaries(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @Parameter(description = "조직 ID", required = true) @PathVariable Long orgId,
+            @Parameter(description = "리포트 유형 (ALL, GOOGLE, NAVER, META, KAKAO)", example = "GOOGLE")
+            @RequestParam(required = false) String reportType,
             @Parameter(description = "다음 페이지 커서") @RequestParam(required = false) String cursor,
             @Parameter(description = "조회 개수 (기본 20, 최대 50)", example = "20")
             @RequestParam(required = false) Integer size
