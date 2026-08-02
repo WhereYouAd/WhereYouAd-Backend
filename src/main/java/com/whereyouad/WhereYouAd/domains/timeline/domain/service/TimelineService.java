@@ -9,7 +9,12 @@ public interface TimelineService {
     TimelineResponse.CreateResponseDTO createTimeline(Long userId, Long orgId, TimelineRequest.TimelineCreateDto dto);
     TimelineResponse.CreateResponseDTO updateTimeline(Long userId, Long orgId, Long timelineId, TimelineRequest.TimelineCreateDto dto);
     void deleteTimeline(Long userId, Long orgId, Long timelineId);
-    List<TimelineResponse.TimelineSummaryDTO> getTimelines(Long userId, Long orgId);
+    List<TimelineResponse.TimelineSummaryDTO> getTimelines(
+            Long userId,
+            Long orgId,
+            TimelineRequest.TimelineListQuery query
+    );
     TimelineResponse.TimelineDetailDTO getTimelineDetail(Long userId, Long orgId, Long timelineId);
+    void updateTimelineOrder(Long userId, Long orgId, TimelineRequest.TimelineOrderUpdateDto dto);
     void requestTimelineSummary(Long userId, Long orgId, Long timelineId);
 }
