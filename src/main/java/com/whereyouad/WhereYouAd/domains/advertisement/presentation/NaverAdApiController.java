@@ -17,14 +17,14 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/naver/{connectionId}")
+@RequestMapping("/api/naver")
 public class NaverAdApiController implements NaverAdApiControllerDocs {
 
     private final NaverAdApiService naverAdApiService;
     private final NaverAdSyncService naverAdSyncService;
 
     // 캠페인 목록 조회
-    @GetMapping("/campaigns")
+    @GetMapping("/{connectionId}/campaigns")
     public ResponseEntity<DataResponse<List<NaverDTO.CampaignResponse>>> getCampaigns(
             @PathVariable Long connectionId
     ) {
@@ -32,7 +32,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 광고 그룹 목록 조회
-    @GetMapping("/adgroups")
+    @GetMapping("/{connectionId}/adgroups")
     public ResponseEntity<DataResponse<List<NaverDTO.AdGroupResponse>>> getAdGroups(
             @PathVariable Long connectionId,
             @RequestParam("nccCampaignId") String nccCampaignId
@@ -41,7 +41,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 광고 소재 목록 조회
-    @GetMapping("/ads")
+    @GetMapping("/{connectionId}/ads")
     public ResponseEntity<DataResponse<List<NaverDTO.AdResponse>>> getAds(
             @PathVariable Long connectionId,
             @RequestParam("nccAdgroupId") String nccAdgroupId
@@ -50,7 +50,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 키워드 목록 조회
-    @GetMapping("/keywords")
+    @GetMapping("/{connectionId}/keywords")
     public ResponseEntity<DataResponse<List<NaverDTO.KeywordResponse>>> getKeywords(
             @PathVariable Long connectionId,
             @RequestParam("nccAdgroupId") String nccAdgroupId
@@ -59,7 +59,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // AD 리포트 생성 요청
-    @PostMapping("/reports/ad")
+    @PostMapping("/{connectionId}/reports/ad")
     public ResponseEntity<DataResponse<NaverDTO.StatReportResponse>> requestAdReport(
             @PathVariable Long connectionId,
             @RequestParam("statDt") String statDt
@@ -68,7 +68,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // AD_CONVERSION 리포트 생성 요청
-    @PostMapping("/reports/ad-conversion")
+    @PostMapping("/{connectionId}/reports/ad-conversion")
     public ResponseEntity<DataResponse<NaverDTO.StatReportResponse>> requestAdConversionReport(
             @PathVariable Long connectionId,
             @RequestParam("statDt") String statDt
@@ -77,7 +77,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 보고서 상태 조회
-    @GetMapping("/reports/{reportJobId}")
+    @GetMapping("/{connectionId}/reports/{reportJobId}")
     public ResponseEntity<DataResponse<NaverDTO.StatReportResponse>> getReportStatus(
             @PathVariable Long connectionId,
             @PathVariable String reportJobId
@@ -86,7 +86,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 보고서 다운로드
-    @GetMapping("/reports/download")
+    @GetMapping("/{connectionId}/reports/download")
     public ResponseEntity<DataResponse<NaverDTO.RawReportResponse>> downloadReport(
             @PathVariable Long connectionId,
             @RequestParam("url") String downloadUrl
@@ -95,7 +95,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 일별 통계 직접 조회 (테스트용)
-    @GetMapping("/stats/daily")
+    @GetMapping("/{connectionId}/stats/daily")
     public ResponseEntity<DataResponse<List<NaverDTO.StatResponse>>> getDailyStats(
             @PathVariable Long connectionId,
             @RequestParam("id") String id,
@@ -106,7 +106,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 메타데이터 동기화 (캠페인/그룹/소재)
-    @PostMapping("/sync/metadata")
+    @PostMapping("/{connectionId}/sync/metadata")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverMetadataSyncResponse>> syncMetadata(
             @PathVariable Long connectionId
     ) {
@@ -114,9 +114,9 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 수동 동기화 (orgId + 날짜 범위)
-    @PostMapping("/sync")
+    @PostMapping("/organizations/{orgId}/sync")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverManualSyncSummary>> syncManually(
-            @PathVariable("connectionId") Long orgId,
+            @PathVariable Long orgId,
             @RequestBody @Valid AdvertisementRequest.ManualSyncRequest request
     ) {
         return ResponseEntity.ok(DataResponse.from(
@@ -124,7 +124,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // DAILY MetricFact 동기화 (기본 지표 + 전환 지표 통합)
-    @PostMapping("/sync/stats")
+    @PostMapping("/{connectionId}/sync/stats")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
             @PathVariable Long connectionId,
             @RequestParam("statDate") String statDate
@@ -133,7 +133,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 캠페인 예산 수정
-    @PutMapping("/campaigns/{campaignId}/budget")
+    @PutMapping("/{connectionId}/campaigns/{campaignId}/budget")
     public ResponseEntity<DataResponse<NaverDTO.CampaignResponse>> updateCampaignBudget(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long connectionId,
@@ -145,7 +145,7 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     }
 
     // 광고그룹 예산 수정
-    @PutMapping("/adgroups/{adgroupId}/budget")
+    @PutMapping("/{connectionId}/adgroups/{adgroupId}/budget")
     public ResponseEntity<DataResponse<NaverDTO.AdGroupResponse>> updateAdGroupBudget(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long connectionId,

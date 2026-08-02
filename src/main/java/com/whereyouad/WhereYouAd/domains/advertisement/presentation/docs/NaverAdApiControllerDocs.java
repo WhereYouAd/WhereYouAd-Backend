@@ -163,7 +163,7 @@ public interface NaverAdApiControllerDocs {
     })
     ResponseEntity<DataResponse<AdvertisementResponse.NaverManualSyncSummary>> syncManually(
             @Parameter(description = "조직 ID", example = "1", required = true)
-            @PathVariable("connectionId") Long orgId,
+            @PathVariable Long orgId,
             @RequestBody AdvertisementRequest.ManualSyncRequest request
     );
 
