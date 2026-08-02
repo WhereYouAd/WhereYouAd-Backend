@@ -30,7 +30,8 @@ public class TimelineResponse {
             String name,
             LocalDate startDate,
             LocalDate endDate,
-            PerformanceStatus performanceStatus
+            PerformanceStatus performanceStatus,
+            int displayOrder
     ) {}
 
     public record TimelineDetailDTO(

@@ -11,23 +11,35 @@ import com.whereyouad.WhereYouAd.domains.ai.exception.AIHandler;
 import com.whereyouad.WhereYouAd.domains.ai.exception.code.AIErrorCode;
 import com.whereyouad.WhereYouAd.domains.ai.persistence.entity.AIInsightReport;
 import com.whereyouad.WhereYouAd.domains.ai.persistence.repository.AIInsightReportRepository;
+import com.whereyouad.WhereYouAd.domains.ai.persistence.repository.projection.AIReportSummaryProjection;
 import com.whereyouad.WhereYouAd.domains.organization.exception.code.OrgErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
+import com.whereyouad.WhereYouAd.global.utils.cursor.CursorUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AIServiceImpl implements AIService {
+
+    private static final int DEFAULT_REPORT_LIST_SIZE = 20;
+    private static final int MAX_REPORT_LIST_SIZE = 50;
+    private static final DateTimeFormatter REPORT_TITLE_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     private final MetricFactRepository metricFactRepository;
     private final AIInsightReportRepository reportRepository;
@@ -136,6 +148,42 @@ public class AIServiceImpl implements AIService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public AIResponse.ReportListResponse getReportSummaries(
+            Long userId, Long orgId, Provider reportType, String encodedCursor, Integer size) {
+
+        orgRepository.findById(orgId)
+                .orElseThrow(() -> new AIHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN));
+
+        validateReportProvider(reportType);
+        int pageSize = resolvePageSize(size);
+        String reportTypeName = reportType != null ? reportType.name() : null;
+        Long cursor = encodedCursor != null && !encodedCursor.isBlank()
+                ? CursorUtil.decodeToId(encodedCursor)
+                : null;
+
+        Slice<AIReportSummaryProjection> reportSlice = reportRepository.findSummariesByOrganizationId(
+                orgId, reportTypeName, cursor, PageRequest.of(0, pageSize));
+
+        List<AIResponse.ReportSummaryResponse> reports = reportSlice.getContent().stream()
+                .map(this::toReportSummaryResponse)
+                .toList();
+
+        String nextCursor = null;
+        if (reportSlice.hasNext() && !reportSlice.getContent().isEmpty()) {
+            Long lastReportId = reportSlice.getContent()
+                    .get(reportSlice.getContent().size() - 1)
+                    .getReportId();
+            nextCursor = CursorUtil.encode(lastReportId);
+        }
+
+        return new AIResponse.ReportListResponse(reportSlice.hasNext(), nextCursor, reports);
+    }
+
+    @Override
     @Transactional
     public void updateShareStatus(Long userId, String accessToken, boolean isShared) {
         AIInsightReport report = reportRepository.findByAccessToken(accessToken)
@@ -152,5 +200,41 @@ public class AIServiceImpl implements AIService {
                 .orElseThrow(() -> new AIHandler(AIErrorCode.AI_ACCESS_FORBIDDEN));
 
         report.updateIsShared(isShared);
+    }
+
+    private int resolvePageSize(Integer size) {
+        if (size == null || size <= 0) {
+            return DEFAULT_REPORT_LIST_SIZE;
+        }
+        return Math.min(size, MAX_REPORT_LIST_SIZE);
+    }
+
+    private void validateReportProvider(Provider reportType) {
+        if (reportType == Provider.KAKAO) {
+            throw new AIHandler(AIErrorCode.UNSUPPORTED_REPORT_PROVIDER);
+        }
+    }
+
+    private AIResponse.ReportSummaryResponse toReportSummaryResponse(AIReportSummaryProjection report) {
+        return new AIResponse.ReportSummaryResponse(
+                report.getReportId(),
+                report.getAccessToken(),
+                buildReportTitle(report),
+                report.getStatus().name(),
+                report.getShared(),
+                report.getCreatedAt()
+        );
+    }
+
+    private String buildReportTitle(AIReportSummaryProjection report) {
+        String reportTarget = "ALL".equalsIgnoreCase(report.getReportType())
+                ? "전체"
+                : report.getReportType().toUpperCase(Locale.ROOT);
+
+        return "%s ~ %s %s 광고 분석".formatted(
+                report.getPeriodStart().toLocalDate().format(REPORT_TITLE_DATE_FORMATTER),
+                report.getPeriodEnd().toLocalDate().format(REPORT_TITLE_DATE_FORMATTER),
+                reportTarget
+        );
     }
 }

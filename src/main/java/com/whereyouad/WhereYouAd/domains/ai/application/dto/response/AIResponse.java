@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.ai.application.dto.response;
 
 import lombok.Builder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class AIResponse {
@@ -30,5 +31,22 @@ public class AIResponse {
             String accessToken,
             String status,
             AnalysisResponse result // PENDING/FAILED 일 때 null
+    ) {}
+
+    // 조직별 AI 분석 리포트 목록의 개별 항목
+    public record ReportSummaryResponse(
+            Long reportId,
+            String reportAccessToken,
+            String title,
+            String status,
+            boolean isShared,
+            LocalDateTime createdAt
+    ) {}
+
+    // 커서 기반 AI 분석 리포트 목록 응답
+    public record ReportListResponse(
+            boolean hasNext,
+            String nextCursor,
+            List<ReportSummaryResponse> reports
     ) {}
 }

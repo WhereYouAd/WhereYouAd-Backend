@@ -6,6 +6,8 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMemb
 import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -50,6 +52,7 @@ public class NotificationDelivery extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "membership_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private OrgMember orgMember;
 
     public void markSuccess() {
