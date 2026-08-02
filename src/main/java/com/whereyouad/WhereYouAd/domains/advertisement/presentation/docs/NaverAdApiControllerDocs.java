@@ -151,6 +151,7 @@ public interface NaverAdApiControllerDocs {
             @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
     })
     ResponseEntity<DataResponse<AdvertisementResponse.NaverMetadataSyncResponse>> syncMetadata(
+            @Parameter(hidden = true) Long userId,
             @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
             @PathVariable Long connectionId
     );
@@ -162,6 +163,7 @@ public interface NaverAdApiControllerDocs {
             @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
     })
     ResponseEntity<DataResponse<AdvertisementResponse.NaverManualSyncSummary>> syncManually(
+            @Parameter(hidden = true) Long userId,
             @Parameter(description = "조직 ID", example = "1", required = true)
             @PathVariable Long orgId,
             @RequestBody AdvertisementRequest.ManualSyncRequest request
@@ -175,6 +177,7 @@ public interface NaverAdApiControllerDocs {
             @ApiResponse(responseCode = "500", description = "동기화 중 오류 발생")
     })
     ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
+            @Parameter(hidden = true) Long userId,
             @Parameter(description = "네이버 커넥션 ID", example = "1", required = true)
             @PathVariable Long connectionId,
             @Parameter(description = "통계 대상 날짜 (yyyy-MM-dd, 예: 2026-04-08)", required = true)

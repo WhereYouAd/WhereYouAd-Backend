@@ -10,6 +10,9 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Ad
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdGroupRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
+import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
+import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.NaverAdErrorCode;
+import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.platform.exception.PlatformHandler;
 import com.whereyouad.WhereYouAd.domains.platform.exception.code.PlatformErrorCode;
 import com.whereyouad.WhereYouAd.global.adapi.exception.AdApiHandler;
@@ -48,6 +51,7 @@ public class NaverAdSyncService {
     private final AdContentRepository adContentRepository;
     private final MetricFactRepository metricFactRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
+    private final OrgMemberRepository orgMemberRepository;
     private final RedisUtil redisUtil;
 
     // 작은 단위로 트랜잭션을 끊기 위한 템플릿
@@ -67,12 +71,20 @@ public class NaverAdSyncService {
     }
 
     // 광고 정보(캠페인/광고그룹/광고소재) 메타데이터 upsert
-    public AdvertisementResponse.NaverMetadataSyncResponse syncAllMetadata(Long connectionId) {
-        log.info("NAVER 광고 동기화 시작 - connectionId: {}", connectionId);
+    public AdvertisementResponse.NaverMetadataSyncResponse syncAllMetadata(Long userId, Long connectionId) {
+        PlatformConnection connection = getConnection(connectionId);
+        validateOrganizationMembership(userId, connection.getPlatformAccount().getOrganization().getId());
+        validateNaverProvider(connection);
+        return syncAllMetadata(connectionId, connection);
+    }
 
-        // 1. connectionId로 연동 계정 조회 (JOIN FETCH로 Account/Org까지 한 번에 로드)
-        PlatformConnection connection = platformConnectionRepository.findWithAccountAndOrgById(connectionId)
-                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
+    AdvertisementResponse.NaverMetadataSyncResponse syncAllMetadata(Long connectionId) {
+        return syncAllMetadata(connectionId, getNaverConnection(connectionId));
+    }
+
+    private AdvertisementResponse.NaverMetadataSyncResponse syncAllMetadata(
+            Long connectionId, PlatformConnection connection) {
+        log.info("NAVER 광고 동기화 시작 - connectionId: {}", connectionId);
 
         // 2. 연결 계정 및 플랫폼 계정 정보 추출 (Lazy Loading 방지를 위해 미리 조회)
         PlatformAccount platformAccount = connection.getPlatformAccount();
@@ -204,11 +216,21 @@ public class NaverAdSyncService {
 
 
     // 일별 기본 지표 MetricFact upsert (/stats 사용)
-    public AdvertisementResponse.NaverStatSyncResponse syncBasicStats(Long connectionId, String statDate) {
-        log.info("NAVER Basic Stats 동기화 시작 - connectionId: {}, date: {}", connectionId, statDate);
+    public AdvertisementResponse.NaverStatSyncResponse syncBasicStats(
+            Long userId, Long connectionId, String statDate) {
+        PlatformConnection connection = getConnection(connectionId);
+        validateOrganizationMembership(userId, connection.getPlatformAccount().getOrganization().getId());
+        validateNaverProvider(connection);
+        return syncBasicStats(connectionId, statDate, connection);
+    }
 
-        PlatformConnection connection = platformConnectionRepository.findWithAccountAndOrgById(connectionId)
-                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
+    AdvertisementResponse.NaverStatSyncResponse syncBasicStats(Long connectionId, String statDate) {
+        return syncBasicStats(connectionId, statDate, getNaverConnection(connectionId));
+    }
+
+    private AdvertisementResponse.NaverStatSyncResponse syncBasicStats(
+            Long connectionId, String statDate, PlatformConnection connection) {
+        log.info("NAVER Basic Stats 동기화 시작 - connectionId: {}, date: {}", connectionId, statDate);
 
         PlatformAccount platformAccount = connection.getPlatformAccount();
         log.info("NAVER 광고 플랫폼 계정 확인: {}", platformAccount.getProvider());
@@ -265,7 +287,9 @@ public class NaverAdSyncService {
 
     // orgId + 날짜 범위 기반 수동 동기화 (분산락 적용)
     public AdvertisementResponse.NaverManualSyncSummary syncAllForOrg(
-            Long orgId, LocalDate startDate, LocalDate endDate) {
+            Long userId, Long orgId, LocalDate startDate, LocalDate endDate) {
+
+        validateOrganizationMembership(userId, orgId);
 
         String cooldownKey = "naver:sync:cooldown:" + orgId;
         if (redisUtil.getData(cooldownKey) != null) {
@@ -313,6 +337,28 @@ public class NaverAdSyncService {
             redisUtil.deleteData(lockKey);
             redisUtil.setDataExpire(cooldownKey, "1", SYNC_COOLDOWN_SECONDS);
         }
+    }
+
+    private PlatformConnection getNaverConnection(Long connectionId) {
+        PlatformConnection connection = getConnection(connectionId);
+        validateNaverProvider(connection);
+        return connection;
+    }
+
+    private PlatformConnection getConnection(Long connectionId) {
+        return platformConnectionRepository.findWithAccountAndOrgById(connectionId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_CONNECTION_NOT_FOUND));
+    }
+
+    private void validateNaverProvider(PlatformConnection connection) {
+        if (connection.getPlatformAccount().getProvider() != Provider.NAVER) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_CONNECTION_NOT_FOUND);
+        }
+    }
+
+    private void validateOrganizationMembership(Long userId, Long orgId) {
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new PlatformHandler(PlatformErrorCode.PLATFORM_ORG_MEMBER_NOT_FOUND));
     }
 
 }

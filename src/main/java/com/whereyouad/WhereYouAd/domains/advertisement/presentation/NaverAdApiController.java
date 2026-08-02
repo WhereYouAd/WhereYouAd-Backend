@@ -108,28 +108,32 @@ public class NaverAdApiController implements NaverAdApiControllerDocs {
     // 메타데이터 동기화 (캠페인/그룹/소재)
     @PostMapping("/{connectionId}/sync/metadata")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverMetadataSyncResponse>> syncMetadata(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long connectionId
     ) {
-        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncAllMetadata(connectionId)));
+        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncAllMetadata(userId, connectionId)));
     }
 
     // 수동 동기화 (orgId + 날짜 범위)
     @PostMapping("/organizations/{orgId}/sync")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverManualSyncSummary>> syncManually(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long orgId,
             @RequestBody @Valid AdvertisementRequest.ManualSyncRequest request
     ) {
         return ResponseEntity.ok(DataResponse.from(
-                naverAdSyncService.syncAllForOrg(orgId, request.startDate(), request.endDate())));
+                naverAdSyncService.syncAllForOrg(userId, orgId, request.startDate(), request.endDate())));
     }
 
     // DAILY MetricFact 동기화 (기본 지표 + 전환 지표 통합)
     @PostMapping("/{connectionId}/sync/stats")
     public ResponseEntity<DataResponse<AdvertisementResponse.NaverStatSyncResponse>> syncStats(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable Long connectionId,
             @RequestParam("statDate") String statDate
     ) {
-        return ResponseEntity.ok(DataResponse.from(naverAdSyncService.syncBasicStats(connectionId, statDate)));
+        return ResponseEntity.ok(DataResponse.from(
+                naverAdSyncService.syncBasicStats(userId, connectionId, statDate)));
     }
 
     // 캠페인 예산 수정
