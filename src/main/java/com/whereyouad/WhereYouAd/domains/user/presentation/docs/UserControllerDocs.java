@@ -7,6 +7,7 @@ import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "User API", description = "회원가입 및 탈퇴, 비번 재설정 및 마이페이지 관련 API")
 public interface UserControllerDocs {
     @Operation(
             summary = "단순 회원가입 API",
@@ -134,6 +136,7 @@ public interface UserControllerDocs {
                     "### 3. 탈퇴 시점 즉시 정리 (Soft Delete)\n" +
                     "- 회원 본인 이메일로 발송된 Pending 상태 조직 초대장 즉시 삭제.\n\n" +
                     "- 회원 JWT RefreshToken 즉시 삭제.\n\n" +
+                    "- 연결된 카카오 / 네이버 / 구글 계정이 있으면 각 소셜 인증 서버의 연동 해제 API를 호출하고 저장된 OAuth 토큰을 폐기합니다. 기존 회원처럼 저장된 소셜 토큰이 없으면 소셜 재로그인 후 다시 요청해야 합니다.\n\n" +
                     "- 회원 status : ACTIVE → DELETED 변경, deletedAt 기록 (Soft Delete).\n\n" +
                     "### 4. 30일 후 Hard Delete (스케줄러 자동 실행, 매일 3:00 AM KST)\n" +
                     "- deletedAt 으로부터 30일 경과한 Soft Deleted 회원이 대상입니다.\n\n" +
@@ -145,7 +148,9 @@ public interface UserControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "404_1", description = "USER_404_1 : 해당 사용자 존재하지 않음"),
-            @ApiResponse(responseCode = "400_9", description = "USER_400_9 : 다른 멤버가 속한 조직의 소유자는 탈퇴할 수 없음 (소유권 위임 후 재시도 필요)")
+            @ApiResponse(responseCode = "400_9", description = "USER_400_9 : 다른 멤버가 속한 조직의 소유자는 탈퇴할 수 없음 (소유권 위임 후 재시도 필요)"),
+            @ApiResponse(responseCode = "409", description = "USER_409_1 : 저장된 소셜 인증 정보가 없어 소셜 재로그인 필요"),
+            @ApiResponse(responseCode = "502", description = "USER_502_1 : 소셜 인증 서버 연동 해제 실패")
     })
     public ResponseEntity<DataResponse<String>> deleteUser(
             @AuthenticationPrincipal(expression = "userId") Long userId

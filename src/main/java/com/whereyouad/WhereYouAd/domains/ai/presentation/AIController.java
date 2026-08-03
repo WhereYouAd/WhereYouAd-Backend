@@ -2,6 +2,7 @@ package com.whereyouad.WhereYouAd.domains.ai.presentation;
 
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.request.AIRequest;
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.AIResponse;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.ai.domain.service.AIService;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import com.whereyouad.WhereYouAd.domains.ai.presentation.docs.AIControllerDocs;
@@ -35,6 +36,18 @@ public class AIController implements AIControllerDocs {
             @PathVariable String accessToken) {
         Long userId = userDetails != null ? userDetails.getUserId() : null;
         AIResponse.ReportStatusResponse response = aiService.getReportByAccessToken(userId, accessToken);
+        return ResponseEntity.ok(DataResponse.from(response));
+    }
+
+    @GetMapping("/organizations/{orgId}/reports")
+    public ResponseEntity<DataResponse<AIResponse.ReportListResponse>> getReportSummaries(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false) Provider reportType,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size) {
+        AIResponse.ReportListResponse response =
+                aiService.getReportSummaries(userId, orgId, reportType, cursor, size);
         return ResponseEntity.ok(DataResponse.from(response));
     }
 

@@ -6,11 +6,13 @@ import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+@Tag(name = "Advertisement API", description = "광고 조회, 상태 변경 관련 API")
 public interface AdvertisementControllerDocs {
 
         @Operation(summary = "캠페인(프로젝트) 내 개별 광고 조회", description = "캠페인(세 플랫폼의 캠페인을 합친 프로젝트) 내의 개별 광고에 대한 상세 정보(해당하는 광고 그룹 타겟 정보까지 포함)를 조회합니다.")

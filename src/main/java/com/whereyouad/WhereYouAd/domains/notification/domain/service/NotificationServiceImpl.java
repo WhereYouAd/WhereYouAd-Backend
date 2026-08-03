@@ -226,6 +226,18 @@ public class NotificationServiceImpl implements NotificationService {
         sendApiAlarm(setting, orgId, request.title(), request.message());
     }
 
+    // 조직이 해당 알림 종류를 외부 채널(디스코드 / 슬랙)로 수신할 수 있는 상태인지 판별
+    // 조건 : 조직 알림 설정 존재 + 알림 종류 ON + (슬랙 or 디스코드 중 하나라도 "URL 등록 + 수신 토글 ON")
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isExternalAlarmActive(Long orgId, NotificationType type) {
+        return orgSettingRepository.findById(orgId)
+                .filter(setting -> isAlertTypeEnabled(setting, type))
+                .filter(setting -> (setting.hasSlack() && setting.isSlackEnabled())
+                        || (setting.hasDiscord() && setting.isDiscordEnabled()))
+                .isPresent();
+    }
+
     // 실질적 외부 채널 알림 전송 메서드
     private void sendApiAlarm(OrgNotificationSetting setting, Long orgId, String title, String message) {
         if (setting.hasSlack() && setting.isSlackEnabled()) {

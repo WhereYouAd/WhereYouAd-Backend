@@ -2,11 +2,14 @@ package com.whereyouad.WhereYouAd.domains.ai.presentation.docs;
 
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.request.AIRequest;
 import com.whereyouad.WhereYouAd.domains.ai.application.dto.response.AIResponse;
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.whereyouad.WhereYouAd.global.security.jwt.CustomUserDetails;
 
+@Tag(name = "AI Report API", description = "AI 요약 리포트 관련 API")
 public interface AIControllerDocs {
 
     @Operation(summary = "AI 광고 성과 분석 요청 API", description = """
@@ -74,6 +78,35 @@ public interface AIControllerDocs {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "리포트 접근 토큰", required = true, example = "550e8400-e29b-41d4-a716-446655440000")
             @PathVariable String accessToken
+    );
+
+    @Operation(summary = "조직별 AI 광고 성과 분석 리포트 목록 조회", description = """
+            로그인한 사용자가 속한 조직의 AI 분석 리포트를 최신순으로 조회합니다.
+            목록에서는 AI 분석 결과 본문을 제외하고 리포트 ID, 접근 토큰, 제목, 상태, 공유 여부, 생성일시만 반환합니다.
+
+            `reportType`을 전달하면 해당 유형의 리포트만 조회하며, 생략하면 전체 유형을 조회합니다.
+            `cursor`를 생략하면 첫 페이지를 조회하며, 응답의 `nextCursor`를 다음 요청에 전달해 다음 페이지를 조회합니다.
+            `size`의 기본값은 20이고 최대 50입니다.
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "목록 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "지원하지 않는 리포트 유형"),
+            @ApiResponse(responseCode = "400_3", description = "아직 지원하지 않는 플랫폼 (UNSUPPORTED_REPORT_PROVIDER)"),
+            @ApiResponse(responseCode = "403_1", description = "해당 조직에 가입되지 않은 사용자 (AI_ACCESS_FORBIDDEN)"),
+            @ApiResponse(responseCode = "404_1", description = "해당 조직이 존재하지 않음 (ORG_NOT_FOUND)")
+    })
+    ResponseEntity<DataResponse<AIResponse.ReportListResponse>> getReportSummaries(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @Parameter(description = "조직 ID", required = true) @PathVariable Long orgId,
+            @Parameter(
+                    description = "리포트 유형",
+                    example = "GOOGLE",
+                    schema = @Schema(allowableValues = {"GOOGLE", "NAVER", "META"})
+            )
+            @RequestParam(required = false) Provider reportType,
+            @Parameter(description = "다음 페이지 커서") @RequestParam(required = false) String cursor,
+            @Parameter(description = "조회 개수 (기본 20, 최대 50)", example = "20")
+            @RequestParam(required = false) Integer size
     );
 
     @Operation(summary = "AI 광고 성과 분석 리포트 공유 상태 변경", description = "발급된 리포트의 공유 여부 변경(조직 멤버만 변경 가능)")

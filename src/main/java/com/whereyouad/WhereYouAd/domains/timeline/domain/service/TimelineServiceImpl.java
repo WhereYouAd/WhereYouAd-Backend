@@ -13,6 +13,7 @@ import com.whereyouad.WhereYouAd.domains.timeline.application.mapper.TimelineCon
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.ComparisonPeriodType;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.MetricType;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.PerformanceStatus;
+import com.whereyouad.WhereYouAd.domains.timeline.domain.constant.TimelineSortType;
 import com.whereyouad.WhereYouAd.domains.timeline.domain.util.TimelineUtil;
 import com.whereyouad.WhereYouAd.domains.timeline.exception.TimelineException;
 import com.whereyouad.WhereYouAd.domains.timeline.exception.code.TimelineErrorCode;
@@ -26,6 +27,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.Me
 import com.whereyouad.WhereYouAd.domains.timeline.persistence.repository.TimelineRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -37,8 +39,10 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -101,6 +105,10 @@ public class TimelineServiceImpl implements TimelineService {
 
         // 입력받은 DTO를 타임라인 엔티티로 변환
         Timeline timeline = TimelineConverter.toTimeline(dto, organization, userId, comparisonDates.start(), comparisonDates.end());
+        orgRepository.findByIdForUpdate(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+        int nextDisplayOrder = timelineRepository.findMaxDisplayOrderByOrganizationId(orgId) + 1;
+        timeline.updateDisplayOrder(nextDisplayOrder);
 
         // 성과 상태 - PerformanceStatus 계산 및 판별 로직 호출 및 저장 (초안)
         PerformanceStatus status = timelineUtil.calculatePerformanceStatus(timeline, currentFacts, pastFacts);
@@ -112,8 +120,8 @@ public class TimelineServiceImpl implements TimelineService {
 
     @Override
     public TimelineResponse.CreateResponseDTO updateTimeline(Long userId, Long orgId, Long timelineId, TimelineRequest.TimelineCreateDto dto) {
-        // 1. 조직 검증
-        orgRepository.findById(orgId)
+        // 1. 동일 조직의 타임라인 쓰기 작업을 직렬화하도록 조직 행 잠금
+        orgRepository.findByIdForUpdate(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
 
         // 2. 타임라인 검증
@@ -189,6 +197,10 @@ public class TimelineServiceImpl implements TimelineService {
     @Override
     public void deleteTimeline(Long userId, Long orgId, Long timelineId) {
 
+        // 동일 조직의 타임라인 쓰기 작업을 직렬화하도록 조직 행 잠금
+        orgRepository.findByIdForUpdate(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
         // 타임라인이 없는 경우
         Timeline timeline = timelineRepository.findById(timelineId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_NOT_FOUND));
@@ -207,8 +219,52 @@ public class TimelineServiceImpl implements TimelineService {
     }
 
     @Override
+    public void updateTimelineOrder(Long userId, Long orgId, TimelineRequest.TimelineOrderUpdateDto dto) {
+        // 동일 조직에서 생성 또는 순서 변경이 동시에 수행되지 않도록 조직 행 잠금
+        orgRepository.findByIdForUpdate(orgId)
+                .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
+
+        // 조직에 소속된 회원만 공용 타임라인 순서 변경 가능
+        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+                .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_UPDATE_FORBIDDEN));
+
+        // 순서 변경 중 다른 트랜잭션이 대상 타임라인을 변경하지 못하도록 전체 행 잠금
+        List<Timeline> timelines = timelineRepository.findAllByOrganizationIdForUpdate(orgId);
+        List<Long> requestedIds = dto.timelineIds();
+
+        // 요청 ID의 중복 여부와 조직에 실제로 존재하는 전체 타임라인 ID인지 검증
+        Set<Long> uniqueRequestedIds = new HashSet<>(requestedIds);
+        Set<Long> organizationTimelineIds = timelines.stream()
+                .map(Timeline::getId)
+                .collect(Collectors.toSet());
+
+        boolean invalidOrder = requestedIds.size() != timelines.size()
+                || uniqueRequestedIds.size() != requestedIds.size()
+                || !uniqueRequestedIds.equals(organizationTimelineIds);
+        if (invalidOrder) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_DISPLAY_ORDER);
+        }
+
+        // ID로 엔티티를 빠르게 찾을 수 있도록 변환한 뒤 요청 배열의 순서대로 재배치
+        Map<Long, Timeline> timelineById = timelines.stream()
+                .collect(Collectors.toMap(Timeline::getId, timeline -> timeline));
+        for (int index = 0; index < requestedIds.size(); index++) {
+            // displayOrder 내림차순 조회 시 요청의 첫 번째 타임라인이 최상단에 위치
+            int displayOrder = requestedIds.size() - index - 1;
+            timelineById.get(requestedIds.get(index)).updateDisplayOrder(displayOrder);
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
-    public List<TimelineResponse.TimelineSummaryDTO> getTimelines(Long userId, Long orgId) {
+    public List<TimelineResponse.TimelineSummaryDTO> getTimelines(
+            Long userId,
+            Long orgId,
+            TimelineRequest.TimelineListQuery query
+    ) {
+        PerformanceStatus status = parsePerformanceStatus(query.status());
+        TimelineSortType sortType = parseTimelineSortType(query.sort());
+
         // 조직이 없는 경우
         orgRepository.findById(orgId)
                 .orElseThrow(() -> new OrgHandler(OrgErrorCode.ORG_NOT_FOUND));
@@ -217,8 +273,44 @@ public class TimelineServiceImpl implements TimelineService {
         orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new TimelineException(TimelineErrorCode.TIMELINE_READ_FORBIDDEN));
 
-        List<Timeline> timelines = timelineRepository.findByOrganizationIdOrderByEndDateDesc(orgId);
+        Sort sort = buildTimelineSort(sortType);
+        List<Timeline> timelines = status == null
+                ? timelineRepository.findAllByOrganizationId(orgId, sort)
+                : timelineRepository.findAllByOrganizationIdAndPerformanceStatus(orgId, status, sort);
         return TimelineConverter.toTimelineSummaryList(timelines);
+    }
+
+    private PerformanceStatus parsePerformanceStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return PerformanceStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_STATUS_FILTER);
+        }
+    }
+
+    private TimelineSortType parseTimelineSortType(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return TimelineSortType.DISPLAY_ORDER;
+        }
+
+        try {
+            return TimelineSortType.valueOf(sort);
+        } catch (IllegalArgumentException e) {
+            throw new TimelineException(TimelineErrorCode.TIMELINE_INVALID_SORT_TYPE);
+        }
+    }
+
+    private Sort buildTimelineSort(TimelineSortType sortType) {
+        return switch (sortType) {
+            case DISPLAY_ORDER -> Sort.by(Sort.Direction.DESC, "displayOrder")
+                    .and(Sort.by(Sort.Direction.DESC, "endDate", "id"));
+            case LATEST -> Sort.by(Sort.Direction.DESC, "endDate", "id");
+            case OLDEST -> Sort.by(Sort.Direction.ASC, "endDate", "id");
+        };
     }
 
     @Override

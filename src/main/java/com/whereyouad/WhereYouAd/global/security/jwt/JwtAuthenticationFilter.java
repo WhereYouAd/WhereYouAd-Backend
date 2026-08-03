@@ -63,6 +63,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String providerStr = jwtTokenProvider.getProvider(token);
                 //& email 값으로 DB 내 해당 email 로 가입한 회원 존재하는지 확인
                 CustomUserDetails userDetails = (CustomUserDetails) customUserDetailService.loadUserByUsername(email);
+                // 서명이 유효한 JWT라도 DB의 최신 회원 상태가 비활성이면 인증을 중단한다.
+                if (!userDetails.isEnabled()) {
+                    setErrorResponse(response, AuthErrorCode.ACCOUNT_NOT_ACTIVE, request);
+                    return;
+                }
 
                 CustomUserDetails finalUserDetails = new CustomUserDetails(
                         userDetails.getUser(),

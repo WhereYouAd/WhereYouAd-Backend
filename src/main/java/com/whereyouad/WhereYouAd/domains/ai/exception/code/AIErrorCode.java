@@ -12,6 +12,7 @@ public enum AIErrorCode implements BaseErrorCode {
     // 400
     INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "AI_400_1", "날짜 범위가 유효하지 않습니다."),
     INVALID_OPENAI_REQUEST(HttpStatus.BAD_REQUEST, "AI_400_2", "OpenAI API 요청 파라미터가 올바르지 않습니다."),
+    UNSUPPORTED_REPORT_PROVIDER(HttpStatus.BAD_REQUEST, "AI_400_3", "아직 지원하지 않는 플랫폼입니다."),
 
     // 401
     INVALID_OPENAI_API_KEY(HttpStatus.UNAUTHORIZED, "AI_401_2", "OpenAI API 키가 유효하지 않습니다."),

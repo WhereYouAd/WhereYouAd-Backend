@@ -11,11 +11,21 @@ import java.util.List;
 
 public class TimelineRequest {
 
+    public record TimelineListQuery(
+            String status,
+            String sort
+    ) {}
+
     public record TimelineCreateDto(
             @NotBlank(message = "타임라인 이름은 필수입니다.") String name,
             @NotNull(message = "시작일은 필수입니다.") LocalDate startDate,
             @NotNull(message = "종료일은 필수입니다.") LocalDate endDate,
             @NotEmpty(message = "성과 지표를 하나 이상 선택해야 합니다.") List<MetricType> metrics,
             @NotNull(message = "비교 기준 기간은 필수입니다.") ComparisonPeriodType comparisonPeriodType
+    ) {}
+
+    public record TimelineOrderUpdateDto(
+            @NotEmpty(message = "타임라인 순서 목록은 비어 있을 수 없습니다.")
+            List<@NotNull(message = "타임라인 ID는 null일 수 없습니다.") Long> timelineIds
     ) {}
 }

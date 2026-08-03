@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.global.security;
 
+import com.whereyouad.WhereYouAd.domains.user.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtAccessDeniedHandler;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtAuthenticationEntryPoint;
 import com.whereyouad.WhereYouAd.global.security.jwt.JwtAuthenticationFilter;
@@ -11,6 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -32,6 +36,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -58,11 +63,34 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // OAuth2 소셜 로그인 설정
                 .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestResolver(authorizationRequestResolver()))
                         .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
                                 .userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler));
 
         return http.build();
+    }
+
+    private OAuth2AuthorizationRequestResolver authorizationRequestResolver() {
+        // 제공자별 로그인 요청 파라미터를 추가하기 위해 기본 Resolver를 확장한다.
+        DefaultOAuth2AuthorizationRequestResolver resolver =
+                new DefaultOAuth2AuthorizationRequestResolver(
+                        clientRegistrationRepository,
+                        "/oauth2/authorization"
+                );
+
+        resolver.setAuthorizationRequestCustomizer(builder -> {
+            String[] registrationId = new String[1];
+            builder.attributes(attributes ->
+                    registrationId[0] = (String) attributes.get("registration_id"));
+
+            if (Provider.GOOGLE.getRegistrationId().equals(registrationId[0])) {
+                // 탈퇴 시 연동 해제에 사용할 RefreshToken을 받도록 Google에 오프라인 접근을 요청한다.
+                builder.additionalParameters(parameters -> parameters.put("access_type", "offline"));
+            }
+        });
+        return resolver;
     }
 
     @Bean  //회원 비밀번호 BCrypt 암호화를 위한 Bean 등록

@@ -5,6 +5,8 @@ import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "org_member_notification_setting")
@@ -21,6 +23,7 @@ public class OrgMemberNotificationSetting extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId // PK == FK(식별 관계)
     @JoinColumn(name = "membership_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private OrgMember orgMember;
 
     @Column(name = "is_master_enabled", nullable = false)

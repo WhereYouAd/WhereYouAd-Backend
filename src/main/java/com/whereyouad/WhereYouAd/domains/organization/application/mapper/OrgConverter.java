@@ -88,6 +88,7 @@ public class OrgConverter {
     public static OrgResponse.OrgMemberSliceDTO toOrgMemberSliceDTO(
             boolean hasNext,
             String nextCursor,
+            Long creatorId,
             List<OrgMember> orgMembers
     ) {
         List<OrgResponse.OrgMemberDTO> memberDTOs = orgMembers.stream()
@@ -97,6 +98,7 @@ public class OrgConverter {
         return new OrgResponse.OrgMemberSliceDTO(
                 hasNext,
                 nextCursor,
+                creatorId,
                 memberDTOs
         );
     }

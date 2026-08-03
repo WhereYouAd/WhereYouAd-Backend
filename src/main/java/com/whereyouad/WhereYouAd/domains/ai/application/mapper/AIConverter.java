@@ -21,11 +21,12 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organiz
 public class AIConverter {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String DEFAULT_REASONING_EFFORT = "low"; // 추론 능력: none, low, medium
 
     // 시스템 프롬프트와 유저 프롬프트를 받아 OpenAiRequest Feign 요청 DTO
     public static OpenAIRequest.Request toOpenAiRequest(
             String model, String systemPrompt, String userPrompt) {
-        return toOpenAiRequest(model, systemPrompt, userPrompt, 0.7);
+        return toOpenAiRequest(model, systemPrompt, userPrompt, 0.3);
     }
 
     public static OpenAIRequest.Request toOpenAiRequest(
@@ -41,6 +42,7 @@ public class AIConverter {
                                 .role("user")
                                 .content(userPrompt)
                                 .build()))
+                .reasoningEffort(DEFAULT_REASONING_EFFORT)
                 .temperature(temperature)
                 .build();
     }

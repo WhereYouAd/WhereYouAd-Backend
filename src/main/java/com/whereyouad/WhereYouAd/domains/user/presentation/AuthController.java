@@ -4,9 +4,9 @@ import com.whereyouad.WhereYouAd.domains.user.application.dto.request.LoginReque
 import com.whereyouad.WhereYouAd.domains.user.domain.service.AuthService;
 import com.whereyouad.WhereYouAd.domains.user.presentation.docs.AuthControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
+import com.whereyouad.WhereYouAd.global.security.cookie.AuthCookieFactory;
 import com.whereyouad.WhereYouAd.global.security.jwt.dto.TokenResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -19,25 +19,15 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController implements AuthControllerDocs {
 
     private final AuthService authService;
-
-    @Value("${cookie.secure}")
-    private boolean cookieSecure;
-
-    @Value("${cookie.domain:}")
-    private String cookieDomain;
-
-    @Value("${cookie.same-site}")
-    private String cookieSameSite;
+    private final AuthCookieFactory authCookieFactory;
 
     @PostMapping("/login")
     public ResponseEntity<DataResponse<TokenResponse>> login(@RequestBody LoginRequest request) {
 
         TokenResponse tokenResponse = authService.login(request);
 
-        ResponseCookie httpOnlyCookie = baseCookie("refresh_token", tokenResponse.refreshToken())
-                .httpOnly(true)
-                .maxAge(60 * 60 * 24 * 7) // 7일
-                .build();
+        ResponseCookie httpOnlyCookie = authCookieFactory.createRefreshTokenCookie(
+                tokenResponse.refreshToken(), 60 * 60 * 24 * 7); // 7일
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, httpOnlyCookie.toString()) //생성한 RefreshToken 쿠키를 헤더에 설정
@@ -52,10 +42,8 @@ public class AuthController implements AuthControllerDocs {
     {
         TokenResponse tokenResponse = authService.reIssue(refreshToken);
 
-        ResponseCookie httpOnlyCookie = baseCookie("refresh_token", tokenResponse.refreshToken())
-                .httpOnly(true)
-                .maxAge(60 * 60 * 24 * 7) // 7일
-                .build();
+        ResponseCookie httpOnlyCookie = authCookieFactory.createRefreshTokenCookie(
+                tokenResponse.refreshToken(), 60 * 60 * 24 * 7); // 7일
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, httpOnlyCookie.toString()) //생성한 RefreshToken 쿠키를 헤더에 설정
@@ -78,16 +66,10 @@ public class AuthController implements AuthControllerDocs {
         authService.logout(accessToken);
 
         //RefreshToken 쿠키 제거
-        ResponseCookie expiredRefresh = baseCookie("refresh_token", "")
-                .httpOnly(true)
-                .maxAge(0)
-                .build();
+        ResponseCookie expiredRefresh = authCookieFactory.createRefreshTokenCookie("", 0);
 
         //AccessToken 쿠키 제거 — 소셜 로그인에서 OAuth2 핸들러가 세팅한 쿠키 제거용(이메일 로그인 유저 브라우저엔 해당 쿠키가 없어 해당X)
-        ResponseCookie expiredAccess = baseCookie("access_token", "")
-                .httpOnly(false)
-                .maxAge(0)
-                .build();
+        ResponseCookie expiredAccess = authCookieFactory.createAccessTokenCookie("", 0);
 
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, expiredRefresh.toString())
@@ -95,15 +77,4 @@ public class AuthController implements AuthControllerDocs {
                 .build();
     }
 
-    // 환경 설정(cookie.secure / cookie.domain / cookie.same-site)을 반영한 쿠키 빌더
-    private ResponseCookie.ResponseCookieBuilder baseCookie(String name, String value) {
-        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
-                .secure(cookieSecure)
-                .path("/")
-                .sameSite(cookieSameSite);
-        if (StringUtils.hasText(cookieDomain)) {
-            builder.domain(cookieDomain);
-        }
-        return builder;
-    }
 }
