@@ -35,6 +35,7 @@ public class ClickConsumer {
 
     private static final DateTimeFormatter MINUTE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
     private static final long REDIS_TTL_SECONDS = 7200L; // 2시간
+    private static final long CLICK_ALERT_COOLDOWN_SECONDS = 600L; // 10분 - 조직별 봇 클릭 외부 알림(Kafka 발행) 쿨다운
     private final ObjectMapper objectMapper;
 
     // Redis 분 단위 집계 (더미/실제 클릭)
@@ -132,13 +133,22 @@ public class ClickConsumer {
 
                 log.info(" 봇 감지 : 실제 데이터 매핑 완료 및 Redis 적재: {}", alertKey);
 
-                // 디스코드/슬랙 등 외부 채널 알림을 위한 Kafka 이벤트 발행
-                notificationEventProducer.produce(NotificationAlertEvent.builder()
-                        .orgId(event.getOrgId())
-                        .type(NotificationType.CLICKS)
-                        .title("[" + campaignNameStr + "] 비정상 클릭 감지")
-                        .message(alertMessage)
-                        .build());
+                // 조직별 쿨다운 체크 - 쿨다운 중이 아닐 때만(=락 선점 성공 시) 외부 채널 알림 발행
+                String cooldownKey = String.format("notification:cooldown:clicks:org:%s", event.getOrgId());
+                boolean cooldownAcquired = Boolean.TRUE.equals(
+                        redisUtil.setIfAbsent(cooldownKey, "1", CLICK_ALERT_COOLDOWN_SECONDS));
+
+                if (cooldownAcquired) {
+                    // 디스코드/슬랙 등 외부 채널 알림을 위한 Kafka 이벤트 발행
+                    notificationEventProducer.produce(NotificationAlertEvent.builder()
+                            .orgId(event.getOrgId())
+                            .type(NotificationType.CLICKS)
+                            .title("[" + campaignNameStr + "] 비정상 클릭 감지")
+                            .message(alertMessage)
+                            .build());
+                } else {
+                    log.debug("[외부 알림 발송 skip] 쿨다운 적용 중, orgId={}", event.getOrgId());
+                }
             } catch (Exception e) {
                 log.error("봇 알림 JSON 변환/저장 실패", e);
             }
