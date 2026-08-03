@@ -26,11 +26,6 @@ public class AIConverter {
     // 시스템 프롬프트와 유저 프롬프트를 받아 OpenAiRequest Feign 요청 DTO
     public static OpenAIRequest.Request toOpenAiRequest(
             String model, String systemPrompt, String userPrompt) {
-        return toOpenAiRequest(model, systemPrompt, userPrompt, 0.3);
-    }
-
-    public static OpenAIRequest.Request toOpenAiRequest(
-            String model, String systemPrompt, String userPrompt, double temperature) {
         return OpenAIRequest.Request.builder()
                 .model(model)
                 .messages(List.of(
@@ -43,7 +38,6 @@ public class AIConverter {
                                 .content(userPrompt)
                                 .build()))
                 .reasoningEffort(DEFAULT_REASONING_EFFORT)
-                .temperature(temperature)
                 .build();
     }
 
