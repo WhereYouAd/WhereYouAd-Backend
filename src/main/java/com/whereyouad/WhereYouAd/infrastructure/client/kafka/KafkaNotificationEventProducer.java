@@ -18,7 +18,13 @@ public class KafkaNotificationEventProducer implements NotificationEventProducer
 
     @Override
     public void produce(NotificationAlertEvent event) {
-        kafkaTemplate.send(TOPIC, String.valueOf(event.getOrgId()), event);
-        log.debug("[Kafka] 외부 알림 이벤트 발행: orgId={}, type={}", event.getOrgId(), event.getType());
+        kafkaTemplate.send(TOPIC, String.valueOf(event.getOrgId()), event)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("[Kafka] 외부 알림 이벤트 발행 실패: orgId={}, type={}", event.getOrgId(), event.getType(), ex);
+                    } else {
+                        log.debug("[Kafka] 외부 알림 이벤트 발행 성공: orgId={}, type={}", event.getOrgId(), event.getType());
+                    }
+                });
     }
 }
