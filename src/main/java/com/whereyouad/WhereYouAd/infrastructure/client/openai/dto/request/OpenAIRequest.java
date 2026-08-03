@@ -17,10 +17,7 @@ public class OpenAIRequest {
 
             // GPT-5 계열 추론 강도
             @JsonProperty("reasoning_effort")
-            String reasoningEffort,
-
-            // 응답 창의성 조절 (0.0 ~ 1.0)
-            double temperature
+            String reasoningEffort
     ) {}
     @Builder
     public record Message (
