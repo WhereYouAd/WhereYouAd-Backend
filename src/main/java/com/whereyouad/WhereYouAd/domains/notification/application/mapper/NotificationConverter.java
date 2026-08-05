@@ -47,15 +47,15 @@ public class NotificationConverter {
         );
     }
 
-    // 기본 알림 설정(entity -> dto), 기본값: 마스터 알림 ON, 이메일 수신 ON / 그 외 알림 관련 모두 수신 X
+    // 기본 알림 설정(entity -> dto), 기본값: 전부 OFF (알림 수신은 설정 페이지에서 직접 켜는 opt-in 방식)
     public static OrgMemberNotificationSetting toDefaultMemberSetting(OrgMember member) {
         return OrgMemberNotificationSetting.builder()
                 .orgMember(member)
-                .isMasterEnabled(true)
+                .isMasterEnabled(false)
                 .isBrowserPushEnabled(false)
-                .isEmailEnabled(true)
+                .isEmailEnabled(false)
                 .alertClicks(false)
-                .alertReport(true)
+                .alertReport(false)
                 .build();
     }
 
