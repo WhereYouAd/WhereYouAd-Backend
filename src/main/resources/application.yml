@@ -180,6 +180,7 @@ google:
     redirect-uri: ${GOOGLE_ADS_OAUTH2_REDIRECT_URL}
     developer-token: ${GOOGLE_ADS_DEVELOPER_TOKEN}
     login-customer-id: ${GOOGLE_ADS_LOGIN_CUSTOMER_ID:}
+    frontend-callback-url: ${GOOGLE_ADS_FRONTEND_CALLBACK_URL}
 
 # 12. 로깅 설정
 logging:
