@@ -56,6 +56,7 @@ public class OrgResponse {
     public record OrgMemberSliceDTO(
             boolean hasNext,
             String nextCursor,
+            Long creatorId,
             List<OrgMemberDTO> members
     ) {}
 

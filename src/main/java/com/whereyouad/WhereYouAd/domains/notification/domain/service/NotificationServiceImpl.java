@@ -148,11 +148,11 @@ public class NotificationServiceImpl implements NotificationService {
                 .stream()
                 .collect(Collectors.toMap(OrgMemberNotificationSetting::getMembershipId, s -> s));
 
-        // 설정이 없는 멤버는 수신 중(true)으로 간주
+        // 설정이 없는 멤버는 기본값(전부 OFF)에 맞춰 미수신(false)으로 간주
         List<NotificationResponse.MemberSetting> members = slice.getContent().stream()
                 .map(m -> {
                     OrgMemberNotificationSetting s = settingsMap.get(m.getId());
-                    boolean isReceive = s == null || s.isMasterEnabled();
+                    boolean isReceive = s != null && s.isMasterEnabled();
                     return NotificationConverter.toMemberSetting(m, isReceive);
                 })
                 .toList();

@@ -61,7 +61,11 @@ public class OrgQueryServiceImpl implements OrgQueryService{
             nextCursor = CursorUtil.encode(lastId);
         }
 
-        return OrgConverter.toOrgMemberSliceDTO(slice.hasNext(), nextCursor, slice.getContent());
+        return OrgConverter.toOrgMemberSliceDTO(
+                slice.hasNext(),
+                nextCursor,
+                organization.getOwnerUserId(),
+                slice.getContent());
     }
 
     // 조직 전체 멤버 수 조회
