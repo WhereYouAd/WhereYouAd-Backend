@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.notification.persistence.entity;
 
+import com.whereyouad.WhereYouAd.domains.notification.domain.constant.NotificationType;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,4 +43,8 @@ public class Notification {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id", nullable = false)
     private Organization organization;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 20)
+    private NotificationType type;
 }
