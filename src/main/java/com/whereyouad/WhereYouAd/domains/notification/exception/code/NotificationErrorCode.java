@@ -14,6 +14,7 @@ public enum NotificationErrorCode implements BaseErrorCode {
     NO_CHANNEL_URL(HttpStatus.BAD_REQUEST, "NOTIFICATION_400_2", "외부 채널 알림을 활성화 하기 위한 해당 채널 웹훅 URL 이 입력되지 않았습니다."),
     CHANNEL_REQUEST_CONFLICT(HttpStatus.BAD_REQUEST, "NOTIFICATION_400_3", "채널 알림 활성화와 연결 해제(웹훅 삭제)를 동시에 요청할 수 없습니다."),
     INVALID_CHANNEL_URL(HttpStatus.BAD_REQUEST, "NOTIFICATION_400_4", "웹훅 URL 형식이 올바르지 않습니다."),
+    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "NOTIFICATION_400_5", "유효하지 않은 커서입니다."),
 
     // 403
     FORBIDDEN(HttpStatus.FORBIDDEN, "NOTIFICATION_403_1", "해당 작업을 수행할 권한이 없습니다."),
