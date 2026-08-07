@@ -8,8 +8,10 @@ import com.whereyouad.WhereYouAd.domains.notification.exception.NotificationExce
 import com.whereyouad.WhereYouAd.domains.notification.exception.code.NotificationErrorCode;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgMemberNotificationSetting;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgNotificationSetting;
+import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.UserNotification;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.repository.OrgMemberNotificationSettingRepository;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.repository.OrgNotificationSettingRepository;
+import com.whereyouad.WhereYouAd.domains.notification.persistence.repository.UserNotificationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
@@ -31,6 +33,7 @@ import org.springframework.util.StringUtils;
 
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +55,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final DiscordWebhookClient discordClient;
     private final SlackWebhookClient slackClient;
     private final AESUtil aesUtil;
+    private final UserNotificationRepository userNotificationRepository;
 
     // 현재 내 알림 설정 조회
     @Override
@@ -60,6 +64,40 @@ public class NotificationServiceImpl implements NotificationService {
         OrgMemberNotificationSetting setting = findOrCreateSetting(member);
         OrgNotificationSetting orgSetting = orgSettingRepository.findById(orgId).orElse(null);
         return NotificationConverter.toMySettings(setting, orgSetting);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public NotificationResponse.NotificationHistoryList getHistory(Long userId, Long orgId, String encodedCursor, Integer size) {
+        findMember(userId, orgId);
+
+        int pageSize = (size != null && size > 0) ? Math.min(size, 50) : 20;
+
+        // 커서가 가리키는 행을 먼저 조회해 정렬 기준값(isRead, createdAt)을 확보
+        Long cursorId = null;
+        Boolean cursorIsRead = null;
+        LocalDateTime cursorCreatedAt = null;
+
+        if (encodedCursor != null && !encodedCursor.isBlank()) {
+            cursorId = CursorUtil.decodeToId(encodedCursor);
+            UserNotification anchor = userNotificationRepository.findCursorAnchor(cursorId, userId)
+                    .orElseThrow(() -> new NotificationException(NotificationErrorCode.INVALID_CURSOR));
+            cursorIsRead = anchor.isRead();
+            cursorCreatedAt = anchor.getNotification().getCreatedAt();
+        }
+
+        Slice<UserNotification> slice = userNotificationRepository.findHistoryWithCursor(
+                userId, orgId, cursorIsRead, cursorCreatedAt, cursorId, PageRequest.of(0, pageSize)
+        );
+
+        // nextCursor 인코딩 (다음 페이지가 있으면)
+        String nextCursor = null;
+        if (slice.hasNext() && !slice.getContent().isEmpty()) {
+            Long lastId = slice.getContent().get(slice.getContent().size() - 1).getId();
+            nextCursor = CursorUtil.encode(lastId);
+        }
+
+        return NotificationConverter.toNotificationHistoryList(slice.hasNext(), nextCursor, slice.getContent());
     }
 
     // 전체 알림 설정 변경 메서드
