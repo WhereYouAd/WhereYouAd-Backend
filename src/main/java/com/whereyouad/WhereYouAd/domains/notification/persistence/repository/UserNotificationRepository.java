@@ -34,9 +34,13 @@ public interface UserNotificationRepository extends JpaRepository<UserNotificati
 
     // 커서가 가리키는 행 조회 (정렬 기준값 isRead / createdAt 확보용, 본인 소유만)
     @Query("SELECT un FROM UserNotification un " +
-            "JOIN FETCH un.notification " +
-            "WHERE un.id = :cursorId AND un.user.id = :userId")
+            "JOIN FETCH un.notification n " +
+            "WHERE un.id = :cursorId " +
+            "AND un.user.id = :userId " +
+            "AND n.organization.id = :orgId")
     Optional<UserNotification> findCursorAnchor(@Param("cursorId") Long cursorId,
-                                                @Param("userId") Long userId);
+                                                @Param("userId") Long userId,
+                                                @Param("orgId") Long orgId
+                                                );
 
 }

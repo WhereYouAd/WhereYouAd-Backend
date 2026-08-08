@@ -83,7 +83,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         if (encodedCursor != null && !encodedCursor.isBlank()) {
             cursorId = CursorUtil.decodeToId(encodedCursor);
-            UserNotification anchor = userNotificationRepository.findCursorAnchor(cursorId, userId)
+            UserNotification anchor = userNotificationRepository.findCursorAnchor(cursorId, userId, orgId)
                     .orElseThrow(() -> new NotificationException(NotificationErrorCode.INVALID_CURSOR));
             cursorIsRead = anchor.isRead();
             cursorCreatedAt = anchor.getNotification().getCreatedAt();
