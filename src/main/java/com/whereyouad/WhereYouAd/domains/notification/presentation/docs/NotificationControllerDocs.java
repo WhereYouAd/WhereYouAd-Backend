@@ -34,7 +34,7 @@ public interface NotificationControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공 (hasNext: 다음 페이지 존재 여부, nextCursor: 다음 페이지 커서, notifications: 알림 기록 리스트)"),
-            @ApiResponse(responseCode = "400", description = "잘못된 커서 형식\n\n NOTIFICATION_400_5 : 유효하지 않은 커서"),
+            @ApiResponse(responseCode = "400", description = "CURSOR_400_3 : 잘못된 커서 형식\n\n NOTIFICATION_400_5 : 유효하지 않은 커서"),
             @ApiResponse(responseCode = "404", description = "해당 조직의 멤버가 아닙니다.")
     })
     ResponseEntity<DataResponse<NotificationResponse.NotificationHistoryList>> getHistory(
