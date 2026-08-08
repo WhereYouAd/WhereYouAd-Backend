@@ -66,14 +66,17 @@ public class NotificationServiceImpl implements NotificationService {
         return NotificationConverter.toMySettings(setting, orgSetting);
     }
 
+    // 알림 기록 조회 (커서 기반 무한 스크롤) -> 안 읽은 알림 우선, 그룹 내에서는 최신순
+    // 읽음 처리 시 정렬 키(isRead)가 바뀌므로 기존 커서는 무효 -> 프론트는 첫 페이지부터 재조회
     @Override
     @Transactional(readOnly = true)
     public NotificationResponse.NotificationHistoryList getHistory(Long userId, Long orgId, String encodedCursor, Integer size) {
         findMember(userId, orgId);
 
+        // 페이지 크기 (기본 20, 상한 50)
         int pageSize = (size != null && size > 0) ? Math.min(size, 50) : 20;
 
-        // 커서가 가리키는 행을 먼저 조회해 정렬 기준값(isRead, createdAt)을 확보
+        // 커서엔 id만 담기는데 정렬 키는 (isRead, createdAt, id) 3개 → 커서가 가리키는 행을 조회해 나머지 기준값 확보
         Long cursorId = null;
         Boolean cursorIsRead = null;
         LocalDateTime cursorCreatedAt = null;
@@ -86,11 +89,12 @@ public class NotificationServiceImpl implements NotificationService {
             cursorCreatedAt = anchor.getNotification().getCreatedAt();
         }
 
+        // Slice 조회 (pageSize + 1건을 읽어 hasNext를 자동 계산)
         Slice<UserNotification> slice = userNotificationRepository.findHistoryWithCursor(
                 userId, orgId, cursorIsRead, cursorCreatedAt, cursorId, PageRequest.of(0, pageSize)
         );
 
-        // nextCursor 인코딩 (다음 페이지가 있으면)
+        // 다음 페이지 커서 = 현재 페이지 마지막 행의 id (다음 조회는 이 행 바로 다음부터 시작)
         String nextCursor = null;
         if (slice.hasNext() && !slice.getContent().isEmpty()) {
             Long lastId = slice.getContent().get(slice.getContent().size() - 1).getId();
