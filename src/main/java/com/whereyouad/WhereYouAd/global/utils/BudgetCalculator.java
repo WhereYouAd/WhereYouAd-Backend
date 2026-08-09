@@ -40,4 +40,15 @@ public class BudgetCalculator {
                 .divide(BigDecimal.valueOf(totalBudget), 1, RoundingMode.DOWN)
                 .doubleValue();
     }
+
+    // 남은 예산 비율 계산 (남은예산 / 예산 * 100), 소수점 첫째 자리까지 버림
+    public double calculateRemainingRate(long totalBudget, long remainingBudget) {
+        if (totalBudget <= 0) {
+            return 0.0;
+        }
+        return BigDecimal.valueOf(remainingBudget)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(totalBudget), 1, RoundingMode.DOWN)
+                .doubleValue();
+    }
 }
