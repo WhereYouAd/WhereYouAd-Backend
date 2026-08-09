@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Grain;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdContent;
@@ -28,6 +29,38 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
     @Query("SELECT SUM(m.spend) FROM MetricFact m JOIN m.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o WHERE om.user.id = :userId AND o.id = :orgId AND m.provider = :provider AND m.adContent.adGroup.adCampaign.status = 'ON_GOING'")
     BigDecimal sumSpendsByUserIdAndOrgIdAndProvider(@Param("userId") Long userId, @Param("orgId") Long orgId,
             @Param("provider") Provider provider);
+
+    // 예산 소진 현황(전체/일일) 조회용: budgetType 캠페인들의 누적(전체) 지출. provider 가 null 이면 조직 전체(통합 대시보드)
+    @Query("SELECT SUM(m.spend) FROM MetricFact m JOIN m.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o " +
+            "WHERE om.user.id = :userId AND o.id = :orgId AND m.adContent.adGroup.adCampaign.status = 'ON_GOING' " +
+            "AND m.adContent.adGroup.adCampaign.budgetType = :budgetType " +
+            "AND (:provider IS NULL OR m.provider = :provider)")
+    BigDecimal sumSpendsByUserIdAndOrgIdAndBudgetType(@Param("userId") Long userId, @Param("orgId") Long orgId,
+            @Param("budgetType") BudgetType budgetType, @Param("provider") Provider provider);
+
+    // 예산 소진 현황(전체/일일) 조회용: budgetType 캠페인들의 특정 기간(예: 오늘, 이번 달) 지출. provider 가 null 이면 조직 전체(통합 대시보드)
+    @Query("SELECT SUM(m.spend) FROM MetricFact m JOIN m.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o " +
+            "WHERE om.user.id = :userId AND o.id = :orgId AND m.adContent.adGroup.adCampaign.status = 'ON_GOING' " +
+            "AND m.adContent.adGroup.adCampaign.budgetType = :budgetType " +
+            "AND (:provider IS NULL OR m.provider = :provider) " +
+            "AND m.timeBucket >= :start AND m.timeBucket < :end")
+    BigDecimal sumSpendsByUserIdAndOrgIdAndBudgetTypeAndPeriod(@Param("userId") Long userId, @Param("orgId") Long orgId,
+            @Param("budgetType") BudgetType budgetType, @Param("provider") Provider provider,
+            @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // 캠페인 상세(프로젝트 상세) 페이지 - 플랫폼별 남은 예산(전체 특성): 프로젝트 내 해당 provider/budgetType 캠페인들의 누적 지출
+    @Query("SELECT SUM(m.spend) FROM MetricFact m WHERE m.project.id = :projectId AND m.provider = :provider " +
+            "AND m.adContent.adGroup.adCampaign.budgetType = :budgetType")
+    BigDecimal sumSpendsByProjectIdAndProviderAndBudgetType(@Param("projectId") Long projectId,
+            @Param("provider") Provider provider, @Param("budgetType") BudgetType budgetType);
+
+    // 캠페인 상세(프로젝트 상세) 페이지 - 플랫폼별 남은 예산(일일 특성): 프로젝트 내 해당 provider/budgetType 캠페인들의 특정 기간(오늘) 지출
+    @Query("SELECT SUM(m.spend) FROM MetricFact m WHERE m.project.id = :projectId AND m.provider = :provider " +
+            "AND m.adContent.adGroup.adCampaign.budgetType = :budgetType " +
+            "AND m.timeBucket >= :start AND m.timeBucket < :end")
+    BigDecimal sumSpendsByProjectIdAndProviderAndBudgetTypeAndPeriod(@Param("projectId") Long projectId,
+            @Param("provider") Provider provider, @Param("budgetType") BudgetType budgetType,
+            @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     // 전체 지표 조회 로직에서 사용
     // 해당 조직(orgId)의 가장 최신 timeBucket을 가져오는 쿼리
