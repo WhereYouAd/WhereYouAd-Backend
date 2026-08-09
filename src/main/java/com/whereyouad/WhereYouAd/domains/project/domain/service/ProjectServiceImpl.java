@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.project.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
@@ -34,6 +35,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -186,7 +189,48 @@ public class ProjectServiceImpl implements ProjectService {
         // 총 예산 (캠페인 budget의 합)
         long totalBudget = budgetCalculator.calculateTotalBudget(campaignSummaries);
 
-        return ProjectConverter.toProjectInfoResponse(project, distinctProviders, totalBudget);
+        // 플랫폼별 남은 예산 (전체(구글/메타)/일일(네이버) 특성에 따라 합산)
+        List<ProjectResponse.PlatformBudgetSummary> platformBudgets = buildPlatformBudgetSummaries(project.getId(), distinctProviders);
+
+        return ProjectConverter.toProjectInfoResponse(project, distinctProviders, totalBudget, platformBudgets);
+    }
+
+    // 프로젝트(캠페인) 내 캠페인들을 provider 기준으로 묶어, 각 플랫폼이 실제로 사용하는 예산 특성(TOTAL/DAILY)에 맞춰 남은 예산을 계산
+    // - TOTAL 타입 캠페인이 하나라도 있으면(구글/메타) TOTAL 타입 캠페인들의 예산 합계 - 누적 지출
+    // - TOTAL 타입 캠페인이 없으면(네이버) DAILY 타입 캠페인들의 예산 합계 - 오늘 지출
+    private List<ProjectResponse.PlatformBudgetSummary> buildPlatformBudgetSummaries(Long projectId, List<Provider> providers) {
+        List<ProjectQueryDto.CampaignBudgetInfo> campaignBudgetInfos = adCampaignRepository.findCampaignBudgetInfoByProjectId(projectId);
+        Map<Provider, List<ProjectQueryDto.CampaignBudgetInfo>> byProvider = campaignBudgetInfos.stream()
+                .collect(Collectors.groupingBy(ProjectQueryDto.CampaignBudgetInfo::provider));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+
+        List<ProjectResponse.PlatformBudgetSummary> result = new ArrayList<>();
+        for (Provider provider : providers) {
+            List<ProjectQueryDto.CampaignBudgetInfo> infos = byProvider.getOrDefault(provider, Collections.emptyList());
+
+            boolean hasTotalType = infos.stream().anyMatch(info -> info.budgetType() == BudgetType.TOTAL);
+            BudgetType characteristic = hasTotalType ? BudgetType.TOTAL : BudgetType.DAILY;
+
+            long budget = infos.stream()
+                    .filter(info -> info.budgetType() == characteristic)
+                    .mapToLong(info -> info.budget() != null ? info.budget() : 0L)
+                    .sum();
+
+            BigDecimal spendDec = (characteristic == BudgetType.TOTAL)
+                    ? metricFactRepository.sumSpendsByProjectIdAndProviderAndBudgetType(projectId, provider, BudgetType.TOTAL)
+                    : metricFactRepository.sumSpendsByProjectIdAndProviderAndBudgetTypeAndPeriod(
+                            projectId, provider, BudgetType.DAILY, todayStart, now);
+
+            long spend = (spendDec != null) ? spendDec.longValue() : 0L;
+            long remaining = budgetCalculator.calculateRemainingBudget(budget, spend);
+            double remainingPercentage = budgetCalculator.calculateRemainingRate(budget, remaining);
+
+            result.add(new ProjectResponse.PlatformBudgetSummary(
+                    provider, characteristic, budget, spend, remaining, remainingPercentage));
+        }
+        return result;
     }
 
     // Provider 추출 공통 메서드
