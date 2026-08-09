@@ -42,8 +42,13 @@ public class BudgetCalculator {
     }
 
     // 남은 예산 비율 계산 (남은예산 / 예산 * 100), 소수점 첫째 자리까지 버림
+    // - 예산이 0 이하이면 소진할 예산 자체가 없으므로 100.0(전부 남음)으로 처리
+    // - 초과 지출로 remainingBudget 이 음수가 되는 경우 0.0 으로 하한을 둠 (프론트 진행률 표시 보호)
     public double calculateRemainingRate(long totalBudget, long remainingBudget) {
         if (totalBudget <= 0) {
+            return 100.0;
+        }
+        if (remainingBudget <= 0) {
             return 0.0;
         }
         return BigDecimal.valueOf(remainingBudget)
