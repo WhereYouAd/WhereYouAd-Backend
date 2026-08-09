@@ -14,6 +14,11 @@ public class DashboardResponse {
     // 예산 소진 현황 API (/api/dashboard/budgets) 응답
     // providerType 미지정(통합 대시보드) 시 groups = [TOTAL 예산타입 캠페인 묶음, DAILY 예산타입 캠페인 묶음]
     // providerType 지정(플랫폼 대시보드) 시 groups = [전체 예산 카드(TOTAL), 일일 예산 카드(DAILY)] (해당 provider 기준)
+    //
+    // 주의: 두 경우 모두 budgetType=DAILY 그룹이 존재하지만 금액의 기준 기간이 다름
+    // - 통합 대시보드(providerType 없음): "이번 달" 단위 추정치 (일일예산 x 이번 달 일수, estimated=true)
+    // - 플랫폼 대시보드(providerType 있음): "오늘 하루" 단위 실측치 (estimated=false)
+    // 통합 대시보드는 모든 그룹을 "전체 예산" 관점으로 통일해서 보여주기 위한 의도적인 설계입니다.
     public record BudgetSummaryResponse(
             String providerType,
             List<BudgetTypeGroup> groups

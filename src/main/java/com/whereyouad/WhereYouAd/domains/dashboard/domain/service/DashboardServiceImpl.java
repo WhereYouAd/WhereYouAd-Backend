@@ -67,7 +67,12 @@ public class DashboardServiceImpl implements DashboardService {
             return getUnifiedBudgetSummary(userId, orgId);
         }
         // 플랫폼 대시보드: 해당 provider 기준 전체 예산 카드 + 일일 예산 카드를 함께 반환
-        Provider provider = Provider.valueOf(providerType.toUpperCase());
+        Provider provider;
+        try { //providerType 에 잘못된 값이 입력되지 않았는지 검증
+            provider = Provider.valueOf(providerType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
+        }
         return getPlatformBudgetSummary(userId, orgId, provider);
     }
 
@@ -83,6 +88,9 @@ public class DashboardServiceImpl implements DashboardService {
         DashboardResponse.BudgetDetail totalDetail = buildBudgetDetail(totalBudgetSum, totalSpendDec, false);
 
         // DAILY 예산타입 그룹 (일일 예산 합계 x 이번 달 총 일수로 추정, 이번 달 누적 지출과 비교)
+        // 주의: 같은 budgetType=DAILY 라도 getPlatformBudgetSummary()의 "일일 예산" 카드(오늘 하루 실측)와는
+        // 스케일이 다름(이쪽은 "한 달" 단위 추정). 통합 대시보드는 카드 프레이밍을 "전체 예산" 관점으로 통일하기 위해
+        // 의도적으로 월 단위 추정치를 사용함 (estimated=true로 구분).
         Long dailyBudgetSum = adCampaignRepository.sumBudgetsByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.DAILY, null);
         List<Provider> dailyProviders = adCampaignRepository.findDistinctProvidersByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.DAILY, null);
         long estimatedMonthlyBudget = estimateMonthlyBudget(dailyBudgetSum);
@@ -106,7 +114,8 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
 
-        // 일일 예산 카드 (실측: 오늘 지출 기준)
+        // 일일 예산 카드 (실측: 오늘 하루 지출 기준)
+        // 주의: getUnifiedBudgetSummary()의 DAILY 그룹(한 달 추정치)과 스케일이 다름 - 여기는 "오늘" 단위 실측치.
         Long dailyBudgetSum = adCampaignRepository.sumBudgetsByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.DAILY, provider);
         BigDecimal todaySpendDec = metricFactRepository.sumSpendsByUserIdAndOrgIdAndBudgetTypeAndPeriod(
                 userId, orgId, BudgetType.DAILY, provider, todayStart, now);
