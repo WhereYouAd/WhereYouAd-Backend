@@ -48,18 +48,20 @@ public interface MetricFactRepository extends JpaRepository<MetricFact, Long> {
             @Param("budgetType") BudgetType budgetType, @Param("provider") Provider provider,
             @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    // 캠페인 상세(프로젝트 상세) 페이지 - 플랫폼별 남은 예산(전체 특성): 프로젝트 내 해당 provider/budgetType 캠페인들의 누적 지출
-    @Query("SELECT SUM(m.spend) FROM MetricFact m WHERE m.project.id = :projectId AND m.provider = :provider " +
-            "AND m.adContent.adGroup.adCampaign.budgetType = :budgetType")
-    BigDecimal sumSpendsByProjectIdAndProviderAndBudgetType(@Param("projectId") Long projectId,
-            @Param("provider") Provider provider, @Param("budgetType") BudgetType budgetType);
+    // 캠페인 상세(프로젝트 상세) 페이지 - 플랫폼별 남은 예산(전체 특성) 배치 조회: provider 별 누적 지출을 한 번에 조회 (N+1 방지)
+    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$ProviderSpend(m.provider, SUM(m.spend)) " +
+            "FROM MetricFact m WHERE m.project.id = :projectId AND m.adContent.adGroup.adCampaign.budgetType = :budgetType " +
+            "GROUP BY m.provider")
+    List<ProjectQueryDto.ProviderSpend> sumSpendsByProjectIdAndBudgetTypeGroupByProvider(
+            @Param("projectId") Long projectId, @Param("budgetType") BudgetType budgetType);
 
-    // 캠페인 상세(프로젝트 상세) 페이지 - 플랫폼별 남은 예산(일일 특성): 프로젝트 내 해당 provider/budgetType 캠페인들의 특정 기간(오늘) 지출
-    @Query("SELECT SUM(m.spend) FROM MetricFact m WHERE m.project.id = :projectId AND m.provider = :provider " +
-            "AND m.adContent.adGroup.adCampaign.budgetType = :budgetType " +
-            "AND m.timeBucket >= :start AND m.timeBucket < :end")
-    BigDecimal sumSpendsByProjectIdAndProviderAndBudgetTypeAndPeriod(@Param("projectId") Long projectId,
-            @Param("provider") Provider provider, @Param("budgetType") BudgetType budgetType,
+    // 캠페인 상세(프로젝트 상세) 페이지 - 플랫폼별 남은 예산(일일 특성) 배치 조회: provider 별 특정 기간(오늘) 지출을 한 번에 조회 (N+1 방지)
+    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$ProviderSpend(m.provider, SUM(m.spend)) " +
+            "FROM MetricFact m WHERE m.project.id = :projectId AND m.adContent.adGroup.adCampaign.budgetType = :budgetType " +
+            "AND m.timeBucket >= :start AND m.timeBucket < :end " +
+            "GROUP BY m.provider")
+    List<ProjectQueryDto.ProviderSpend> sumSpendsByProjectIdAndBudgetTypeAndPeriodGroupByProvider(
+            @Param("projectId") Long projectId, @Param("budgetType") BudgetType budgetType,
             @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     // 전체 지표 조회 로직에서 사용

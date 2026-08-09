@@ -206,6 +206,14 @@ public class ProjectServiceImpl implements ProjectService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
+        // provider 루프 안에서 매번 쿼리하지 않도록, TOTAL/DAILY 지출을 provider별로 배치 조회 (N+1 방지)
+        Map<Provider, BigDecimal> totalSpendByProvider = metricFactRepository
+                .sumSpendsByProjectIdAndBudgetTypeGroupByProvider(projectId, BudgetType.TOTAL).stream()
+                .collect(Collectors.toMap(ProjectQueryDto.ProviderSpend::provider, ProjectQueryDto.ProviderSpend::totalSpend));
+        Map<Provider, BigDecimal> dailySpendByProvider = metricFactRepository
+                .sumSpendsByProjectIdAndBudgetTypeAndPeriodGroupByProvider(projectId, BudgetType.DAILY, todayStart, now).stream()
+                .collect(Collectors.toMap(ProjectQueryDto.ProviderSpend::provider, ProjectQueryDto.ProviderSpend::totalSpend));
+
         List<ProjectResponse.PlatformBudgetSummary> result = new ArrayList<>();
         for (Provider provider : providers) {
             List<ProjectQueryDto.CampaignBudgetInfo> infos = byProvider.getOrDefault(provider, Collections.emptyList());
@@ -219,9 +227,8 @@ public class ProjectServiceImpl implements ProjectService {
                     .sum();
 
             BigDecimal spendDec = (characteristic == BudgetType.TOTAL)
-                    ? metricFactRepository.sumSpendsByProjectIdAndProviderAndBudgetType(projectId, provider, BudgetType.TOTAL)
-                    : metricFactRepository.sumSpendsByProjectIdAndProviderAndBudgetTypeAndPeriod(
-                            projectId, provider, BudgetType.DAILY, todayStart, now);
+                    ? totalSpendByProvider.get(provider)
+                    : dailySpendByProvider.get(provider);
 
             long spend = (spendDec != null) ? spendDec.longValue() : 0L;
             long remaining = budgetCalculator.calculateRemainingBudget(budget, spend);

@@ -24,4 +24,10 @@ public class ProjectQueryDto {
             BudgetType budgetType,
             Long budget
     ){}
+
+    // 캠페인(프로젝트) 상세 페이지의 플랫폼별 지출 배치 조회용 (provider 루프 내 개별 쿼리 방지)
+    public record ProviderSpend(
+            Provider provider,
+            BigDecimal totalSpend
+    ){}
 }
