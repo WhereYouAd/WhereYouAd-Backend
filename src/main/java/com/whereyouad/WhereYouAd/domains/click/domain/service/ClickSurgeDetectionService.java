@@ -51,8 +51,9 @@ public class ClickSurgeDetectionService {
     // 윈도우 2개 + 여유. 미감지 시 명시적 삭제, 트래픽이 끊긴 경우엔 TTL 만료가 연속성 리셋을 담당
     private static final long STREAK_TTL_SECONDS = 660;
 
-    // 알림 발송 확정된 감지 건 1개 (조직별로 모아서 알림 1건으로 병합)
-    private record SurgeAlert(Long adContentId, long clicks, BaselineSnapshot baseline, SurgeVerdict verdict) {
+    // 알림 발송 확정된 감지 건 1개 (조직별로 모아서 알림 1건으로 병합). event는 중복 저장 스킵 시 null
+    private record SurgeAlert(Long adContentId, long clicks, BaselineSnapshot baseline, SurgeVerdict verdict,
+                              ClickAnomalyEvent event) {
     }
 
     public void detectForWindow(LocalDateTime windowStart) {
@@ -101,12 +102,16 @@ public class ClickSurgeDetectionService {
             statsToSave.add(stat);
 
             if (verdict.detected()) {
-                // 감지 즉시 이력은 무조건 저장하고, 발송 여부(streak+쿨다운)는 별도 판단
-                boolean notify = shouldNotify(adContentId);
-                saveAnomalyEvent(adContentId, orgId, windowStart, clicks, baseline, verdict, notify);
+                // 감지 즉시 이력은 무조건 저장(notified=false). 발송 성공 후에만 notified=true로 갱신
+                int streak = incrementStreak(adContentId);
+                ClickAnomalyEvent savedEvent = saveAnomalyEvent(adContentId, orgId, windowStart, clicks, baseline, verdict);
+                // 알림 비활성(드라이런) 모드에서는 쿨다운을 소모하지 않는다
+                boolean notify = properties.isNotifyEnabled()
+                        && streak >= properties.getStreakRequired()
+                        && acquireCooldown(adContentId);
                 if (notify) {
                     alertsByOrg.computeIfAbsent(orgId, key -> new ArrayList<>())
-                            .add(new SurgeAlert(adContentId, clicks, baseline, verdict));
+                            .add(new SurgeAlert(adContentId, clicks, baseline, verdict, savedEvent));
                 }
             } else {
                 // 미감지 = 연속성 끊김 → streak 리셋
@@ -117,7 +122,7 @@ public class ClickSurgeDetectionService {
         // 5. baseline 일괄 저장 후 조직별 알림 발송
         baselineStatRepository.saveAll(statsToSave);
 
-        if (properties.isNotifyEnabled() && !alertsByOrg.isEmpty()) {
+        if (!alertsByOrg.isEmpty()) {
             notifyByOrg(alertsByOrg);
         }
     }
@@ -182,25 +187,26 @@ public class ClickSurgeDetectionService {
         return ClickSurgeCalculator.fromRollingWindows(windowSums);
     }
 
-    // 발송 여부 판단: 연속 감지 횟수(streak) 충족 + 쿨다운 미적용일 때만 true
-    private boolean shouldNotify(Long adContentId) {
+    // 연속 감지 횟수 증가. 미감지 윈도우에서는 detectForWindow가 키를 삭제해 리셋한다
+    private int incrementStreak(Long adContentId) {
         String streakKey = STREAK_KEY_PREFIX + adContentId;
         String current = redisUtil.getData(streakKey);
         int streak = (current != null ? Integer.parseInt(current) : 0) + 1;
         redisUtil.setDataExpire(streakKey, String.valueOf(streak), STREAK_TTL_SECONDS);
+        return streak;
+    }
 
-        if (streak < properties.getStreakRequired()) {
-            return false;
-        }
-        // 쿨다운 선점 성공 시에만 발송 (TTL 동안 같은 광고 재발송 방지)
+    // 쿨다운 선점 성공 시에만 발송 (TTL 동안 같은 광고 재발송 방지)
+    private boolean acquireCooldown(Long adContentId) {
         return Boolean.TRUE.equals(redisUtil.setIfAbsent(
                 COOLDOWN_KEY_PREFIX + adContentId, "1", properties.getCooldownSeconds()));
     }
 
-    private void saveAnomalyEvent(Long adContentId, Long orgId, LocalDateTime windowStart, long clicks,
-                                  BaselineSnapshot baseline, SurgeVerdict verdict, boolean notified) {
+    // 저장 성공 시 엔티티 반환, 유니크 충돌(중복 실행)이면 null
+    private ClickAnomalyEvent saveAnomalyEvent(Long adContentId, Long orgId, LocalDateTime windowStart, long clicks,
+                                               BaselineSnapshot baseline, SurgeVerdict verdict) {
         try {
-            anomalyEventRepository.save(ClickAnomalyEvent.builder()
+            return anomalyEventRepository.save(ClickAnomalyEvent.builder()
                     .adContentId(adContentId)
                     .orgId(orgId)
                     .windowStart(windowStart)
@@ -211,11 +217,12 @@ public class ClickSurgeDetectionService {
                     .multiplierRatio(verdict.ratio())
                     .detectionBasis(verdict.basis())
                     .baselineSource(baseline.source())
-                    .notified(notified)
+                    .notified(false)
                     .build());
         } catch (DataIntegrityViolationException e) {
             // uk_anomaly_ad_window - 같은 윈도우 중복 실행 시 멱등 처리
             log.debug("[급증감지] 중복 이벤트 스킵: adId={}, windowStart={}", adContentId, windowStart);
+            return null;
         }
     }
 
@@ -238,11 +245,22 @@ public class ClickSurgeDetectionService {
                         .map(alert -> formatAlertLine(alert, adNameById))
                         .collect(Collectors.joining("\n"));
                 notificationService.sendApiAlarmToOrg(orgId, NotificationType.CLICKS, title, message);
+                markEventsNotified(alerts);
             } catch (Exception e) {
-                // 조직별 발송 실패 격리 - 다른 조직 알림에 영향 없도록
+                // 조직별 발송 실패 격리 - 다른 조직 알림에 영향 없도록. 실패 시 notified=false 유지
                 log.error("[급증감지] 알림 발송 실패: orgId={}", orgId, e);
             }
         }
+    }
+
+    // 발송 성공한 조직의 이벤트만 notified=true로 갱신
+    private void markEventsNotified(List<SurgeAlert> alerts) {
+        List<ClickAnomalyEvent> events = alerts.stream()
+                .map(SurgeAlert::event)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        events.forEach(ClickAnomalyEvent::markNotified);
+        anomalyEventRepository.saveAll(events);
     }
 
     // 알림 본문 한 줄 생성. baseline 유무에 따라 문구 분기 (신규 광고는 "평소 대비"를 쓸 수 없음)

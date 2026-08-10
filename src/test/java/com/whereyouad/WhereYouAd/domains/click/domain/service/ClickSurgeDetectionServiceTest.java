@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.anyCollection;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -105,7 +106,7 @@ class ClickSurgeDetectionServiceTest {
     }
 
     @Test
-    @DisplayName("streak K회 도달 + 쿨다운 선점 성공이면 발송")
+    @DisplayName("streak K회 도달 + 쿨다운 선점 성공이면 발송 후 notified=true 갱신")
     void streakReachedAndCooldownAcquiredNotifies() {
         givenActiveAds(AD_ID + ":" + ORG_ID);
         givenMinuteCounts("40");
@@ -115,6 +116,7 @@ class ClickSurgeDetectionServiceTest {
         when(redisUtil.setIfAbsent(startsWith("notification:cooldown:surge:ad:"), anyString(), anyLong()))
                 .thenReturn(true);
         when(adContentRepository.findAllById(any())).thenReturn(List.of());
+        when(anomalyEventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.detectForWindow(windowStart);
 
@@ -122,6 +124,29 @@ class ClickSurgeDetectionServiceTest {
         verify(anomalyEventRepository).save(eventCaptor.capture());
         assertThat(eventCaptor.getValue().isNotified()).isTrue();
         verify(notificationService).sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("알림 발송 실패 시 notified=false 유지")
+    void deliveryFailureKeepsNotifiedFalse() {
+        givenActiveAds(AD_ID + ":" + ORG_ID);
+        givenMinuteCounts("40");
+        when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
+                .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
+        when(redisUtil.getData("click:surge:streak:" + AD_ID)).thenReturn("1");
+        when(redisUtil.setIfAbsent(startsWith("notification:cooldown:surge:ad:"), anyString(), anyLong()))
+                .thenReturn(true);
+        when(adContentRepository.findAllById(any())).thenReturn(List.of());
+        when(anomalyEventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new RuntimeException("웹훅 실패"))
+                .when(notificationService).sendApiAlarmToOrg(anyLong(), any(), anyString(), anyString());
+
+        service.detectForWindow(windowStart);
+
+        ArgumentCaptor<ClickAnomalyEvent> eventCaptor = ArgumentCaptor.forClass(ClickAnomalyEvent.class);
+        verify(anomalyEventRepository).save(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().isNotified()).isFalse();
+        verify(anomalyEventRepository, never()).saveAll(any());
     }
 
     @Test
@@ -177,7 +202,7 @@ class ClickSurgeDetectionServiceTest {
     }
 
     @Test
-    @DisplayName("드라이런 모드(notify-enabled=false)면 감지·기록만 하고 발송하지 않음")
+    @DisplayName("드라이런 모드(notify-enabled=false)면 기록만 하고 쿨다운 소모·발송 없이 notified=false 유지")
     void dryRunRecordsButDoesNotNotify() {
         props.setNotifyEnabled(false);
         givenActiveAds(AD_ID + ":" + ORG_ID);
@@ -185,12 +210,13 @@ class ClickSurgeDetectionServiceTest {
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
                 .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
         when(redisUtil.getData("click:surge:streak:" + AD_ID)).thenReturn("1");
-        when(redisUtil.setIfAbsent(startsWith("notification:cooldown:surge:ad:"), anyString(), anyLong()))
-                .thenReturn(true);
 
         service.detectForWindow(windowStart);
 
-        verify(anomalyEventRepository).save(any());
+        ArgumentCaptor<ClickAnomalyEvent> eventCaptor = ArgumentCaptor.forClass(ClickAnomalyEvent.class);
+        verify(anomalyEventRepository).save(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().isNotified()).isFalse();
+        verify(redisUtil, never()).setIfAbsent(anyString(), anyString(), anyLong());
         verify(notificationService, never()).sendApiAlarmToOrg(anyLong(), any(), anyString(), anyString());
     }
 
