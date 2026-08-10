@@ -60,7 +60,7 @@ class ClickSurgeCalculatorTest {
 
     @Test
     @DisplayName("σ 하한(√μ) 동작 - 저분산 슬롯에서 소폭 상승은 미감지")
-    void sigmaFloorSuppresssSmallBump() {
+    void sigmaFloorSuppressSmallBump() {
         // std 0이어도 σ_eff = √40 → z = 20/6.32 ≈ 3.16 < 3.5, ratio 1.5 < 3
         SurgeVerdict verdict = ClickSurgeCalculator.judge(60, ema(40, 0), props);
         assertThat(verdict.detected()).isFalse();

@@ -5,6 +5,7 @@ import com.whereyouad.WhereYouAd.domains.notification.domain.constant.Notificati
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -12,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -68,9 +70,14 @@ class BotClickSummaryNotificationServiceTest {
 
         service.sendDailyBotSummaries();
 
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
         verify(notificationService).sendApiAlarmToOrg(
                 eq(1L), eq(NotificationType.CLICKS),
                 contains("조직1"),
-                contains("342"));
+                messageCaptor.capture());
+        assertThat(messageCaptor.getValue())
+                .contains("총 의심 클릭 342회")
+                .contains("유니크 IP 17개")
+                .contains("광고A(120회)");
     }
 }
