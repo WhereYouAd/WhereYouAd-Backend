@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -45,9 +46,10 @@ public class ClickConsumer {
     // key: click:real:{adContentId}:{yyyyMMddHHmm} 또는 click:dummy:{adContentId}:{yyyyMMddHHmm}
     @KafkaListener(topics = "ad-click-events", groupId = "where-you-ad-group")
     public void consume(ClickDto event) {
-        // 현재 시간을 분 단위 문자열로 변환
-        LocalDateTime now = LocalDateTime.now(ClickWindowKeys.ZONE_ID);
-        String currentMinute = now.format(MINUTE_FORMATTER);
+        // 이벤트 발생 시각(clickedAt)을 분 단위 문자열로 변환 - consumer 지연 시에도 실제 클릭 시각 기준으로 집계
+        LocalDateTime clickTime = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(event.getClickedAt()), ClickWindowKeys.ZONE_ID);
+        String currentMinute = clickTime.format(MINUTE_FORMATTER);
         String mode = event.isDummy() ? "dummy" : "real";
         String clickKey = String.format("click:%s:%s:%s", mode, event.getAdContentId(), currentMinute);
 
@@ -72,7 +74,7 @@ public class ClickConsumer {
 
         // 급증 감지 대상 등록 - 이번 5분 윈도우에 클릭이 있었던 광고만 스케줄러가 검사
         if (!event.isDummy() && event.getOrgId() != null && clickSurgeProperties.isEnabled()) {
-            LocalDateTime windowStart = ClickWindowKeys.floorToWindowStart(now, clickSurgeProperties.getWindowMinutes());
+            LocalDateTime windowStart = ClickWindowKeys.floorToWindowStart(clickTime, clickSurgeProperties.getWindowMinutes());
             redisUtil.sAddExpire(
                     ClickWindowKeys.activeAdsKey(windowStart),
                     clickSurgeProperties.getActiveSetTtlSeconds(),
