@@ -30,6 +30,19 @@ public class NotificationController implements NotificationControllerDocs {
         return ResponseEntity.ok(DataResponse.from(notificationService.getMySettings(userId, orgId)));
     }
 
+    @GetMapping("/history/{orgId}")
+    @Override
+    public ResponseEntity<DataResponse<NotificationResponse.NotificationHistoryList>> getHistory(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size
+    ) {
+        return ResponseEntity.ok(DataResponse.from(
+                notificationService.getHistory(userId, orgId, cursor, size)
+        ));
+    }
+
     @PatchMapping("/settings/{orgId}/master")
     @Override
     public ResponseEntity<DataResponse<Void>> updateMaster(
