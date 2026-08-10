@@ -88,7 +88,7 @@ BotClickSummaryNotificationService.sendDailyBotSummaries()   ← 트랜잭션 �
     │
     ├─ BotClickSummaryDataLoader.load(어제)                   ← readOnly 트랜잭션
     │    ├─ summarizeSuspectClicksByOrg: 조직별 [총 의심 클릭, 유니크 IP, 영향 광고 수]
-    │    └─ findTopSuspectAdsByOrg: 조직별 상위 3개 광고
+    │    └─ summarizeSuspectAdClicksByOrg: 전 조직 광고별 집계 → 조직별 상위 3개 선별
     │
     └─ 조직별 sendApiAlarmToOrg() 발송 (실패 격리)
 ```

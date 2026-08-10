@@ -1,7 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.click.persistence.repository;
 
 import com.whereyouad.WhereYouAd.domains.click.persistence.entity.ClickLog;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -22,17 +21,15 @@ public interface ClickLogRepository extends JpaRepository<ClickLog, Long> {
     List<Object[]> summarizeSuspectClicksByOrg(
             @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    // 조직 내 봇 클릭 상위 광고 - 반환: [광고명, 클릭수]
-    @Query("SELECT ac.name, COUNT(cl) " +
+    // 전 조직의 봇 클릭 광고별 집계 - 반환: [orgId, 광고명, 클릭수]. 조직별 상위 N 선별은 호출부에서 수행
+    @Query("SELECT c.organization.id, ac.name, COUNT(cl) " +
             "FROM ClickLog cl " +
             "JOIN cl.adContent ac JOIN ac.adGroup ag JOIN ag.adCampaign c " +
-            "WHERE c.organization.id = :orgId AND cl.isSuspect = true " +
-            "AND cl.clickedAt >= :start AND cl.clickedAt < :end " +
-            "GROUP BY ac.id, ac.name ORDER BY COUNT(cl) DESC")
-    List<Object[]> findTopSuspectAdsByOrg(
-            @Param("orgId") Long orgId,
-            @Param("start") LocalDateTime start, @Param("end") LocalDateTime end,
-            Pageable pageable);
+            "WHERE cl.isSuspect = true AND cl.clickedAt >= :start AND cl.clickedAt < :end " +
+            "GROUP BY c.organization.id, ac.id, ac.name " +
+            "ORDER BY c.organization.id, COUNT(cl) DESC")
+    List<Object[]> summarizeSuspectAdClicksByOrg(
+            @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     // PlatformAccount 연동 해제 시 청크 단위 정리용
     // ad_content_id → ad_group_id → ad_campaign_id → platform_account_id 경유
