@@ -51,6 +51,8 @@ class ClickSurgeDetectionServiceTest {
     private AdContentRepository adContentRepository;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     private ClickSurgeDetectionService service;
 
@@ -64,7 +66,7 @@ class ClickSurgeDetectionServiceTest {
     void setUp() {
         service = new ClickSurgeDetectionService(
                 redisUtil, baselineStatRepository, anomalyEventRepository,
-                adContentRepository, notificationService, props);
+                adContentRepository, notificationService, props, transactionManager);
     }
 
     private void givenActiveAds(String... members) {

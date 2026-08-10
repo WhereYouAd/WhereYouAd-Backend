@@ -18,6 +18,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -45,6 +48,7 @@ public class ClickSurgeDetectionService {
     private final AdContentRepository adContentRepository;
     private final NotificationService notificationService;
     private final ClickSurgeProperties properties;
+    private final PlatformTransactionManager transactionManager;
 
     private static final String STREAK_KEY_PREFIX = "click:surge:streak:";
     private static final String COOLDOWN_KEY_PREFIX = "notification:cooldown:surge:ad:";
@@ -69,6 +73,18 @@ public class ClickSurgeDetectionService {
             return;
         }
 
+        // 3~5. baseline 조회 → 판정 → EMA 갱신·저장을 한 트랜잭션으로 처리
+        //      (조회 엔티티를 managed 상태로 유지해 saveAll 시 엔티티별 merge SELECT 제거)
+        Map<Long, List<SurgeAlert>> alertsByOrg = new TransactionTemplate(transactionManager)
+                .execute(status -> runDetection(orgIdByAdId, windowStart));
+
+        // 6. 알림 발송은 트랜잭션 밖 - 외부 호출이 DB 커넥션을 점유하지 않도록
+        if (alertsByOrg != null && !alertsByOrg.isEmpty()) {
+            notifyByOrg(alertsByOrg);
+        }
+    }
+
+    private Map<Long, List<SurgeAlert>> runDetection(Map<Long, Long> orgIdByAdId, LocalDateTime windowStart) {
         // 3. 활성 광고 전체의 (요일, 시간대) 슬롯 baseline을 쿼리 1방에 일괄 조회 (N+1 방지)
         int weekday = windowStart.getDayOfWeek().getValue();
         int hourOfDay = windowStart.getHour();
@@ -119,12 +135,9 @@ public class ClickSurgeDetectionService {
             }
         }
 
-        // 5. baseline 일괄 저장 후 조직별 알림 발송
+        // 5. baseline 일괄 저장 (기존 엔티티는 managed 상태라 dirty checking, 신규 엔티티만 persist)
         baselineStatRepository.saveAll(statsToSave);
-
-        if (!alertsByOrg.isEmpty()) {
-            notifyByOrg(alertsByOrg);
-        }
+        return alertsByOrg;
     }
 
     // active set 멤버 "{adId}:{orgId}" → Map<adId, orgId>. 형식이 깨진 멤버는 로그만 남기고 skip
@@ -202,11 +215,14 @@ public class ClickSurgeDetectionService {
                 COOLDOWN_KEY_PREFIX + adContentId, "1", properties.getCooldownSeconds()));
     }
 
-    // 저장 성공 시 엔티티 반환, 유니크 충돌(중복 실행)이면 null
+    // 저장 성공 시 엔티티 반환, 유니크 충돌(중복 실행)이면 null.
+    // REQUIRES_NEW 분리 - 유니크 충돌 catch가 바깥 감지 트랜잭션을 rollback-only로 만들지 않도록
     private ClickAnomalyEvent saveAnomalyEvent(Long adContentId, Long orgId, LocalDateTime windowStart, long clicks,
                                                BaselineSnapshot baseline, SurgeVerdict verdict) {
+        TransactionTemplate requiresNew = new TransactionTemplate(transactionManager);
+        requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         try {
-            return anomalyEventRepository.save(ClickAnomalyEvent.builder()
+            return requiresNew.execute(status -> anomalyEventRepository.save(ClickAnomalyEvent.builder()
                     .adContentId(adContentId)
                     .orgId(orgId)
                     .windowStart(windowStart)
@@ -218,7 +234,7 @@ public class ClickSurgeDetectionService {
                     .detectionBasis(verdict.basis())
                     .baselineSource(baseline.source())
                     .notified(false)
-                    .build());
+                    .build()));
         } catch (DataIntegrityViolationException e) {
             // uk_anomaly_ad_window - 같은 윈도우 중복 실행 시 멱등 처리
             log.debug("[급증감지] 중복 이벤트 스킵: adId={}, windowStart={}", adContentId, windowStart);
