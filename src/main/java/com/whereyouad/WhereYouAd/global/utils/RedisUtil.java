@@ -6,6 +6,9 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -67,6 +70,25 @@ public class RedisUtil {
             template.expire(key, Duration.ofSeconds(durationSeconds));
 
         return count;
+    }
+
+    // Set 에 멤버 추가 + TTL 갱신
+    public Long sAddExpire(String key, long durationSeconds, String... members) {
+        Long added = template.opsForSet().add(key, members);
+        template.expire(key, Duration.ofSeconds(durationSeconds));
+        return added;
+    }
+
+    // Set 전체 멤버 조회
+    public Set<String> sMembers(String key) {
+        Set<String> members = template.opsForSet().members(key);
+        return members != null ? members : Collections.emptySet();
+    }
+
+    // 다건 GET (없는 키는 null 요소로 반환)
+    public List<String> multiGetData(List<String> keys) {
+        List<String> values = template.opsForValue().multiGet(keys);
+        return values != null ? values : Collections.emptyList();
     }
 
 }
