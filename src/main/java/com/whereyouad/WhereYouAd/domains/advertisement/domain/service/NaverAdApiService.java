@@ -356,7 +356,7 @@ public class NaverAdApiService {
                     Thread.sleep(STATS_CALL_INTERVAL_MS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    break;
+                    throw new AdvertisementHandler(NaverAdErrorCode.NAVER_STAT_SYNC_INTERRUPTED);
                 }
             }
         }

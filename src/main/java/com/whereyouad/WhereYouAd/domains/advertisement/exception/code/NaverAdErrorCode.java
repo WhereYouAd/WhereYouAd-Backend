@@ -31,6 +31,7 @@ public enum NaverAdErrorCode implements BaseErrorCode {
     NAVER_HOURLY_STAT_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "NAVER_500_8", "네이버 시간대별 통계 조회에 실패했습니다."),
     NAVER_CAMPAIGN_BUDGET_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "NAVER_500_9", "네이버 캠페인 예산 수정에 실패했습니다."),
     NAVER_AD_GROUP_BUDGET_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "NAVER_500_10", "네이버 광고 그룹 예산 수정에 실패했습니다."),
+    NAVER_STAT_SYNC_INTERRUPTED(HttpStatus.INTERNAL_SERVER_ERROR, "NAVER_500_11", "네이버 통계 동기화가 중단되었습니다."),
     ;
 
     private final HttpStatus httpStatus;
