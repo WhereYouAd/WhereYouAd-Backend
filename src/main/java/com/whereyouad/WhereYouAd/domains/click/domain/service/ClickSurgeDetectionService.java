@@ -52,7 +52,7 @@ public class ClickSurgeDetectionService {
 
     private static final String STREAK_KEY_PREFIX = "click:surge:streak:";
     private static final String COOLDOWN_KEY_PREFIX = "notification:cooldown:surge:ad:";
-    // 윈도우 2개 + 여유. 미감지 시 명시적 삭제, 트래픽이 끊긴 경우엔 TTL 만료가 연속성 리셋을 담당
+    // 윈도우 2개 + 여유. TTL은 상태 정리용이며 연속성은 저장된 마지막 감지 윈도우로 판단한다.
     private static final long STREAK_TTL_SECONDS = 660;
 
     // 알림 발송 확정된 감지 건 1개 (조직별로 모아서 알림 1건으로 병합). event는 중복 저장 스킵 시 null
@@ -119,7 +119,7 @@ public class ClickSurgeDetectionService {
 
             if (verdict.detected()) {
                 // 감지 즉시 이력은 무조건 저장(notified=false). 발송 성공 후에만 notified=true로 갱신
-                int streak = incrementStreak(adContentId);
+                int streak = incrementStreak(adContentId, windowStart);
                 ClickAnomalyEvent savedEvent = saveAnomalyEvent(adContentId, orgId, windowStart, clicks, baseline, verdict);
                 // 알림 비활성(드라이런) 모드에서는 쿨다운을 소모하지 않는다
                 boolean notify = properties.isNotifyEnabled()
@@ -200,13 +200,18 @@ public class ClickSurgeDetectionService {
         return ClickSurgeCalculator.fromRollingWindows(windowSums);
     }
 
-    // 연속 감지 횟수 증가. 미감지 윈도우에서는 detectForWindow가 키를 삭제해 리셋한다
-    private int incrementStreak(Long adContentId) {
+    // 마지막 감지 윈도우를 함께 저장해, 중간에 비어 있던 윈도우도 다음 감지 시 리셋한다.
+    private int incrementStreak(Long adContentId, LocalDateTime windowStart) {
         String streakKey = STREAK_KEY_PREFIX + adContentId;
-        String current = redisUtil.getData(streakKey);
-        int streak = (current != null ? Integer.parseInt(current) : 0) + 1;
-        redisUtil.setDataExpire(streakKey, String.valueOf(streak), STREAK_TTL_SECONDS);
-        return streak;
+        String currentWindow = windowStart.format(ClickWindowKeys.MINUTE_FORMATTER);
+        String previousWindow = windowStart.minusMinutes(properties.getWindowMinutes())
+                .format(ClickWindowKeys.MINUTE_FORMATTER);
+        Long streak = redisUtil.advanceClickSurgeStreak(
+                streakKey, currentWindow, previousWindow, STREAK_TTL_SECONDS);
+        if (streak == null) {
+            throw new IllegalStateException("Unable to advance click surge streak");
+        }
+        return Math.toIntExact(streak);
     }
 
     // 쿨다운 선점 성공 시에만 발송 (TTL 동안 같은 광고 재발송 방지)

@@ -67,10 +67,16 @@ class ClickSurgeDetectionServiceTest {
         service = new ClickSurgeDetectionService(
                 redisUtil, baselineStatRepository, anomalyEventRepository,
                 adContentRepository, notificationService, props, transactionManager);
+        lenient().when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong()))
+                .thenReturn(1L);
     }
 
     private void givenActiveAds(String... members) {
-        when(redisUtil.sMembers(ClickWindowKeys.activeAdsKey(windowStart)))
+        givenActiveAds(windowStart, members);
+    }
+
+    private void givenActiveAds(LocalDateTime targetWindow, String... members) {
+        when(redisUtil.sMembers(ClickWindowKeys.activeAdsKey(targetWindow)))
                 .thenReturn(Set.of(members));
     }
 
@@ -96,14 +102,16 @@ class ClickSurgeDetectionServiceTest {
         givenMinuteCounts("40"); // 5분 합산 200회, baseline 40 → 5배
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
                 .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
-        when(redisUtil.getData("click:surge:streak:" + AD_ID)).thenReturn(null); // 첫 감지
-
         service.detectForWindow(windowStart);
 
         ArgumentCaptor<ClickAnomalyEvent> eventCaptor = ArgumentCaptor.forClass(ClickAnomalyEvent.class);
         verify(anomalyEventRepository).save(eventCaptor.capture());
         assertThat(eventCaptor.getValue().isNotified()).isFalse();
-        verify(redisUtil).setDataExpire(eq("click:surge:streak:" + AD_ID), eq("1"), anyLong());
+        verify(redisUtil).advanceClickSurgeStreak(
+                eq("click:surge:streak:" + AD_ID),
+                eq(windowStart.format(ClickWindowKeys.MINUTE_FORMATTER)),
+                eq(windowStart.minusMinutes(props.getWindowMinutes()).format(ClickWindowKeys.MINUTE_FORMATTER)),
+                anyLong());
         verify(notificationService, never()).sendApiAlarmToOrg(anyLong(), any(), anyString(), anyString());
     }
 
@@ -114,7 +122,7 @@ class ClickSurgeDetectionServiceTest {
         givenMinuteCounts("40");
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
                 .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
-        when(redisUtil.getData("click:surge:streak:" + AD_ID)).thenReturn("1"); // 직전 윈도우 감지 이력
+        when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong())).thenReturn(2L);
         when(redisUtil.setIfAbsent(startsWith("notification:cooldown:surge:ad:"), anyString(), anyLong()))
                 .thenReturn(true);
         when(adContentRepository.findAllById(any())).thenReturn(List.of());
@@ -135,7 +143,7 @@ class ClickSurgeDetectionServiceTest {
         givenMinuteCounts("40");
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
                 .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
-        when(redisUtil.getData("click:surge:streak:" + AD_ID)).thenReturn("1");
+        when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong())).thenReturn(2L);
         when(redisUtil.setIfAbsent(startsWith("notification:cooldown:surge:ad:"), anyString(), anyLong()))
                 .thenReturn(true);
         when(adContentRepository.findAllById(any())).thenReturn(List.of());
@@ -158,7 +166,7 @@ class ClickSurgeDetectionServiceTest {
         givenMinuteCounts("40");
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
                 .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
-        when(redisUtil.getData("click:surge:streak:" + AD_ID)).thenReturn("3");
+        when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong())).thenReturn(3L);
         when(redisUtil.setIfAbsent(startsWith("notification:cooldown:surge:ad:"), anyString(), anyLong()))
                 .thenReturn(false); // 쿨다운 선점 실패
 
@@ -185,6 +193,38 @@ class ClickSurgeDetectionServiceTest {
     }
 
     @Test
+    @DisplayName("빈 active set 윈도우 뒤 감지는 이전 윈도우 불일치로 streak을 다시 시작")
+    void skippedActiveWindowPassesWindowGapToAtomicStreakUpdate() {
+        LocalDateTime emptyWindow = windowStart.plusMinutes(props.getWindowMinutes());
+        LocalDateTime laterWindow = emptyWindow.plusMinutes(props.getWindowMinutes());
+        givenActiveAds(AD_ID + ":" + ORG_ID);
+        givenActiveAds(emptyWindow);
+        givenActiveAds(laterWindow, AD_ID + ":" + ORG_ID);
+        givenMinuteCounts("40");
+        when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
+                .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
+
+        service.detectForWindow(windowStart);
+        service.detectForWindow(emptyWindow);
+        service.detectForWindow(laterWindow);
+
+        ArgumentCaptor<String> currentWindowCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> previousWindowCaptor = ArgumentCaptor.forClass(String.class);
+        verify(redisUtil, times(2)).advanceClickSurgeStreak(
+                eq("click:surge:streak:" + AD_ID),
+                currentWindowCaptor.capture(),
+                previousWindowCaptor.capture(),
+                anyLong());
+        assertThat(currentWindowCaptor.getAllValues()).containsExactly(
+                windowStart.format(ClickWindowKeys.MINUTE_FORMATTER),
+                laterWindow.format(ClickWindowKeys.MINUTE_FORMATTER));
+        assertThat(previousWindowCaptor.getAllValues()).containsExactly(
+                windowStart.minusMinutes(props.getWindowMinutes()).format(ClickWindowKeys.MINUTE_FORMATTER),
+                emptyWindow.format(ClickWindowKeys.MINUTE_FORMATTER));
+        verify(notificationService, never()).sendApiAlarmToOrg(anyLong(), any(), anyString(), anyString());
+    }
+
+    @Test
     @DisplayName("같은 조직의 여러 광고가 동시 급증하면 조직당 알림 1건으로 묶어 발송")
     void multipleAdsSameOrgBundledIntoOneNotification() {
         Long adId2 = 102L;
@@ -192,7 +232,7 @@ class ClickSurgeDetectionServiceTest {
         givenMinuteCounts("40");
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
                 .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25), warmedUpStat(adId2, 40, 25)));
-        when(redisUtil.getData(startsWith("click:surge:streak:"))).thenReturn("1");
+        when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong())).thenReturn(2L);
         when(redisUtil.setIfAbsent(startsWith("notification:cooldown:surge:ad:"), anyString(), anyLong()))
                 .thenReturn(true);
         when(adContentRepository.findAllById(any())).thenReturn(List.of());
@@ -211,7 +251,7 @@ class ClickSurgeDetectionServiceTest {
         givenMinuteCounts("40");
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
                 .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
-        when(redisUtil.getData("click:surge:streak:" + AD_ID)).thenReturn("1");
+        when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong())).thenReturn(2L);
 
         service.detectForWindow(windowStart);
 

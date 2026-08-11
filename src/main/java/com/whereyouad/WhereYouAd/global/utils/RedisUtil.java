@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.global.utils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -14,6 +15,25 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class RedisUtil {
+
+    private static final DefaultRedisScript<Long> ADVANCE_CLICK_SURGE_STREAK_SCRIPT = new DefaultRedisScript<>("""
+            local current = redis.call('GET', KEYS[1])
+            local count = 1
+            if current then
+                local separator = string.find(current, '|', 1, true)
+                if separator then
+                    local lastWindow = string.sub(current, 1, separator - 1)
+                    local previousCount = tonumber(string.sub(current, separator + 1))
+                    if lastWindow == ARGV[1] then
+                        count = previousCount or 1
+                    elseif lastWindow == ARGV[2] and previousCount then
+                        count = previousCount + 1
+                    end
+                end
+            end
+            redis.call('SET', KEYS[1], ARGV[1] .. '|' .. count, 'EX', ARGV[3])
+            return count
+            """, Long.class);
 
     private final StringRedisTemplate template;
 
@@ -27,6 +47,19 @@ public class RedisUtil {
     // 분산 락용: 키가 없을 때만 set. Meta 광고 데이터 갱신 요청시 과도한 갱신 버튼 연타로 인한 Meta API 차단 방지용
     public Boolean setIfAbsent(String key, String value, long durationSeconds) {
         return template.opsForValue().setIfAbsent(key, value, Duration.ofSeconds(durationSeconds));
+    }
+
+    /**
+     * 클릭 급증 streak 상태를 {@code lastDetectedWindow|count} 형식으로 원자적으로 갱신한다.
+     * 같은 윈도우 재실행은 멱등 처리하고, 직전 윈도우일 때만 횟수를 증가시킨다.
+     */
+    public Long advanceClickSurgeStreak(String key, String currentWindow, String previousWindow, long durationSeconds) {
+        return template.execute(
+                ADVANCE_CLICK_SURGE_STREAK_SCRIPT,
+                Collections.singletonList(key),
+                currentWindow,
+                previousWindow,
+                String.valueOf(durationSeconds));
     }
 
     //Redis 에서 데이터 꺼내기(Value 꺼내기)
