@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.infrastructure.client.naver.converter;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Goal;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
@@ -30,6 +31,7 @@ public class NaverConverter {
                 .organization(organization)
                 .platformAccount(platformAccount)
                 .budget(dto.useDailyBudget() != null && dto.useDailyBudget() ? dto.dailyBudget() : null)
+                .budgetType(resolveBudgetType(dto.useDailyBudget()))
                 .startDate(parseLocalDate(dto.periodStartDt()))
                 .endDate(parseLocalDate(dto.periodEndDt()))
                 .goal(goal)
@@ -50,6 +52,7 @@ public class NaverConverter {
                 parseLocalDate(dto.periodEndDt()),
                 entity.getDescription()
         );
+        entity.applyBudgetType(resolveBudgetType(dto.useDailyBudget()));
     }
 
     // 광고 그룹 생성용
@@ -61,6 +64,7 @@ public class NaverConverter {
                 .status(mapToDomainStatus(dto.status()))
                 .adCampaign(campaign)
                 .budget(dto.useDailyBudget() != null && dto.useDailyBudget() ? dto.dailyBudget() : null)
+                .budgetType(resolveBudgetType(dto.useDailyBudget()))
                 .bidAmount(dto.bidAmt())
                 .build();
     }
@@ -76,6 +80,12 @@ public class NaverConverter {
                 dto.useDailyBudget() != null && dto.useDailyBudget() ? dto.dailyBudget() : null,
                 dto.bidAmt()
         );
+        entity.applyBudgetType(resolveBudgetType(dto.useDailyBudget()));
+    }
+
+    // 네이버는 총 예산(TOTAL) 개념이 없어 일일 예산 사용 시에만 DAILY, 미사용(무제한) 시 null
+    private static BudgetType resolveBudgetType(Boolean useDailyBudget) {
+        return Boolean.TRUE.equals(useDailyBudget) ? BudgetType.DAILY : null;
     }
 
     // 광고 소재 생성용
