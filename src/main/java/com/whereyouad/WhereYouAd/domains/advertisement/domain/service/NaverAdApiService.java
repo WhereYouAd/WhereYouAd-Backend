@@ -29,6 +29,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +39,11 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class NaverAdApiService {
+
+    // /stats 조회 대상 지표 필드
+    private static final String STAT_FIELDS = "[\"impCnt\",\"clkCnt\",\"salesAmt\",\"ctr\",\"cpc\",\"ccnt\",\"convAmt\"]";
+    // 네이버 API rate limit 대응 호출 간격
+    private static final long STATS_CALL_INTERVAL_MS = 400L;
 
     private final PlatformConnectionRepository connectionRepository;
     private final OrgMemberRepository orgMemberRepository;
@@ -310,13 +317,49 @@ public class NaverAdApiService {
             Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
                     connectionId, AdAuthRequest.forMethodAndPath("GET", "/stats"));
 
-            String fields = "[\"impCnt\",\"clkCnt\",\"salesAmt\",\"ctr\",\"cpc\",\"ccnt\",\"convAmt\"]";
             String timeRange = String.format("{\"since\":\"%s\",\"until\":\"%s\"}", since, until);
-            NaverDTO.StatListResponse result = naverClient.getStats(headers, id, fields, timeRange, null, null);
+            NaverDTO.StatListResponse result = naverClient.getStats(headers, id, STAT_FIELDS, timeRange, null, null);
             return result != null && result.data() != null ? result.data() : List.of();
         } catch (Exception e) {
             log.error("[NAVER] 일별 통계 조회 실패 - connectionId={}, id={}", connectionId, id, e);
             throw new AdvertisementHandler(NaverAdErrorCode.NAVER_HOURLY_STAT_FETCH_FAILED);
         }
+    }
+
+    // 일별 기본 지표 날짜 범위 배치 조회
+    // 네이버 /stats는 일별(timeIncrement=1) 조회 시 단일 id만 지원하므로 소재당 1회씩 범위 전체를 조회
+    // 반환: 소재 externalAdId → 해당 소재의 일별 통계 행 목록 (API 호출 실패한 소재는 키 미포함)
+    public Map<String, List<NaverDTO.StatResponse>> getDailyStatsBatch(
+            Long connectionId, List<String> adIds, LocalDate since, LocalDate until) {
+        if (adIds.isEmpty()) {
+            return Map.of();
+        }
+
+        String timeRange = String.format("{\"since\":\"%s\",\"until\":\"%s\"}", since, until);
+        Map<String, List<NaverDTO.StatResponse>> statsByAdId = new LinkedHashMap<>();
+
+        for (int i = 0; i < adIds.size(); i++) {
+            String adId = adIds.get(i);
+            try {
+                Map<String, String> headers = adApiAuthUtil.generateAuthHeaders(
+                        connectionId, AdAuthRequest.forMethodAndPath("GET", "/stats"));
+                NaverDTO.StatListResponse result =
+                        naverClient.getStatsByDateRange(headers, adId, STAT_FIELDS, timeRange, "1");
+                statsByAdId.put(adId,
+                        result != null && result.data() != null ? result.data() : List.of());
+            } catch (Exception e) {
+                log.error("[NAVER] 소재(ID:{}) 통계 범위 조회 실패 - connectionId={}", adId, connectionId, e);
+            }
+
+            if (i < adIds.size() - 1) {
+                try {
+                    Thread.sleep(STATS_CALL_INTERVAL_MS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        return statsByAdId;
     }
 }
