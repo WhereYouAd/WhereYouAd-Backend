@@ -3,9 +3,11 @@ package com.whereyouad.WhereYouAd.global.utils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -35,6 +37,16 @@ public class RedisUtil {
     //Redis 에서 데이터 지우기(key 값 기반)
     public void deleteData(String key) {
         template.delete(key);
+    }
+
+    // 분산 락 해제용: 저장된 값이 기대값과 일치할 때만 삭제 (Lua로 원자적 처리, 남의 락 삭제 방지)
+    private static final DefaultRedisScript<Long> COMPARE_AND_DELETE_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+            Long.class);
+
+    public Boolean compareAndDelete(String key, String expectedValue) {
+        Long result = template.execute(COMPARE_AND_DELETE_SCRIPT, List.of(key), expectedValue);
+        return result != null && result == 1L;
     }
 
     // List 데이터 저장 (왼쪽 끝에 저장)

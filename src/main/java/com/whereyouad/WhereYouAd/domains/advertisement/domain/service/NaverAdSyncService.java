@@ -41,6 +41,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -322,7 +324,9 @@ public class NaverAdSyncService {
         }
 
         String lockKey = "naver:sync:lock:" + orgId;
-        Boolean acquired = redisUtil.setIfAbsent(lockKey, String.valueOf(System.currentTimeMillis()), SYNC_LOCK_TTL_SECONDS);
+        // 락 소유권 토큰: 만료 후 다른 요청이 획득한 락을 finally에서 삭제하는 것을 방지
+        String lockToken = UUID.randomUUID().toString();
+        Boolean acquired = redisUtil.setIfAbsent(lockKey, lockToken, SYNC_LOCK_TTL_SECONDS);
         if (!Boolean.TRUE.equals(acquired)) {
             throw new AdApiHandler(AdApiErrorCode.SYNC_IN_PROGRESS);
         }
@@ -354,6 +358,9 @@ public class NaverAdSyncService {
                                 syncBasicStats(conn.getId(), chunkStart, chunkEnd);
                         totalMetrics += stats.processedAdContentCount();
                         chunkStart = chunkEnd.plusDays(1);
+
+                        // 장시간 동기화 중 락 만료 방지를 위해 청크 처리마다 TTL 갱신
+                        redisUtil.expire(lockKey, SYNC_LOCK_TTL_SECONDS, TimeUnit.SECONDS);
                     }
                 } catch (Exception e) {
                     log.warn("[NAVER] 연결 ID {} 동기화 실패", conn.getId(), e);
@@ -366,7 +373,7 @@ public class NaverAdSyncService {
                     totalCampaigns, totalGroups, totalContents, totalMetrics, failedConnectionIds
             );
         } finally {
-            redisUtil.deleteData(lockKey);
+            redisUtil.compareAndDelete(lockKey, lockToken);
             redisUtil.setDataExpire(cooldownKey, "1", SYNC_COOLDOWN_SECONDS);
         }
     }
