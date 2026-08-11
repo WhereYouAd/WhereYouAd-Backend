@@ -36,14 +36,23 @@ import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class NaverAdSyncService {
+
+    private static final long SYNC_COOLDOWN_SECONDS = 60L;
+    private static final long SYNC_LOCK_TTL_SECONDS = 300L;
+    // 수동 동기화 시 통계 배치 조회 날짜 청크 크기
+    private static final int STAT_SYNC_CHUNK_DAYS = 30;
+    // 네이버 데이터 보관 한도
+    private static final long MAX_SYNC_RANGE_DAYS = 365L;
 
     private final NaverAdApiService naverAdApiService;
     private final AdCampaignRepository adCampaignRepository;
@@ -57,9 +66,6 @@ public class NaverAdSyncService {
     // 작은 단위로 트랜잭션을 끊기 위한 템플릿
     private final PlatformTransactionManager transactionManager;
     private TransactionTemplate txTemplate;
-
-    private static final long SYNC_COOLDOWN_SECONDS = 60L;
-    private static final long SYNC_LOCK_TTL_SECONDS = 300L;
 
     @PostConstruct
     public void init() {
@@ -215,74 +221,88 @@ public class NaverAdSyncService {
     }
 
 
-    // 일별 기본 지표 MetricFact upsert (/stats 사용)
+    // 일별 기본 지표 MetricFact upsert (/stats 배치 조회: 여러 소재 × 날짜 범위)
     public AdvertisementResponse.NaverStatSyncResponse syncBasicStats(
             Long userId, Long connectionId, String statDate) {
         PlatformConnection connection = getConnection(connectionId);
         validateOrganizationMembership(userId, connection.getPlatformAccount().getOrganization().getId());
         validateNaverProvider(connection);
-        return syncBasicStats(connectionId, statDate, connection);
+        LocalDate date = LocalDate.parse(statDate);
+        return syncBasicStats(connectionId, date, date, connection);
     }
 
-    AdvertisementResponse.NaverStatSyncResponse syncBasicStats(Long connectionId, String statDate) {
-        return syncBasicStats(connectionId, statDate, getNaverConnection(connectionId));
+    AdvertisementResponse.NaverStatSyncResponse syncBasicStats(
+            Long connectionId, LocalDate startDate, LocalDate endDate) {
+        return syncBasicStats(connectionId, startDate, endDate, getNaverConnection(connectionId));
     }
 
     private AdvertisementResponse.NaverStatSyncResponse syncBasicStats(
-            Long connectionId, String statDate, PlatformConnection connection) {
-        log.info("NAVER Basic Stats 동기화 시작 - connectionId: {}, date: {}", connectionId, statDate);
+            Long connectionId, LocalDate startDate, LocalDate endDate, PlatformConnection connection) {
+        log.info("NAVER Basic Stats 동기화 시작 - connectionId: {}, 기간: {} ~ {}", connectionId, startDate, endDate);
 
         PlatformAccount platformAccount = connection.getPlatformAccount();
-        log.info("NAVER 광고 플랫폼 계정 확인: {}", platformAccount.getProvider());
         List<AdContent> adContents = adContentRepository.findAllByPlatformAccount(platformAccount);
 
-        int processedCount = 0;
+        Map<String, AdContent> contentByExternalId = new LinkedHashMap<>();
         for (AdContent adContent : adContents) {
-            if (adContent.getExternalAdId() == null) continue;
-
-            try {
-                List<NaverDTO.StatResponse> stats = naverAdApiService.getDailyStats(connectionId,
-                        adContent.getExternalAdId(), statDate, statDate);
-
-                if (stats.isEmpty()) {
-                    processedCount++;
-                    continue;
-                }
-
-                NaverDTO.StatResponse stat = stats.get(0);
-                long impCnt = stat.impCnt() != null ? stat.impCnt() : 0L;
-                long clkCnt = stat.clkCnt() != null ? stat.clkCnt() : 0L;
-                BigDecimal salesAmt = stat.salesAmt() != null
-                        ? BigDecimal.valueOf(stat.salesAmt()) : BigDecimal.ZERO;
-                boolean hasConversionData = stat.ccnt() != null || stat.convAmt() != null;
-                long ccnt = stat.ccnt() != null ? stat.ccnt() : 0L;
-                BigDecimal convAmt = stat.convAmt() != null
-                        ? BigDecimal.valueOf(stat.convAmt()) : BigDecimal.ZERO;
-
-                LocalDateTime dailyTimeBucket = LocalDate.parse(statDate).atStartOfDay();
-
-                txTemplate.execute(status -> {
-                    MetricFact dailyFact = metricFactRepository
-                            .findByAdContentAndTimeBucketAndGrain(adContent, dailyTimeBucket, Grain.DAILY)
-                            .orElseGet(() -> AdvertisementConverter.createMetricFact(
-                                    adContent, dailyTimeBucket, Grain.DAILY, Provider.NAVER));
-                    dailyFact.updateBasicMetrics(impCnt, clkCnt, salesAmt);
-                    if (hasConversionData) {
-                        dailyFact.updateConversionMetrics(ccnt, convAmt);
-                    }
-                    metricFactRepository.save(dailyFact);
-                    return null;
-                });
-
-                processedCount++;
-            } catch (Exception e) {
-                log.error("NAVER 광고 소재(ID:{}) 통계(Basic) 동기화 오류: {}", adContent.getExternalAdId(), e.getMessage());
+            if (adContent.getExternalAdId() != null) {
+                contentByExternalId.put(adContent.getExternalAdId(), adContent);
             }
         }
 
-        log.info("NAVER Basic Stats 동기화 완료 - connectionId: {}, date: {}, processed: {}",
-                connectionId, statDate, processedCount);
-        return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDate, processedCount);
+        // 소재당 1회 호출로 날짜 범위 전체의 일별 행을 조회 (소재 ID → 일별 행 목록)
+        Map<String, List<NaverDTO.StatResponse>> statsByAdId = naverAdApiService.getDailyStatsBatch(
+                connectionId, new ArrayList<>(contentByExternalId.keySet()), startDate, endDate);
+
+        int processedCount = 0;
+        for (Map.Entry<String, List<NaverDTO.StatResponse>> entry : statsByAdId.entrySet()) {
+            AdContent adContent = contentByExternalId.get(entry.getKey());
+            if (adContent == null) continue;
+            List<NaverDTO.StatResponse> rows = entry.getValue().stream()
+                    .filter(stat -> stat.statDt() != null)
+                    .toList();
+
+            try {
+                // 소재 하나(날짜 범위 전체)를 한 트랜잭션으로 upsert
+                txTemplate.execute(status -> {
+                    for (NaverDTO.StatResponse stat : rows) {
+                        upsertDailyMetricFact(adContent, stat);
+                    }
+                    return null;
+                });
+                processedCount++;
+            } catch (Exception e) {
+                log.error("NAVER 광고 소재(ID:{}) 통계(Basic) 동기화 오류: {}", entry.getKey(), e.getMessage());
+            }
+        }
+
+        log.info("NAVER Basic Stats 동기화 완료 - connectionId: {}, 기간: {} ~ {}, processed: {}",
+                connectionId, startDate, endDate, processedCount);
+        String statDateLabel = startDate.equals(endDate)
+                ? startDate.toString() : startDate + "~" + endDate;
+        return new AdvertisementResponse.NaverStatSyncResponse(connectionId, statDateLabel, processedCount);
+    }
+
+    private void upsertDailyMetricFact(AdContent adContent, NaverDTO.StatResponse stat) {
+        long impCnt = stat.impCnt() != null ? stat.impCnt() : 0L;
+        long clkCnt = stat.clkCnt() != null ? stat.clkCnt() : 0L;
+        BigDecimal salesAmt = stat.salesAmt() != null
+                ? BigDecimal.valueOf(stat.salesAmt()) : BigDecimal.ZERO;
+        boolean hasConversionData = stat.ccnt() != null || stat.convAmt() != null;
+
+        LocalDateTime dailyTimeBucket = LocalDate.parse(stat.statDt()).atStartOfDay();
+
+        MetricFact dailyFact = metricFactRepository
+                .findByAdContentAndTimeBucketAndGrain(adContent, dailyTimeBucket, Grain.DAILY)
+                .orElseGet(() -> AdvertisementConverter.createMetricFact(
+                        adContent, dailyTimeBucket, Grain.DAILY, Provider.NAVER));
+        dailyFact.updateBasicMetrics(impCnt, clkCnt, salesAmt);
+        if (hasConversionData) {
+            dailyFact.updateConversionMetrics(
+                    stat.ccnt() != null ? stat.ccnt() : 0L,
+                    stat.convAmt() != null ? BigDecimal.valueOf(stat.convAmt()) : BigDecimal.ZERO);
+        }
+        metricFactRepository.save(dailyFact);
     }
 
     // orgId + 날짜 범위 기반 수동 동기화 (분산락 적용)
@@ -290,6 +310,11 @@ public class NaverAdSyncService {
             Long userId, Long orgId, LocalDate startDate, LocalDate endDate) {
 
         validateOrganizationMembership(userId, orgId);
+
+        // 네이버 데이터 보관 한도(365일) 초과 방지
+        if (ChronoUnit.DAYS.between(startDate, endDate) >= MAX_SYNC_RANGE_DAYS) {
+            throw new AdvertisementHandler(NaverAdErrorCode.NAVER_INVALID_SYNC_RANGE);
+        }
 
         String cooldownKey = "naver:sync:cooldown:" + orgId;
         if (redisUtil.getData(cooldownKey) != null) {
@@ -318,10 +343,17 @@ public class NaverAdSyncService {
                     totalGroups    += metadata.syncedAdGroupCount();
                     totalContents  += metadata.syncedAdContentCount();
 
-                    for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
-                        String statDate = d.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                        AdvertisementResponse.NaverStatSyncResponse stats = syncBasicStats(conn.getId(), statDate);
+                    // 날짜 범위를 30일 청크로 잘라 배치 동기화
+                    LocalDate chunkStart = startDate;
+                    while (!chunkStart.isAfter(endDate)) {
+                        LocalDate chunkEnd = chunkStart.plusDays(STAT_SYNC_CHUNK_DAYS - 1);
+                        if (chunkEnd.isAfter(endDate)) {
+                            chunkEnd = endDate;
+                        }
+                        AdvertisementResponse.NaverStatSyncResponse stats =
+                                syncBasicStats(conn.getId(), chunkStart, chunkEnd);
                         totalMetrics += stats.processedAdContentCount();
+                        chunkStart = chunkEnd.plusDays(1);
                     }
                 } catch (Exception e) {
                     log.warn("[NAVER] 연결 ID {} 동기화 실패", conn.getId(), e);
