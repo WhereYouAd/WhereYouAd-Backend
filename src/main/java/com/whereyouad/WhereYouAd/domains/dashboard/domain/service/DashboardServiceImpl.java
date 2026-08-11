@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.dashboard.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
@@ -61,37 +62,101 @@ public class DashboardServiceImpl implements DashboardService {
         orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new DashboardException(OrgErrorCode.ORG_MEMBER_NOT_FOUND));
 
-        Long totalBudget;
-        BigDecimal totalSpendDec;
-
-        // 통합 대시보드
+        // 통합 대시보드: 예산타입(TOTAL/DAILY) 별로 그룹화하여 각각의 남은 예산을 반환
         if (providerType == null || providerType.trim().isEmpty()) {
-            totalBudget = adCampaignRepository.sumAllBudgetsByUserIdAndOrgId(userId, orgId);
-            totalSpendDec = metricFactRepository.sumAllSpendsByUserIdAndOrgId(userId, orgId);
-            providerType = "ALL";
+            return getUnifiedBudgetSummary(userId, orgId);
         }
-        // 플랫폼 대시보드
-        else {
-            Provider provider = Provider.valueOf(providerType.toUpperCase());
-            totalBudget = adCampaignRepository.sumBudgetsByUserIdAndOrgIdAndProvider(userId, orgId, provider);
-            totalSpendDec = metricFactRepository.sumSpendsByUserIdAndOrgIdAndProvider(userId, orgId, provider);
-            providerType = provider.name();
+        // 플랫폼 대시보드: 해당 provider 기준 전체 예산 카드 + 일일 예산 카드를 함께 반환
+        Provider provider;
+        try { //providerType 에 잘못된 값이 입력되지 않았는지 검증
+            provider = Provider.valueOf(providerType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new DashboardException(DashboardErrorCode.PROVIDER_NOT_VALID);
         }
+        return getPlatformBudgetSummary(userId, orgId, provider);
+    }
 
-        // Null 방지
-        totalBudget = (totalBudget != null) ? totalBudget : 0L;
-        Long totalSpend = (totalSpendDec != null) ? totalSpendDec.longValue() : 0L;
+    // 통합 대시보드 예산 소진 현황: TOTAL 예산타입 캠페인 묶음(실측) + DAILY 예산타입 캠페인 묶음(일일예산 기반 한 달 추정)
+    private DashboardResponse.BudgetSummaryResponse getUnifiedBudgetSummary(Long userId, Long orgId) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
 
-        // 잔액 및 퍼센트 (BudgetCalculator에 위임)
-        Long remainingBudget = budgetCalculator.calculateRemainingBudget(totalBudget, totalSpend);
-        Double usagePercentage = budgetCalculator.calculateUsageRate(totalBudget, BigDecimal.valueOf(totalSpend));
+        // TOTAL 예산타입 그룹 (실측: 캠페인 총 예산 - 누적 지출)
+        Long totalBudgetSum = adCampaignRepository.sumBudgetsByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.TOTAL, null);
+        BigDecimal totalSpendDec = metricFactRepository.sumSpendsByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.TOTAL, null);
+        List<Provider> totalProviders = adCampaignRepository.findDistinctProvidersByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.TOTAL, null);
+        DashboardResponse.BudgetDetail totalDetail = buildBudgetDetail(totalBudgetSum, totalSpendDec, false);
+
+        // DAILY 예산타입 그룹 (일일 예산 합계 x 이번 달 총 일수로 추정, 이번 달 누적 지출과 비교)
+        // 주의: 같은 budgetType=DAILY 라도 getPlatformBudgetSummary()의 "일일 예산" 카드(오늘 하루 실측)와는
+        // 스케일이 다름(이쪽은 "한 달" 단위 추정). 통합 대시보드는 카드 프레이밍을 "전체 예산" 관점으로 통일하기 위해
+        // 의도적으로 월 단위 추정치를 사용함 (estimated=true로 구분).
+        Long dailyBudgetSum = adCampaignRepository.sumBudgetsByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.DAILY, null);
+        List<Provider> dailyProviders = adCampaignRepository.findDistinctProvidersByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.DAILY, null);
+        long estimatedMonthlyBudget = estimateMonthlyBudget(dailyBudgetSum);
+        BigDecimal monthToDateSpendDec = metricFactRepository.sumSpendsByUserIdAndOrgIdAndBudgetTypeAndPeriod(
+                userId, orgId, BudgetType.DAILY, null, monthStart, now);
+        DashboardResponse.BudgetDetail dailyDetail = buildBudgetDetail(estimatedMonthlyBudget, monthToDateSpendDec, true);
 
         return new DashboardResponse.BudgetSummaryResponse(
-                providerType,
-                usagePercentage,
-                totalBudget,
-                totalSpend,
-                remainingBudget);
+                "ALL",
+                List.of(
+                        new DashboardResponse.BudgetTypeGroup(BudgetType.TOTAL, totalProviders, totalDetail),
+                        new DashboardResponse.BudgetTypeGroup(BudgetType.DAILY, dailyProviders, dailyDetail)
+                ));
+    }
+
+    // 플랫폼 대시보드 예산 소진 현황: 전체 예산 카드 + 일일 예산 카드
+    // - 전체 예산: 해당 provider 에 TOTAL 타입 캠페인이 있으면 실측값(구글/메타), 없으면 일일예산 기반 한 달 추정치(네이버)
+    // - 일일 예산: 해당 provider 의 DAILY 타입 캠페인 합계와 오늘 지출 기준 실측값
+    private DashboardResponse.BudgetSummaryResponse getPlatformBudgetSummary(Long userId, Long orgId, Provider provider) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+
+        // 일일 예산 카드 (실측: 오늘 하루 지출 기준)
+        // 주의: getUnifiedBudgetSummary()의 DAILY 그룹(한 달 추정치)과 스케일이 다름 - 여기는 "오늘" 단위 실측치.
+        Long dailyBudgetSum = adCampaignRepository.sumBudgetsByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.DAILY, provider);
+        BigDecimal todaySpendDec = metricFactRepository.sumSpendsByUserIdAndOrgIdAndBudgetTypeAndPeriod(
+                userId, orgId, BudgetType.DAILY, provider, todayStart, now);
+        DashboardResponse.BudgetDetail dailyDetail = buildBudgetDetail(dailyBudgetSum, todaySpendDec, false);
+
+        // 전체 예산 카드
+        Long totalBudgetSum = adCampaignRepository.sumBudgetsByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.TOTAL, provider);
+        DashboardResponse.BudgetDetail totalDetail;
+        if (totalBudgetSum != null && totalBudgetSum > 0) {
+            // TOTAL 타입 캠페인 실측값 존재 (예: 구글, 메타)
+            BigDecimal totalSpendDec = metricFactRepository.sumSpendsByUserIdAndOrgIdAndBudgetType(userId, orgId, BudgetType.TOTAL, provider);
+            totalDetail = buildBudgetDetail(totalBudgetSum, totalSpendDec, false);
+        } else {
+            // TOTAL 타입 캠페인이 없는 플랫폼(예: 네이버) -> 일일 예산 기반 한 달 추정치로 대체
+            long estimatedMonthlyBudget = estimateMonthlyBudget(dailyBudgetSum);
+            BigDecimal monthToDateSpendDec = metricFactRepository.sumSpendsByUserIdAndOrgIdAndBudgetTypeAndPeriod(
+                    userId, orgId, BudgetType.DAILY, provider, monthStart, now);
+            totalDetail = buildBudgetDetail(estimatedMonthlyBudget, monthToDateSpendDec, true);
+        }
+
+        return new DashboardResponse.BudgetSummaryResponse(
+                provider.name(),
+                List.of(
+                        new DashboardResponse.BudgetTypeGroup(BudgetType.TOTAL, List.of(provider), totalDetail),
+                        new DashboardResponse.BudgetTypeGroup(BudgetType.DAILY, List.of(provider), dailyDetail)
+                ));
+    }
+
+    // 일일 예산 합계를 이번 달 총 일수만큼 곱해 한 달 추정 총 예산을 계산 (네이버처럼 총 예산 개념이 없는 플랫폼용)
+    private long estimateMonthlyBudget(Long dailyBudgetSum) {
+        long daily = (dailyBudgetSum != null) ? dailyBudgetSum : 0L;
+        int daysInMonth = LocalDate.now().lengthOfMonth();
+        return daily * daysInMonth;
+    }
+
+    private DashboardResponse.BudgetDetail buildBudgetDetail(Long budget, BigDecimal spendDec, boolean estimated) {
+        long budgetVal = (budget != null) ? budget : 0L;
+        long spendVal = (spendDec != null) ? spendDec.longValue() : 0L;
+        long remaining = budgetCalculator.calculateRemainingBudget(budgetVal, spendVal);
+        double remainingPercentage = budgetCalculator.calculateRemainingRate(budgetVal, remaining);
+        return new DashboardResponse.BudgetDetail(budgetVal, spendVal, remaining, remainingPercentage, estimated);
     }
 
     @Override

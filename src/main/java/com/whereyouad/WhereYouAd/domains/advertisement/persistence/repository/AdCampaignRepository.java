@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
@@ -45,6 +46,20 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     Long sumBudgetsByUserIdAndOrgIdAndProvider(@Param("userId") Long userId, @Param("orgId") Long orgId,
             @Param("provider") Provider provider);
 
+    // 예산 소진 현황(전체/일일) 조회용: budgetType 기준 예산 합산. provider 가 null 이면 조직 전체 합산(통합 대시보드), 지정되면 해당 플랫폼만 합산(플랫폼 대시보드)
+    @Query("SELECT SUM(c.budget) FROM AdCampaign c JOIN c.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o " +
+            "WHERE om.user.id = :userId AND o.id = :orgId AND c.status = 'ON_GOING' AND c.budgetType = :budgetType " +
+            "AND (:provider IS NULL OR c.provider = :provider)")
+    Long sumBudgetsByUserIdAndOrgIdAndBudgetType(@Param("userId") Long userId, @Param("orgId") Long orgId,
+            @Param("budgetType") BudgetType budgetType, @Param("provider") Provider provider);
+
+    // 위 합산에 실제로 포함된 provider 목록 (통합 대시보드에서 그룹에 속한 플랫폼 표시용)
+    @Query("SELECT DISTINCT c.provider FROM AdCampaign c JOIN c.project p JOIN p.organization o JOIN OrgMember om ON om.organization = o " +
+            "WHERE om.user.id = :userId AND o.id = :orgId AND c.status = 'ON_GOING' AND c.budgetType = :budgetType " +
+            "AND (:provider IS NULL OR c.provider = :provider)")
+    List<Provider> findDistinctProvidersByUserIdAndOrgIdAndBudgetType(@Param("userId") Long userId, @Param("orgId") Long orgId,
+            @Param("budgetType") BudgetType budgetType, @Param("provider") Provider provider);
+
     @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$CampaignSummary(c.project.id, c.provider, c.budget) " +
             "FROM AdCampaign c WHERE c.project.id IN :projectIds")
     List<ProjectQueryDto.CampaignSummary> findCampaignSummariesByProjectIds(@Param("projectIds") List<Long> projectIds);
@@ -52,6 +67,11 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
     @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$CampaignSummary(c.project.id, c.provider, c.budget) " +
             "FROM AdCampaign c WHERE c.project.id = :projectId")
     List<ProjectQueryDto.CampaignSummary> findCampaignSummariesByProjectId(@Param("projectId") Long projectId);
+
+    // 캠페인 상세(프로젝트 상세) 페이지의 플랫폼별 남은 예산 계산용: provider + budgetType + budget 조회
+    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$CampaignBudgetInfo(c.provider, c.budgetType, c.budget) " +
+            "FROM AdCampaign c WHERE c.project.id = :projectId")
+    List<ProjectQueryDto.CampaignBudgetInfo> findCampaignBudgetInfoByProjectId(@Param("projectId") Long projectId);
 
     @Modifying
     @Query("UPDATE AdCampaign a SET a.status = :status WHERE a.project.id = :projectId")

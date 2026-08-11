@@ -23,8 +23,10 @@ public class ProjectConverter {
         return new ProjectResponse.ProjectListResponse(projects);
     }
 
-    public static ProjectResponse.ProjectInfoResponse toProjectInfoResponse(Project project, List<Provider> providers, Long budget) {
+    public static ProjectResponse.ProjectInfoResponse toProjectInfoResponse(Project project, List<Provider> providers, Long budget,
+            List<ProjectResponse.PlatformBudgetSummary> platformBudgets) {
         return new ProjectResponse.ProjectInfoResponse(
-                project.getId(), project.getName(), project.getStatus(), project.getDescription(), budget, project.getCreatedAt().toLocalDate(), providers);
+                project.getId(), project.getName(), project.getStatus(), project.getDescription(), budget,
+                project.getCreatedAt().toLocalDate(), providers, platformBudgets);
     }
 }
