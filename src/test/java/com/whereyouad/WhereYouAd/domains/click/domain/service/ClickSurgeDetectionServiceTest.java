@@ -134,10 +134,11 @@ class ClickSurgeDetectionServiceTest {
         verify(anomalyEventRepository).save(eventCaptor.capture());
         assertThat(eventCaptor.getValue().isNotified()).isTrue();
         verify(notificationService).sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS), anyString(), anyString());
+        verify(redisUtil, never()).deleteIfValueMatches(anyString(), anyString());
     }
 
     @Test
-    @DisplayName("알림 발송 실패 시 notified=false 유지")
+    @DisplayName("알림 발송 실패 시 notified=false 유지 및 소유 쿨다운 해제")
     void deliveryFailureKeepsNotifiedFalse() {
         givenActiveAds(AD_ID + ":" + ORG_ID);
         givenMinuteCounts("40");
@@ -157,6 +158,35 @@ class ClickSurgeDetectionServiceTest {
         verify(anomalyEventRepository).save(eventCaptor.capture());
         assertThat(eventCaptor.getValue().isNotified()).isFalse();
         verify(anomalyEventRepository, never()).saveAll(any());
+        ArgumentCaptor<String> tokenCaptor = ArgumentCaptor.forClass(String.class);
+        verify(redisUtil).setIfAbsent(
+                eq("notification:cooldown:surge:ad:" + AD_ID),
+                tokenCaptor.capture(),
+                eq(props.getCooldownSeconds()));
+        verify(redisUtil).deleteIfValueMatches(
+                eq("notification:cooldown:surge:ad:" + AD_ID),
+                eq(tokenCaptor.getValue()));
+    }
+
+    @Test
+    @DisplayName("알림 발송 성공 후 이벤트 갱신 실패는 쿨다운을 유지")
+    void eventUpdateFailureAfterDeliveryKeepsCooldown() {
+        givenActiveAds(AD_ID + ":" + ORG_ID);
+        givenMinuteCounts("40");
+        when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
+                .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
+        when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong())).thenReturn(2L);
+        when(redisUtil.setIfAbsent(startsWith("notification:cooldown:surge:ad:"), anyString(), anyLong()))
+                .thenReturn(true);
+        when(adContentRepository.findAllById(any())).thenReturn(List.of());
+        when(anomalyEventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new RuntimeException("이벤트 갱신 실패"))
+                .when(anomalyEventRepository).saveAll(any());
+
+        service.detectForWindow(windowStart);
+
+        verify(notificationService).sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS), anyString(), anyString());
+        verify(redisUtil, never()).deleteIfValueMatches(anyString(), anyString());
     }
 
     @Test

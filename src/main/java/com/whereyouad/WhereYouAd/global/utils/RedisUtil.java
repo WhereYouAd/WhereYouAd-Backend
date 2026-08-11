@@ -35,6 +35,13 @@ public class RedisUtil {
             return count
             """, Long.class);
 
+    private static final DefaultRedisScript<Long> DELETE_IF_VALUE_MATCHES_SCRIPT = new DefaultRedisScript<>("""
+            if redis.call('GET', KEYS[1]) == ARGV[1] then
+                return redis.call('DEL', KEYS[1])
+            end
+            return 0
+            """, Long.class);
+
     private final StringRedisTemplate template;
 
     //Redis 에 데이터 저장(유효시간 설정)
@@ -60,6 +67,17 @@ public class RedisUtil {
                 currentWindow,
                 previousWindow,
                 String.valueOf(durationSeconds));
+    }
+
+    /**
+     * 키 값이 아직 {@code expectedValue}와 같을 때만 삭제한다.
+     */
+    public boolean deleteIfValueMatches(String key, String expectedValue) {
+        Long deleted = template.execute(
+                DELETE_IF_VALUE_MATCHES_SCRIPT,
+                Collections.singletonList(key),
+                expectedValue);
+        return deleted != null && deleted > 0;
     }
 
     //Redis 에서 데이터 꺼내기(Value 꺼내기)

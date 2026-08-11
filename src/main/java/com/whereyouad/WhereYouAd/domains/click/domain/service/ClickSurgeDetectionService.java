@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,8 +57,11 @@ public class ClickSurgeDetectionService {
     private static final long STREAK_TTL_SECONDS = 660;
 
     // 알림 발송 확정된 감지 건 1개 (조직별로 모아서 알림 1건으로 병합). event는 중복 저장 스킵 시 null
+    private record CooldownClaim(String key, String ownershipToken) {
+    }
+
     private record SurgeAlert(Long adContentId, long clicks, BaselineSnapshot baseline, SurgeVerdict verdict,
-                              ClickAnomalyEvent event) {
+                              ClickAnomalyEvent event, CooldownClaim cooldownClaim) {
     }
 
     public void detectForWindow(LocalDateTime windowStart) {
@@ -122,12 +126,13 @@ public class ClickSurgeDetectionService {
                 int streak = incrementStreak(adContentId, windowStart);
                 ClickAnomalyEvent savedEvent = saveAnomalyEvent(adContentId, orgId, windowStart, clicks, baseline, verdict);
                 // 알림 비활성(드라이런) 모드에서는 쿨다운을 소모하지 않는다
-                boolean notify = properties.isNotifyEnabled()
-                        && streak >= properties.getStreakRequired()
-                        && acquireCooldown(adContentId);
-                if (notify) {
+                CooldownClaim cooldownClaim = null;
+                if (properties.isNotifyEnabled() && streak >= properties.getStreakRequired()) {
+                    cooldownClaim = acquireCooldown(adContentId);
+                }
+                if (cooldownClaim != null) {
                     alertsByOrg.computeIfAbsent(orgId, key -> new ArrayList<>())
-                            .add(new SurgeAlert(adContentId, clicks, baseline, verdict, savedEvent));
+                            .add(new SurgeAlert(adContentId, clicks, baseline, verdict, savedEvent, cooldownClaim));
                 }
             } else {
                 // 미감지 = 연속성 끊김 → streak 리셋
@@ -215,9 +220,13 @@ public class ClickSurgeDetectionService {
     }
 
     // 쿨다운 선점 성공 시에만 발송 (TTL 동안 같은 광고 재발송 방지)
-    private boolean acquireCooldown(Long adContentId) {
-        return Boolean.TRUE.equals(redisUtil.setIfAbsent(
-                COOLDOWN_KEY_PREFIX + adContentId, "1", properties.getCooldownSeconds()));
+    private CooldownClaim acquireCooldown(Long adContentId) {
+        String key = COOLDOWN_KEY_PREFIX + adContentId;
+        String ownershipToken = UUID.randomUUID().toString();
+        if (!Boolean.TRUE.equals(redisUtil.setIfAbsent(key, ownershipToken, properties.getCooldownSeconds()))) {
+            return null;
+        }
+        return new CooldownClaim(key, ownershipToken);
     }
 
     // 저장 성공 시 엔티티 반환, 유니크 충돌(중복 실행)이면 null.
@@ -266,10 +275,28 @@ public class ClickSurgeDetectionService {
                         .map(alert -> formatAlertLine(alert, adNameById))
                         .collect(Collectors.joining("\n"));
                 notificationService.sendApiAlarmToOrg(orgId, NotificationType.CLICKS, title, message);
-                markEventsNotified(alerts);
             } catch (Exception e) {
                 // 조직별 발송 실패 격리 - 다른 조직 알림에 영향 없도록. 실패 시 notified=false 유지
+                releaseCooldowns(alerts);
                 log.error("[급증감지] 알림 발송 실패: orgId={}", orgId, e);
+                continue;
+            }
+            try {
+                markEventsNotified(alerts);
+            } catch (Exception e) {
+                // 실제 발송은 성공했으므로 중복 알림 방지를 위해 쿨다운은 유지한다.
+                log.error("[급증감지] 알림 발송 후 이벤트 갱신 실패: orgId={}", orgId, e);
+            }
+        }
+    }
+
+    private void releaseCooldowns(List<SurgeAlert> alerts) {
+        for (SurgeAlert alert : alerts) {
+            CooldownClaim cooldownClaim = alert.cooldownClaim();
+            try {
+                redisUtil.deleteIfValueMatches(cooldownClaim.key(), cooldownClaim.ownershipToken());
+            } catch (Exception e) {
+                log.error("[급증감지] 실패한 알림의 쿨다운 해제 실패: adContentId={}", alert.adContentId(), e);
             }
         }
     }
