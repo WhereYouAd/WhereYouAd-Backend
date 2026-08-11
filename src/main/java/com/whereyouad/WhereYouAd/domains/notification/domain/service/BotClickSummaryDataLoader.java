@@ -47,15 +47,16 @@ public class BotClickSummaryDataLoader {
         return summaries;
     }
 
-    // 전 조직 광고별 집계를 쿼리 1방에 조회 후 조직별 상위 TOP_AD_LIMIT개만 취한다 (조직, 클릭수 내림차순 정렬 전제)
+    // 쿼리가 조직별 상위 TOP_AD_LIMIT개만 반환한다. 호출부의 제한은 결과 계약을 방어한다.
     private Map<Long, List<BotClickSummaryData.TopAd>> loadTopAdsByOrg(LocalDateTime start, LocalDateTime end) {
         Map<Long, List<BotClickSummaryData.TopAd>> topAdsByOrg = new HashMap<>();
-        for (Object[] adRow : clickLogRepository.summarizeSuspectAdClicksByOrg(start, end)) {
-            List<BotClickSummaryData.TopAd> topAds = topAdsByOrg.computeIfAbsent((Long) adRow[0], key -> new ArrayList<>());
+        for (Object[] adRow : clickLogRepository.summarizeSuspectAdClicksByOrg(start, end, TOP_AD_LIMIT)) {
+            Long orgId = ((Number) adRow[0]).longValue();
+            List<BotClickSummaryData.TopAd> topAds = topAdsByOrg.computeIfAbsent(orgId, key -> new ArrayList<>());
             if (topAds.size() < TOP_AD_LIMIT) {
                 topAds.add(new BotClickSummaryData.TopAd(
                         adRow[1] != null ? (String) adRow[1] : "알 수 없는 광고",
-                        (Long) adRow[2]));
+                        ((Number) adRow[2]).longValue()));
             }
         }
         return topAdsByOrg;
