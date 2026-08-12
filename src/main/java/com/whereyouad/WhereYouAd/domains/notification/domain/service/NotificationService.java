@@ -28,4 +28,8 @@ public interface NotificationService {
     void sendTest(Long orgId, NotificationRequest.TestSend request);
 
     NotificationResponse.NotificationHistoryList getHistory(Long userId, Long orgId, String encodedCursor, Integer size);
+
+    void markAsRead(Long userId, Long orgId, Long userNotificationId);
+
+    void markAllAsRead(Long userId, Long orgId);
 }

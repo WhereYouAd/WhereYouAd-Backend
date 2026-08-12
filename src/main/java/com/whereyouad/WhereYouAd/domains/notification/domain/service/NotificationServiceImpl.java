@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import java.net.URI;
@@ -102,6 +103,34 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         return NotificationConverter.toNotificationHistoryList(slice.hasNext(), nextCursor, slice.getContent());
+    }
+
+    // 조직 내 회원의 안읽은 알림 단건 읽음 처리
+    @Override
+    public void markAsRead(Long userId, Long orgId, Long userNotificationId) {
+        findMember(userId, orgId);
+
+        UserNotification userNotification = userNotificationRepository.findById(userNotificationId)
+                .orElseThrow(() -> new NotificationException(NotificationErrorCode.USER_NOTIFICATION_NOT_FOUND));
+
+        // UserNotification 객체 내부 userId 나 orgId 가 불일치할 경우 모두 Not Found 처리
+        if (!Objects.equals(userNotification.getUser().getId(), userId)) {
+            throw new NotificationException(NotificationErrorCode.USER_NOTIFICATION_NOT_FOUND);
+        }
+
+        if (!Objects.equals(userNotification.getNotification().getOrganization().getId(), orgId)) {
+            throw new NotificationException(NotificationErrorCode.USER_NOTIFICATION_NOT_FOUND);
+        }
+
+        // Dirty Checking 기반 읽음 처리
+        userNotification.markAsRead();
+    }
+
+    // 조직 내 회원의 안 읽은 알림 전체 읽음 처리
+    @Override
+    public void markAllAsRead(Long userId, Long orgId) {
+        findMember(userId, orgId);
+        userNotificationRepository.markAllAsRead(userId, orgId, LocalDateTime.now());
     }
 
     // 전체 알림 설정 변경 메서드
