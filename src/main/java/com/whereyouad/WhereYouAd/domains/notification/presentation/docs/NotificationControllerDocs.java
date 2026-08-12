@@ -44,6 +44,30 @@ public interface NotificationControllerDocs {
             @RequestParam(required = false) Integer size
     );
 
+    @Operation(summary = "알림 단건 읽음 처리",
+            description = "알림 기록 하나를 읽음 상태로 변경합니다. historyId는 알림 기록 조회 응답의 notificationId 값을 그대로 사용합니다. " +
+                    "이미 읽은 알림이면 아무 변화 없이 성공합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "변경 성공"),
+            @ApiResponse(responseCode = "404", description = "NOTIFICATION_404_1 : 해당 조직의 멤버가 아닙니다.\n\n NOTIFICATION_404_3 : 알림 기록을 찾을 수 없습니다.")
+    })
+    ResponseEntity<DataResponse<Void>> markNotificationAsRead(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long userNotificationId
+    );
+
+    @Operation(summary = "알림 모두 읽음 처리",
+            description = "조직 내에서 본인이 수신한 안 읽은 알림을 모두 읽음 상태로 변경합니다. 안 읽은 알림이 없으면 아무 변화 없이 성공합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "변경 성공"),
+            @ApiResponse(responseCode = "404", description = "NOTIFICATION_404_1 : 해당 조직의 멤버가 아닙니다.")
+    })
+    ResponseEntity<DataResponse<Void>> markAllNotificationsAsRead(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    );
+
     @Operation(summary = "마스터 컨트롤 변경", description = "모든 알림을 일시적으로 켜거나 끕니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "변경 성공"),
