@@ -45,7 +45,7 @@ public interface NotificationControllerDocs {
     );
 
     @Operation(summary = "알림 단건 읽음 처리",
-            description = "알림 기록 하나를 읽음 상태로 변경합니다. historyId는 알림 기록 조회 응답의 notificationId 값을 그대로 사용합니다. " +
+            description = "알림 기록 하나를 읽음 상태로 변경합니다. userNotificationId 는 알림 기록 조회 응답의 userNotificationId 값을 그대로 사용합니다. " +
                     "이미 읽은 알림이면 아무 변화 없이 성공합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "변경 성공"),
