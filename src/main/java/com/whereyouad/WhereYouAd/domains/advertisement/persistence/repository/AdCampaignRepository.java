@@ -68,8 +68,8 @@ public interface AdCampaignRepository extends JpaRepository<AdCampaign, Long> {
             "FROM AdCampaign c WHERE c.project.id = :projectId")
     List<ProjectQueryDto.CampaignSummary> findCampaignSummariesByProjectId(@Param("projectId") Long projectId);
 
-    // 캠페인 상세(프로젝트 상세) 페이지의 플랫폼별 남은 예산 계산용: provider + budgetType + budget 조회
-    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$CampaignBudgetInfo(c.provider, c.budgetType, c.budget) " +
+    // 캠페인 상세(프로젝트 상세) 페이지의 플랫폼별 남은 예산 계산용: campaignId + provider + budgetType + budget 조회
+    @Query("SELECT new com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto$CampaignBudgetInfo(c.id, c.provider, c.budgetType, c.budget) " +
             "FROM AdCampaign c WHERE c.project.id = :projectId")
     List<ProjectQueryDto.CampaignBudgetInfo> findCampaignBudgetInfoByProjectId(@Param("projectId") Long projectId);
 

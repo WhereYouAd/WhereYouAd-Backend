@@ -20,6 +20,7 @@ public class ProjectQueryDto {
 
     // 캠페인(프로젝트) 상세 페이지의 플랫폼별 남은 예산 계산용
     public record CampaignBudgetInfo(
+            Long campaignId,
             Provider provider,
             BudgetType budgetType,
             Long budget
