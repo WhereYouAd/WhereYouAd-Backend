@@ -221,8 +221,11 @@ public class ProjectServiceImpl implements ProjectService {
             boolean hasTotalType = infos.stream().anyMatch(info -> info.budgetType() == BudgetType.TOTAL);
             BudgetType characteristic = hasTotalType ? BudgetType.TOTAL : BudgetType.DAILY;
 
-            long budget = infos.stream()
+            List<ProjectQueryDto.CampaignBudgetInfo> matchingInfos = infos.stream()
                     .filter(info -> info.budgetType() == characteristic)
+                    .toList();
+
+            long budget = matchingInfos.stream()
                     .mapToLong(info -> info.budget() != null ? info.budget() : 0L)
                     .sum();
 
@@ -234,8 +237,15 @@ public class ProjectServiceImpl implements ProjectService {
             long remaining = budgetCalculator.calculateRemainingBudget(budget, spend);
             double remainingPercentage = budgetCalculator.calculateRemainingRate(budget, remaining);
 
+            // 예산 수정 요청용 캠페인 식별자
+            // - 네이버는 예산 수정 API가 내부 PK가 아닌 connectionId + 외부 캠페인ID(String)를 요구하므로 내려주지 않음
+            // - 구글/메타도 매칭되는 캠페인이 정확히 1개일 때만 값을 채움 (2개 이상이면 어느 캠페인을 가리키는지 모호하므로 null)
+            Long adCampaignId = (provider != Provider.NAVER && matchingInfos.size() == 1)
+                    ? matchingInfos.get(0).campaignId()
+                    : null;
+
             result.add(new ProjectResponse.PlatformBudgetSummary(
-                    provider, characteristic, budget, spend, remaining, remainingPercentage));
+                    provider, characteristic, adCampaignId, budget, spend, remaining, remainingPercentage));
         }
         return result;
     }
