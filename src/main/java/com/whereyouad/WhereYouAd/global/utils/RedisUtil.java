@@ -91,6 +91,16 @@ public class RedisUtil {
         template.delete(key);
     }
 
+    // 분산 락 해제용: 저장된 값이 기대값과 일치할 때만 삭제 (Lua로 원자적 처리, 남의 락 삭제 방지)
+    private static final DefaultRedisScript<Long> COMPARE_AND_DELETE_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+            Long.class);
+
+    public Boolean compareAndDelete(String key, String expectedValue) {
+        Long result = template.execute(COMPARE_AND_DELETE_SCRIPT, List.of(key), expectedValue);
+        return result != null && result == 1L;
+    }
+
     // List 데이터 저장 (왼쪽 끝에 저장)
     public Long leftPush(String key, String value) {
         return template.opsForList().leftPush(key, value);

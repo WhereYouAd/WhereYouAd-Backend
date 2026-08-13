@@ -59,6 +59,17 @@ public interface NaverClient {
             @RequestParam(value = "breakdown", required = false) String breakdown
     );
 
+    // 통계 데이터 날짜 범위 조회 (단일 소재 + timeIncrement=1 → 일별 행)
+    // 복수 ids + 일별(timeIncrement=1) 조합은 네이버 미지원 (공식 샘플 Stats.java: 일별은 단일 id만)
+    @GetMapping("/stats")
+    NaverDTO.StatListResponse getStatsByDateRange(
+            @RequestHeader Map<String, String> headers,
+            @RequestParam("id") String id,
+            @RequestParam("fields") String fields,
+            @RequestParam("timeRange") String timeRange,
+            @RequestParam("timeIncrement") String timeIncrement
+    );
+
     // 대용량 보고서 생성 요청
     @PostMapping("/stat-reports")
     NaverDTO.StatReportResponse createStatReport(
