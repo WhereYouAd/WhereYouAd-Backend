@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Slf4j
@@ -28,12 +27,10 @@ public class NaverAdScheduler {
         // 현재 DB에 저장된 모든 NAVER 연결 계정을 가져옴
         List<PlatformConnection> connections = platformConnectionRepository.findByPlatformAccount_Provider(Provider.NAVER);
 
-        // T-1(어제), T-2(그저께)
+        // T-2(그저께) ~ T-1(어제) 범위를 배치 한 번으로 동기화
         LocalDate today = LocalDate.now();
-        String yesterday = today.minusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        String dayBeforeYesterday = today.minusDays(2).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-
-        String[] targetDates = { dayBeforeYesterday, yesterday };
+        LocalDate startDate = today.minusDays(2);
+        LocalDate endDate = today.minusDays(1);
 
         // NAVER 계정 (PlatformConnection) 단위로 메타데이터 및 통계 동기화
         for (PlatformConnection conn : connections) {
@@ -47,12 +44,11 @@ public class NaverAdScheduler {
                 log.error("connectionId: {} 메타데이터 동기화 실패: {}", connectionId, e.getMessage(), e);
             }
 
-            for (String statDate : targetDates) {
-                try {
-                    naverAdSyncService.syncBasicStats(connectionId, statDate);
-                } catch (Exception e) {
-                    log.error("connectionId: {} / date: {} 동기화 실패: {}", connectionId, statDate, e.getMessage(), e);
-                }
+            try {
+                naverAdSyncService.syncBasicStats(connectionId, startDate, endDate);
+            } catch (Exception e) {
+                log.error("connectionId: {} / 기간: {} ~ {} 동기화 실패: {}",
+                        connectionId, startDate, endDate, e.getMessage(), e);
             }
         }
 

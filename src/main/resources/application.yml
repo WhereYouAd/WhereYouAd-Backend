@@ -192,3 +192,21 @@ cookie:
   secure: ${COOKIE_SECURE:false}
   domain: ${COOKIE_DOMAIN:}
   same-site: ${COOKIE_SAME_SITE:Lax}
+
+# 13. 클릭 이상 감지 설정
+click:
+  surge:
+    enabled: true
+    notify-enabled: true        # false = 감지·기록만 하고 발송하지 않는 드라이런 모드
+    window-minutes: 5
+    multiplier-threshold: 3.0   # baseline 대비 배수 기준
+    z-score-threshold: 3.5
+    min-window-clicks: 30       # 윈도우 최소 절대 클릭수 가드
+    cold-start-min-clicks: 90   # baseline 전무 시 절대치 단독 발동 기준
+    streak-required: 2          # 연속 감지 횟수 (2회 = 10분 지속)
+    cooldown-seconds: 1800      # 광고별 알림 쿨다운(초)
+    ema-alpha: 0.2
+    warmup-min-samples: 12      # EMA 샘플 미만이면 직전 1시간 롤링 baseline 사용
+    active-set-ttl-seconds: 1800
+  bot-summary:
+    enabled: true
