@@ -26,6 +26,24 @@ public interface NotificationControllerDocs {
             @PathVariable Long orgId
     );
 
+    @Operation(
+            summary = "알림 기록 조회 API (무한 스크롤 - Slice 기반)",
+            description = "조직 내에서 본인이 수신한 알림 기록을 조회합니다. 안 읽은 알림이 먼저 오고, 안 읽은 알림끼리는 최신순입니다. \n\n" +
+                    "안 읽은 알림이 없으면 전체가 최신순으로 정렬됩니다. cursor와 size 파라미터를 통해 무한 스크롤을 지원하며, cursor는 Base64로 인코딩된 문자열입니다. \n\n" +
+                    "**읽음 처리 후에는 정렬 순서가 바뀌므로 cursor를 버리고 첫 페이지부터 다시 조회해야 합니다.**"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공 (hasNext: 다음 페이지 존재 여부, nextCursor: 다음 페이지 커서, notifications: 알림 기록 리스트)"),
+            @ApiResponse(responseCode = "400", description = "CURSOR_400_3 : 잘못된 커서 형식\n\n NOTIFICATION_400_5 : 유효하지 않은 커서"),
+            @ApiResponse(responseCode = "404", description = "해당 조직의 멤버가 아닙니다.")
+    })
+    ResponseEntity<DataResponse<NotificationResponse.NotificationHistoryList>> getHistory(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size
+    );
+
     @Operation(summary = "마스터 컨트롤 변경", description = "모든 알림을 일시적으로 켜거나 끕니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "변경 성공"),

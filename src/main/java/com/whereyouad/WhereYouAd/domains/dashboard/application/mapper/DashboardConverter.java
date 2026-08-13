@@ -11,12 +11,6 @@ import java.util.List;
 
 public class DashboardConverter {
 
-    public static DashboardResponse.BudgetSummaryResponse toBudgetSummary(
-            String providerType, Double usagePercentage, Long totalBudget, Long totalSpend, Long remainingBudget) {
-        return new DashboardResponse.BudgetSummaryResponse(providerType, usagePercentage, totalBudget, totalSpend,
-                remainingBudget);
-    }
-
     public static DashboardResponse.RankingROAS toRankingROAS(
             Integer rank,
             Provider provider,

@@ -8,8 +8,10 @@ import com.whereyouad.WhereYouAd.domains.notification.exception.NotificationExce
 import com.whereyouad.WhereYouAd.domains.notification.exception.code.NotificationErrorCode;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgMemberNotificationSetting;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgNotificationSetting;
+import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.UserNotification;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.repository.OrgMemberNotificationSettingRepository;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.repository.OrgNotificationSettingRepository;
+import com.whereyouad.WhereYouAd.domains.notification.persistence.repository.UserNotificationRepository;
 import com.whereyouad.WhereYouAd.domains.organization.domain.constant.OrgRole;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
@@ -31,6 +33,7 @@ import org.springframework.util.StringUtils;
 
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +55,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final DiscordWebhookClient discordClient;
     private final SlackWebhookClient slackClient;
     private final AESUtil aesUtil;
+    private final UserNotificationRepository userNotificationRepository;
 
     // 현재 내 알림 설정 조회
     @Override
@@ -60,6 +64,44 @@ public class NotificationServiceImpl implements NotificationService {
         OrgMemberNotificationSetting setting = findOrCreateSetting(member);
         OrgNotificationSetting orgSetting = orgSettingRepository.findById(orgId).orElse(null);
         return NotificationConverter.toMySettings(setting, orgSetting);
+    }
+
+    // 알림 기록 조회 (커서 기반 무한 스크롤) -> 안 읽은 알림 우선, 그룹 내에서는 최신순
+    // 읽음 처리 시 정렬 키(isRead)가 바뀌므로 기존 커서는 무효 -> 프론트는 첫 페이지부터 재조회
+    @Override
+    @Transactional(readOnly = true)
+    public NotificationResponse.NotificationHistoryList getHistory(Long userId, Long orgId, String encodedCursor, Integer size) {
+        findMember(userId, orgId);
+
+        // 페이지 크기 (기본 20, 상한 50)
+        int pageSize = (size != null && size > 0) ? Math.min(size, 50) : 20;
+
+        // 커서엔 id만 담기는데 정렬 키는 (isRead, createdAt, id) 3개 → 커서가 가리키는 행을 조회해 나머지 기준값 확보
+        Long cursorId = null;
+        Boolean cursorIsRead = null;
+        LocalDateTime cursorCreatedAt = null;
+
+        if (encodedCursor != null && !encodedCursor.isBlank()) {
+            cursorId = CursorUtil.decodeToId(encodedCursor);
+            UserNotification anchor = userNotificationRepository.findCursorAnchor(cursorId, userId, orgId)
+                    .orElseThrow(() -> new NotificationException(NotificationErrorCode.INVALID_CURSOR));
+            cursorIsRead = anchor.isRead();
+            cursorCreatedAt = anchor.getNotification().getCreatedAt();
+        }
+
+        // Slice 조회 (pageSize + 1건을 읽어 hasNext를 자동 계산)
+        Slice<UserNotification> slice = userNotificationRepository.findHistoryWithCursor(
+                userId, orgId, cursorIsRead, cursorCreatedAt, cursorId, PageRequest.of(0, pageSize)
+        );
+
+        // 다음 페이지 커서 = 현재 페이지 마지막 행의 id (다음 조회는 이 행 바로 다음부터 시작)
+        String nextCursor = null;
+        if (slice.hasNext() && !slice.getContent().isEmpty()) {
+            Long lastId = slice.getContent().get(slice.getContent().size() - 1).getId();
+            nextCursor = CursorUtil.encode(lastId);
+        }
+
+        return NotificationConverter.toNotificationHistoryList(slice.hasNext(), nextCursor, slice.getContent());
     }
 
     // 전체 알림 설정 변경 메서드
@@ -148,11 +190,11 @@ public class NotificationServiceImpl implements NotificationService {
                 .stream()
                 .collect(Collectors.toMap(OrgMemberNotificationSetting::getMembershipId, s -> s));
 
-        // 설정이 없는 멤버는 수신 중(true)으로 간주
+        // 설정이 없는 멤버는 기본값(전부 OFF)에 맞춰 미수신(false)으로 간주
         List<NotificationResponse.MemberSetting> members = slice.getContent().stream()
                 .map(m -> {
                     OrgMemberNotificationSetting s = settingsMap.get(m.getId());
-                    boolean isReceive = s == null || s.isMasterEnabled();
+                    boolean isReceive = s != null && s.isMasterEnabled();
                     return NotificationConverter.toMemberSetting(m, isReceive);
                 })
                 .toList();

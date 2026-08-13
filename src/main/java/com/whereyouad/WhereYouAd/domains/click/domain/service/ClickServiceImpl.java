@@ -7,6 +7,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCont
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.response.ClickResponse;
+import com.whereyouad.WhereYouAd.domains.click.domain.constant.ClickWindowKeys;
 import com.whereyouad.WhereYouAd.domains.click.exception.ClickHandler;
 import com.whereyouad.WhereYouAd.domains.click.exception.code.ClickErrorCode;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
@@ -109,8 +110,9 @@ public class ClickServiceImpl implements ClickService {
         }
 
         List<ClickResponse.RealtimeClickCount> result = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+        // ClickConsumer가 적재한 분 단위 키와 같은 타임존을 사용해야 조회가 정합
+        LocalDateTime now = LocalDateTime.now(ClickWindowKeys.ZONE_ID);
+        DateTimeFormatter formatter = ClickWindowKeys.MINUTE_FORMATTER;
 
         for (int i = minutes - 1; i >= 0; i--) {
             LocalDateTime time = now.minusMinutes(i);

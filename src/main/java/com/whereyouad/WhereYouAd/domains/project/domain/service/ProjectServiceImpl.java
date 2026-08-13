@@ -1,5 +1,6 @@
 package com.whereyouad.WhereYouAd.domains.project.domain.service;
 
+import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.BudgetType;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.AdvertisementHandler;
 import com.whereyouad.WhereYouAd.domains.advertisement.exception.code.AdvertisementErrorCode;
@@ -16,6 +17,8 @@ import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMemb
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgMemberRepository;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.repository.OrgRepository;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
+import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.ProjectQueryDto;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.request.ProjectRequest;
 import com.whereyouad.WhereYouAd.domains.project.application.dto.response.ProjectResponse;
@@ -34,6 +37,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,6 +55,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final OrgRepository orgRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final MetricFactRepository metricFactRepository;
+    private final PlatformConnectionRepository platformConnectionRepository;
     private final BudgetCalculator budgetCalculator;
 
     @Override
@@ -186,7 +192,81 @@ public class ProjectServiceImpl implements ProjectService {
         // 총 예산 (캠페인 budget의 합)
         long totalBudget = budgetCalculator.calculateTotalBudget(campaignSummaries);
 
-        return ProjectConverter.toProjectInfoResponse(project, distinctProviders, totalBudget);
+        // 플랫폼별 남은 예산 (전체(구글/메타)/일일(네이버) 특성에 따라 합산)
+        List<ProjectResponse.PlatformBudgetSummary> platformBudgets = buildPlatformBudgetSummaries(userId, project.getId(), distinctProviders);
+
+        return ProjectConverter.toProjectInfoResponse(project, distinctProviders, totalBudget, platformBudgets);
+    }
+
+    // 프로젝트(캠페인) 내 캠페인들을 provider 기준으로 묶어, 각 플랫폼이 실제로 사용하는 예산 특성(TOTAL/DAILY)에 맞춰 남은 예산을 계산
+    // - TOTAL 타입 캠페인이 하나라도 있으면(구글/메타) TOTAL 타입 캠페인들의 예산 합계 - 누적 지출
+    // - TOTAL 타입 캠페인이 없으면(네이버) DAILY 타입 캠페인들의 예산 합계 - 오늘 지출
+    private List<ProjectResponse.PlatformBudgetSummary> buildPlatformBudgetSummaries(Long userId, Long projectId, List<Provider> providers) {
+        List<ProjectQueryDto.CampaignBudgetInfo> campaignBudgetInfos = adCampaignRepository.findCampaignBudgetInfoByProjectId(projectId);
+        Map<Provider, List<ProjectQueryDto.CampaignBudgetInfo>> byProvider = campaignBudgetInfos.stream()
+                .collect(Collectors.groupingBy(ProjectQueryDto.CampaignBudgetInfo::provider));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+
+        // provider 루프 안에서 매번 쿼리하지 않도록, TOTAL/DAILY 지출을 provider별로 배치 조회 (N+1 방지)
+        Map<Provider, BigDecimal> totalSpendByProvider = metricFactRepository
+                .sumSpendsByProjectIdAndBudgetTypeGroupByProvider(projectId, BudgetType.TOTAL).stream()
+                .collect(Collectors.toMap(ProjectQueryDto.ProviderSpend::provider, ProjectQueryDto.ProviderSpend::totalSpend));
+        Map<Provider, BigDecimal> dailySpendByProvider = metricFactRepository
+                .sumSpendsByProjectIdAndBudgetTypeAndPeriodGroupByProvider(projectId, BudgetType.DAILY, todayStart, now).stream()
+                .collect(Collectors.toMap(ProjectQueryDto.ProviderSpend::provider, ProjectQueryDto.ProviderSpend::totalSpend));
+
+        List<ProjectResponse.PlatformBudgetSummary> result = new ArrayList<>();
+        for (Provider provider : providers) {
+            List<ProjectQueryDto.CampaignBudgetInfo> infos = byProvider.getOrDefault(provider, Collections.emptyList());
+
+            boolean hasTotalType = infos.stream().anyMatch(info -> info.budgetType() == BudgetType.TOTAL);
+            BudgetType characteristic = hasTotalType ? BudgetType.TOTAL : BudgetType.DAILY;
+
+            List<ProjectQueryDto.CampaignBudgetInfo> matchingInfos = infos.stream()
+                    .filter(info -> info.budgetType() == characteristic)
+                    .toList();
+
+            long budget = matchingInfos.stream()
+                    .mapToLong(info -> info.budget() != null ? info.budget() : 0L)
+                    .sum();
+
+            BigDecimal spendDec = (characteristic == BudgetType.TOTAL)
+                    ? totalSpendByProvider.get(provider)
+                    : dailySpendByProvider.get(provider);
+
+            long spend = (spendDec != null) ? spendDec.longValue() : 0L;
+            long remaining = budgetCalculator.calculateRemainingBudget(budget, spend);
+            double remainingPercentage = budgetCalculator.calculateRemainingRate(budget, remaining);
+
+            // 예산 수정 요청용 캠페인 식별자
+            // - 매칭되는 캠페인이 정확히 1개일 때만 값을 채움 (2개 이상이면 어느 캠페인을 가리키는지 모호하므로 null)
+            // - 구글/메타: 내부 PK(adCampaignId)를 그대로 사용
+            // - 네이버: 예산 수정 API가 내부 PK가 아닌 connectionId + 외부 캠페인ID를 요구하므로 별도로 조립
+            ProjectQueryDto.CampaignBudgetInfo target = (matchingInfos.size() == 1) ? matchingInfos.get(0) : null;
+
+            Long adCampaignId = (target != null && provider != Provider.NAVER) ? target.campaignId() : null;
+            ProjectResponse.NaverBudgetTarget naverBudgetTarget = (target != null && provider == Provider.NAVER)
+                    ? buildNaverBudgetTarget(userId, target)
+                    : null;
+
+            result.add(new ProjectResponse.PlatformBudgetSummary(
+                    provider, characteristic, adCampaignId, naverBudgetTarget, budget, spend, remaining, remainingPercentage));
+        }
+        return result;
+    }
+
+    // 네이버 캠페인 예산 수정 요청(PUT /api/naver/{connectionId}/campaigns/{campaignId}/budget) 조립용 식별자 조회
+    // externalCampaignId/platformAccountId가 없거나, 해당 유저의 platformAccount 연동 정보가 없으면 null 반환
+    private ProjectResponse.NaverBudgetTarget buildNaverBudgetTarget(Long userId, ProjectQueryDto.CampaignBudgetInfo info) {
+        if (info.externalCampaignId() == null || info.platformAccountId() == null) {
+            return null;
+        }
+        return platformConnectionRepository.findByUserIdAndPlatformAccountId(userId, info.platformAccountId())
+                .map(PlatformConnection::getId)
+                .map(connectionId -> new ProjectResponse.NaverBudgetTarget(connectionId, info.externalCampaignId()))
+                .orElse(null);
     }
 
     // Provider 추출 공통 메서드

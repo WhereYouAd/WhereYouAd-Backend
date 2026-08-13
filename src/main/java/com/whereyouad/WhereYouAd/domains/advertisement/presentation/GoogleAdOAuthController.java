@@ -31,7 +31,7 @@ public class GoogleAdOAuthController implements GoogleAdOAuthDocs {
     @Value("${google.ads.redirect-uri}")
     private String redirectUri;
 
-    @Value("${oauth2.redirect-url}")
+    @Value("${google.ads.frontend-callback-url}")
     private String frontendCallbackUrl;
 
     // 구글 광고 API 접근 권한 스코프

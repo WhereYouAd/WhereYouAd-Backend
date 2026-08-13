@@ -1,8 +1,10 @@
 package com.whereyouad.WhereYouAd.domains.notification.application.mapper;
 
 import com.whereyouad.WhereYouAd.domains.notification.application.dto.response.NotificationResponse;
+import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.Notification;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgMemberNotificationSetting;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgNotificationSetting;
+import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.UserNotification;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.OrgMember;
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 
@@ -47,15 +49,15 @@ public class NotificationConverter {
         );
     }
 
-    // 기본 알림 설정(entity -> dto), 기본값: 마스터 알림 ON, 이메일 수신 ON / 그 외 알림 관련 모두 수신 X
+    // 기본 알림 설정(entity -> dto), 기본값: 전부 OFF (알림 수신은 설정 페이지에서 직접 켜는 opt-in 방식)
     public static OrgMemberNotificationSetting toDefaultMemberSetting(OrgMember member) {
         return OrgMemberNotificationSetting.builder()
                 .orgMember(member)
-                .isMasterEnabled(true)
+                .isMasterEnabled(false)
                 .isBrowserPushEnabled(false)
-                .isEmailEnabled(true)
+                .isEmailEnabled(false)
                 .alertClicks(false)
-                .alertReport(true)
+                .alertReport(false)
                 .build();
     }
 
@@ -64,6 +66,36 @@ public class NotificationConverter {
         return OrgNotificationSetting.builder()
                 .organization(organization)
                 .build();
+    }
+
+    public static NotificationResponse.NotificationHistory toNotificationHistory(UserNotification userNotification) {
+        Notification notification = userNotification.getNotification();
+
+        return new NotificationResponse.NotificationHistory(
+                userNotification.getId(),
+                notification.getTitle(),
+                notification.getMessage(),
+                notification.getCreatedAt(),
+                notification.getType(),
+                userNotification.isRead()
+        );
+    }
+
+    // 알림 기록 Slice DTO 변환 (무한 스크롤)
+    public static NotificationResponse.NotificationHistoryList toNotificationHistoryList(
+            boolean hasNext,
+            String nextCursor,
+            List<UserNotification> userNotifications
+    ) {
+        List<NotificationResponse.NotificationHistory> notifications = userNotifications.stream()
+                .map(NotificationConverter::toNotificationHistory)
+                .toList();
+
+        return new NotificationResponse.NotificationHistoryList(
+                hasNext,
+                nextCursor,
+                notifications
+        );
     }
 
     public static DiscordMessage toDiscordMessage(String title, String message) {

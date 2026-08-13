@@ -141,7 +141,7 @@ public class OpenApiService {
                 startDate, endDate, prevStartDate, prevEndDate,
                 thisWeekMetrics, prevWeekMetrics);
 
-        OpenAIRequest.Request request = AIConverter.toOpenAiRequest(model, systemPrompt, userPrompt, 0.3);
+        OpenAIRequest.Request request = AIConverter.toOpenAiRequest(model, systemPrompt, userPrompt);
 
         OpenAIResponse.Response response;
         try {

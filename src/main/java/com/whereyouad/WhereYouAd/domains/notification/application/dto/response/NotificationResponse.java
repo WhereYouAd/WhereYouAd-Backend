@@ -1,5 +1,8 @@
 package com.whereyouad.WhereYouAd.domains.notification.application.dto.response;
 
+import com.whereyouad.WhereYouAd.domains.notification.domain.constant.NotificationType;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class NotificationResponse {
@@ -32,4 +35,18 @@ public class NotificationResponse {
             List<MemberSetting> members
     ) {}
 
+    public record NotificationHistoryList(
+            boolean hasNext,
+            String nextCursor,
+            List<NotificationHistory> notifications
+    ) {}
+
+    public record NotificationHistory(
+            Long userNotificationId, // UserNotification 의 Id 사용
+            String title,
+            String message,
+            LocalDateTime createdAt,
+            NotificationType type,
+            boolean isRead
+    ) {}
 }
