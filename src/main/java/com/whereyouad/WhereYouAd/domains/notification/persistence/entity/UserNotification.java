@@ -35,4 +35,13 @@ public class UserNotification {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    // 알림 읽음 처리
+    public void markAsRead() {
+        if (this.isRead) {
+            return;
+        }
+        this.isRead = true;
+        this.readAt = LocalDateTime.now();
+    }
 }

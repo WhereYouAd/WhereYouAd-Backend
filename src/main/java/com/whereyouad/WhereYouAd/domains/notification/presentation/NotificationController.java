@@ -43,6 +43,27 @@ public class NotificationController implements NotificationControllerDocs {
         ));
     }
 
+    @PatchMapping("/history/{orgId}/{userNotificationId}/read")
+    @Override
+    public ResponseEntity<DataResponse<Void>> markNotificationAsRead(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long userNotificationId
+    ) {
+        notificationService.markAsRead(userId, orgId, userNotificationId);
+        return ResponseEntity.ok(DataResponse.ok());
+    }
+
+    @PatchMapping("/history/{orgId}/read-all")
+    @Override
+    public ResponseEntity<DataResponse<Void>> markAllNotificationsAsRead(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId
+    ) {
+        notificationService.markAllAsRead(userId, orgId);
+        return ResponseEntity.ok(DataResponse.ok());
+    }
+
     @PatchMapping("/settings/{orgId}/master")
     @Override
     public ResponseEntity<DataResponse<Void>> updateMaster(

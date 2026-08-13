@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.UserNot
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -42,5 +43,17 @@ public interface UserNotificationRepository extends JpaRepository<UserNotificati
                                                 @Param("userId") Long userId,
                                                 @Param("orgId") Long orgId
                                                 );
+
+    // 조직 내 회원의 안 읽은 알림 일괄 읽음 처리
+    // 벌크 UPDATE는 조인을 쓸 수 없어 조직 조건만 서브쿼리로 분리
+    @Modifying
+    @Query("UPDATE UserNotification un " +
+            "SET un.isRead = true, un.readAt = :now " +
+            "WHERE un.user.id = :userId " +
+            "AND un.isRead = false " +
+            "AND un.notification.id IN (SELECT n.id FROM Notification n WHERE n.organization.id = :orgId)")
+    int markAllAsRead(@Param("userId") Long userId,
+                      @Param("orgId") Long orgId,
+                      @Param("now") LocalDateTime now);
 
 }
