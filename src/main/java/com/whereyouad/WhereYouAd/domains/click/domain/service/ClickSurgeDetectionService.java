@@ -100,6 +100,8 @@ public class ClickSurgeDetectionService {
 
         List<ClickBaselineStat> statsToSave = new ArrayList<>();
         Map<Long, List<SurgeAlert>> alertsByOrg = new HashMap<>();
+        // 조직별 클릭 알림 활성 여부 캐시 - 같은 조직 광고마다 설정을 중복 조회하지 않도록
+        Map<Long, Boolean> alarmActiveByOrg = new HashMap<>();
 
         // 4. 광고별 판정 루프
         for (Map.Entry<Long, Long> entry : orgIdByAdId.entrySet()) {
@@ -125,9 +127,12 @@ public class ClickSurgeDetectionService {
                 // 감지 즉시 이력은 무조건 저장(notified=false). 발송 성공 후에만 notified=true로 갱신
                 int streak = incrementStreak(adContentId, windowStart);
                 ClickAnomalyEvent savedEvent = saveAnomalyEvent(adContentId, orgId, windowStart, clicks, baseline, verdict);
-                // 알림 비활성(드라이런) 모드에서는 쿨다운을 소모하지 않는다
+                // 알림 비활성(드라이런) 모드나 클릭 알림을 꺼둔 조직은 쿨다운을 소모하지 않는다
+                // (쿨다운만 선점하고 발송은 skip되면, 그 사이 알림을 켠 조직이 다음 급증 알림을 놓치게 됨)
                 CooldownClaim cooldownClaim = null;
-                if (properties.isNotifyEnabled() && streak >= properties.getStreakRequired()) {
+                if (properties.isNotifyEnabled() && streak >= properties.getStreakRequired()
+                        && alarmActiveByOrg.computeIfAbsent(orgId,
+                                key -> notificationService.isExternalAlarmActive(key, NotificationType.CLICKS))) {
                     cooldownClaim = acquireCooldown(adContentId);
                 }
                 if (cooldownClaim != null) {

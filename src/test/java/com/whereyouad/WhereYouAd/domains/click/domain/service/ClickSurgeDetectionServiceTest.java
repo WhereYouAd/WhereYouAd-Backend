@@ -69,6 +69,8 @@ class ClickSurgeDetectionServiceTest {
                 adContentRepository, notificationService, props, transactionManager);
         lenient().when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong()))
                 .thenReturn(1L);
+        lenient().when(notificationService.isExternalAlarmActive(anyLong(), any()))
+                .thenReturn(true);
     }
 
     private void givenActiveAds(String... members) {
@@ -277,6 +279,25 @@ class ClickSurgeDetectionServiceTest {
     @DisplayName("드라이런 모드(notify-enabled=false)면 기록만 하고 쿨다운 소모·발송 없이 notified=false 유지")
     void dryRunRecordsButDoesNotNotify() {
         props.setNotifyEnabled(false);
+        givenActiveAds(AD_ID + ":" + ORG_ID);
+        givenMinuteCounts("40");
+        when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
+                .thenReturn(List.of(warmedUpStat(AD_ID, 40, 25)));
+        when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong())).thenReturn(2L);
+
+        service.detectForWindow(windowStart);
+
+        ArgumentCaptor<ClickAnomalyEvent> eventCaptor = ArgumentCaptor.forClass(ClickAnomalyEvent.class);
+        verify(anomalyEventRepository).save(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().isNotified()).isFalse();
+        verify(redisUtil, never()).setIfAbsent(anyString(), anyString(), anyLong());
+        verify(notificationService, never()).sendApiAlarmToOrg(anyLong(), any(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("클릭 알림이 꺼진 조직은 streak 도달해도 쿨다운 선점·발송 없이 기록만 남김")
+    void inactiveOrgAlarmSkipsCooldownAndNotification() {
+        when(notificationService.isExternalAlarmActive(ORG_ID, NotificationType.CLICKS)).thenReturn(false);
         givenActiveAds(AD_ID + ":" + ORG_ID);
         givenMinuteCounts("40");
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))
