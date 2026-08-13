@@ -5,6 +5,8 @@ import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCont
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
 import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
 import com.whereyouad.WhereYouAd.domains.click.application.mapper.ClickConverter;
+import com.whereyouad.WhereYouAd.domains.click.domain.config.ClickSurgeProperties;
+import com.whereyouad.WhereYouAd.domains.click.domain.constant.ClickWindowKeys;
 import com.whereyouad.WhereYouAd.domains.click.domain.service.BotDetector;
 import com.whereyouad.WhereYouAd.domains.click.persistence.entity.ClickLog;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickLogRepository;
@@ -17,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -32,8 +35,9 @@ public class ClickConsumer {
     private final ClickLogRepository clickLogRepository;
     private final BotDetector botDetector;
     private final NotificationEventProducer notificationEventProducer;
+    private final ClickSurgeProperties clickSurgeProperties;
 
-    private static final DateTimeFormatter MINUTE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+    private static final DateTimeFormatter MINUTE_FORMATTER = ClickWindowKeys.MINUTE_FORMATTER;
     private static final long REDIS_TTL_SECONDS = 7200L; // 2시간
     private static final long CLICK_ALERT_COOLDOWN_SECONDS = 600L; // 10분 - 조직별 봇 클릭 외부 알림(Kafka 발행) 쿨다운
     private final ObjectMapper objectMapper;
@@ -42,8 +46,10 @@ public class ClickConsumer {
     // key: click:real:{adContentId}:{yyyyMMddHHmm} 또는 click:dummy:{adContentId}:{yyyyMMddHHmm}
     @KafkaListener(topics = "ad-click-events", groupId = "where-you-ad-group")
     public void consume(ClickDto event) {
-        // 현재 시간을 분 단위 문자열로 변환
-        String currentMinute = LocalDateTime.now().format(MINUTE_FORMATTER);
+        // 이벤트 발생 시각(clickedAt)을 분 단위 문자열로 변환 - consumer 지연 시에도 실제 클릭 시각 기준으로 집계
+        LocalDateTime clickTime = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(event.getClickedAt()), ClickWindowKeys.ZONE_ID);
+        String currentMinute = clickTime.format(MINUTE_FORMATTER);
         String mode = event.isDummy() ? "dummy" : "real";
         String clickKey = String.format("click:%s:%s:%s", mode, event.getAdContentId(), currentMinute);
 
@@ -64,6 +70,15 @@ public class ClickConsumer {
             }
         } else { //orgId null 이벤트 로그 처리
             log.warn("orgId 누락 이벤트 수신: adId={}, mode={}", event.getAdContentId(), mode);
+        }
+
+        // 급증 감지 대상 등록 - 이번 5분 윈도우에 클릭이 있었던 광고만 스케줄러가 검사
+        if (!event.isDummy() && event.getOrgId() != null && clickSurgeProperties.isEnabled()) {
+            LocalDateTime windowStart = ClickWindowKeys.floorToWindowStart(clickTime, clickSurgeProperties.getWindowMinutes());
+            redisUtil.sAddExpire(
+                    ClickWindowKeys.activeAdsKey(windowStart),
+                    clickSurgeProperties.getActiveSetTtlSeconds(),
+                    ClickWindowKeys.activeAdsMember(event.getAdContentId(), event.getOrgId()));
         }
 
         log.debug("Click Key: {}, UserAgent: {}, IP Address: {}, Count: {}",
