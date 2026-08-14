@@ -136,6 +136,15 @@ services:
     networks:
       - where-you-ad-network
 
+  # 5. Prometheus
+  prometheus:
+    image: prom/prometheus:latest # 가장 최신 정보 가져옴
+    container_name: where-you-ad-prometheus
+    ports:
+      - "9090:9090" # 프로메테우스의 기본 포트 번호
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml # 프로메테우스 설정 파일
+
 networks:
   where-you-ad-network:
     driver: bridge
