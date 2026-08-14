@@ -52,6 +52,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() //swagger 접근 허용
+                        .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll() //모니터링(Prometheus) 엔드포인트 접근 허용
                         .requestMatchers("/api/users/my", "/api/auth/logout").authenticated() //마이페이지, 로그아웃은 인증 필요
                         .requestMatchers("/api/users/**", "/api/auth/**", "/api/clicks/track/**", "/api/ai/reports/**").permitAll() //로그인, 회원가입, 이메일 인증, 트래킹, AI 리포트 접근 허용
                         .requestMatchers("/api/meta/callback").permitAll()
