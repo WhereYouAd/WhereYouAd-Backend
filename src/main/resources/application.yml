@@ -210,3 +210,17 @@ click:
     active-set-ttl-seconds: 1800
   bot-summary:
     enabled: true
+
+
+# 14. 모니터링 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info,metrics,env,loggers # 수집할 정보들
+  metrics:
+    tags:
+      application: whereyouad
+  endpoint:
+    health:
+      show-details: always
