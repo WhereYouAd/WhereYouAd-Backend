@@ -39,7 +39,7 @@ public class BotClickSummaryNotificationService {
                 String title = String.format("[%s] 어제의 봇 클릭 요약 (%s)",
                         summary.orgName(), yesterday.format(DATE_FMT));
                 notificationService.sendApiAlarmToOrg(
-                        summary.orgId(), NotificationType.CLICKS, title, buildMessage(summary));
+                        summary.orgId(), NotificationType.BOT_CLICKS, title, buildMessage(summary));
             } catch (Exception e) {
                 // 조직별 발송 실패 격리
                 log.error("[봇클릭요약] 조직={} 발송 실패", summary.orgId(), e);
