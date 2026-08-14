@@ -4,6 +4,8 @@ import com.whereyouad.WhereYouAd.domains.notification.domain.constant.Notificati
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -42,6 +44,7 @@ public class Notification {
     // 연관 관계
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Organization organization;
 
     @Enumerated(EnumType.STRING)
