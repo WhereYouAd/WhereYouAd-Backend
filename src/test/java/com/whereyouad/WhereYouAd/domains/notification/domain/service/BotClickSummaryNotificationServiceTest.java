@@ -50,7 +50,7 @@ class BotClickSummaryNotificationServiceTest {
 
         service.sendDailyBotSummaries();
 
-        verify(notificationService).sendApiAlarmToOrg(eq(2L), eq(NotificationType.CLICKS), anyString(), anyString());
+        verify(notificationService).sendApiAlarmToOrg(eq(2L), eq(NotificationType.BOT_CLICKS), anyString(), anyString());
     }
 
     @Test
@@ -72,7 +72,7 @@ class BotClickSummaryNotificationServiceTest {
 
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
         verify(notificationService).sendApiAlarmToOrg(
-                eq(1L), eq(NotificationType.CLICKS),
+                eq(1L), eq(NotificationType.BOT_CLICKS),
                 contains("조직1"),
                 messageCaptor.capture());
         assertThat(messageCaptor.getValue())

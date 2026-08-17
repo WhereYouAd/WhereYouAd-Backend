@@ -347,7 +347,7 @@ public class NotificationServiceImpl implements NotificationService {
     // 알림 종류 입력 받아 실제 조직에서 수신 설정 되어있는지 여부 반환
     private boolean isAlertTypeEnabled(OrgNotificationSetting setting, NotificationType type) {
         return switch (type) {
-            case CLICKS -> setting.isAlertClicks();
+            case BOT_CLICKS, CLICKS_INCREASE -> setting.isAlertClicks();
             case REPORT -> setting.isAlertReport();
         };
     }
