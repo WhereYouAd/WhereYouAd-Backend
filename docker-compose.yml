@@ -145,6 +145,13 @@ services:
       # app 컨테이너를 서비스명(app:8080)으로 스크레이핑하는 dev용 설정
       # (배포 서버에 monitoring/prometheus.dev.yml 이 미리 존재해야 함 - .gitignore 대상, prometheus.dev.yml.example 참고)
       - ./monitoring/prometheus.dev.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus # 컨테이너 재생성(down/recreate)해도 리팩토링 전후 지표가 남도록 영속화
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d' # 리팩토링 전후 비교를 위해 기본 15일보다 넉넉하게
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
     networks:
       - where-you-ad-network # app 컨테이너를 이름으로 찾으려면 같은 네트워크에 있어야 함
     restart: always
@@ -165,6 +172,10 @@ services:
     depends_on:
       - prometheus
     restart: always
+
+volumes:
+  prometheus-data:
+    driver: local
 
 networks:
   where-you-ad-network:
