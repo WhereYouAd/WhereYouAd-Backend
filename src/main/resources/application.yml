@@ -113,6 +113,10 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+    listener:
+      observation-enabled: true    # @KafkaListener 처리시간/에러 지표(spring.kafka.listener.*)
+    template:
+      observation-enabled: true    # KafkaTemplate.send() 지표(spring.kafka.template.*)
 
   # AWS S3
   cloud:
