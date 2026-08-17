@@ -7,3 +7,7 @@ scrape_configs:
     static_configs:
       # 도커 컨테이너 안에서 내 로컬 컴퓨터(Host)에 떠있는 스프링 부트로 접근
       - targets: ['host.docker.internal:8080']
+    basic_auth:
+      # application.yml의 actuator-auth 기본값과 동일 (로컬 전용 고정값, 실제 비밀번호 아님)
+      username: metrics
+      password: local-dev-only

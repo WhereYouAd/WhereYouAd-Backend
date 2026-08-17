@@ -234,3 +234,10 @@ management:
   endpoint:
     health:
       show-details: always
+
+# Actuator(/actuator/**) 전용 Basic Auth 계정 (Prometheus 스크레이핑용)
+# 로컬은 기본값(local-dev-only)으로 바로 동작 - monitoring/prometheus.yml과 값이 일치해야 함
+# dev/prod는 .env.prod의 값으로 반드시 덮어써야 함 (monitoring/prometheus.dev.yml과 일치)
+actuator-auth:
+  username: ${ACTUATOR_METRICS_USERNAME:metrics}
+  password: ${ACTUATOR_METRICS_PASSWORD:local-dev-only}
