@@ -1,5 +1,9 @@
 package com.whereyouad.WhereYouAd.global.config;
 
+import io.lettuce.core.metrics.MicrometerCommandLatencyRecorder;
+import io.lettuce.core.metrics.MicrometerOptions;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.boot.autoconfigure.data.redis.ClientResourcesBuilderCustomizer;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +19,15 @@ import java.time.Duration;
 @Configuration
 @EnableCaching
 public class RedisConfig {
+
+    // Lettuce 커맨드(GET/SET/EXPIRE 등)별 레이턴시를 Micrometer로 수집
+    // -> lettuce_command_completion_seconds{command="..."} 메트릭 노출
+    @Bean
+    public ClientResourcesBuilderCustomizer lettuceMetricsCustomizer(MeterRegistry meterRegistry) {
+        return builder -> builder.commandLatencyRecorder(
+                new MicrometerCommandLatencyRecorder(meterRegistry, MicrometerOptions.create())
+        );
+    }
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
