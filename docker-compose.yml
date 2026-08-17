@@ -142,7 +142,12 @@ services:
     ports:
       - "9090:9090" # 프로메테우스의 기본 포트 번호
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml # 프로메테우스 설정 파일
+      # app 컨테이너를 서비스명(app:8080)으로 스크레이핑하는 dev용 설정
+      # (배포 서버에 monitoring/prometheus.dev.yml 이 미리 존재해야 함 - .gitignore 대상, prometheus.dev.yml.example 참고)
+      - ./monitoring/prometheus.dev.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - where-you-ad-network # app 컨테이너를 이름으로 찾으려면 같은 네트워크에 있어야 함
+    restart: always
 
 networks:
   where-you-ad-network:
