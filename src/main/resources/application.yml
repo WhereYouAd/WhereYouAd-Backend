@@ -28,6 +28,7 @@ spring:
     properties:
       hibernate:
         format_sql: true     # SQL 예쁘게 출력
+        generate_statistics: true  # Actuator/Micrometer hibernate 지표(N+1 검증용) 수집을 위해 필요
         jdbc:
           time_zone: Asia/Seoul
     open-in-view: false     #OSIV 비활성화 -> SSE Db 커넥션 풀 고갈 방지
@@ -221,6 +222,11 @@ management:
   metrics:
     tags:
       application: whereyouad
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true   # p95/p99 latency 계산용 histogram bucket 생성
+    enable:
+      hibernate: true                # N+1 검증용 hibernate.* 지표 활성화
   endpoint:
     health:
       show-details: always
