@@ -140,7 +140,7 @@ services:
     image: prom/prometheus:latest # 가장 최신 정보 가져옴
     container_name: where-you-ad-prometheus
     ports:
-      - "9090:9090" # 프로메테우스의 기본 포트 번호
+      - "127.0.0.1:9090:9090" # Prometheus 자체는 인증이 없어서 외부 공개 금지 - SSH 터널/VPN으로만 접근
     volumes:
       # app 컨테이너를 서비스명(app:8080)으로 스크레이핑하는 dev용 설정
       # (배포 서버에 monitoring/prometheus.dev.yml 이 미리 존재해야 함 - .gitignore 대상, prometheus.dev.yml.example 참고)
