@@ -8,6 +8,7 @@ services:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data-local:/prometheus # docker-compose down 해도 로컬 테스트 지표 유지
 
   grafana:
     image: grafana/grafana:latest
@@ -22,3 +23,7 @@ services:
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - prometheus
+
+volumes:
+  prometheus-data-local:
+    driver: local
