@@ -149,6 +149,23 @@ services:
       - where-you-ad-network # app 컨테이너를 이름으로 찾으려면 같은 네트워크에 있어야 함
     restart: always
 
+  # 6. Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: where-you-ad-grafana
+    ports:
+      - "127.0.0.1:3000:3000" # 외부 공개 대신 SSH 터널/VPN으로만 접근 (직접 공개하려면 "3000:3000"로 변경 + 보안그룹 IP 제한 필수)
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - where-you-ad-network
+    depends_on:
+      - prometheus
+    restart: always
+
 networks:
   where-you-ad-network:
     driver: bridge
