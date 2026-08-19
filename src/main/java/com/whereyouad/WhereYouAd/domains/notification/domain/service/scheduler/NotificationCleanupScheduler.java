@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class NotificationCleanupScheduler {
     @Scheduled(cron = "0 0 5 * * *", zone = "Asia/Seoul")
     public void deleteOldNotifications() {
         // 스케줄러 실행 시점으로 부터 만료 기준일 (30일 과거) 설정
-        LocalDateTime threshold = LocalDateTime.now().minusDays(RETENTION_DAYS);
+        LocalDateTime threshold = LocalDate.now().minusDays(RETENTION_DAYS).atStartOfDay();
         log.info("오래된 알림 내역 삭제 스케줄러 실행 - threshold: {}", threshold);
 
         int totalDeleted = 0;
