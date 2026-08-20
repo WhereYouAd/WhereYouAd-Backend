@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.MetaAdApiService;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
 import com.whereyouad.WhereYouAd.infrastructure.client.meta.dto.MetaResponse;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,6 +27,10 @@ public class MetaAdSyncScheduler {
      * 모든 Meta 연동 계정의 광고 데이터를 UPSERT 동기화
      */
     @Scheduled(cron = "0 0 2 * * *", zone = "Asia/Seoul")
+    @Timed(
+            value = "scheduler.execution",
+            extraTags = {"job", "meta-ad-sync"}
+    )
     public void scheduledSync() {
         log.info("[META SCHEDULER] 자동 동기화 시작");
 
