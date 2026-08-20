@@ -24,8 +24,12 @@ public class RedisConfig {
     // -> lettuce_command_completion_seconds{command="..."} 메트릭 노출
     @Bean
     public ClientResourcesBuilderCustomizer lettuceMetricsCustomizer(MeterRegistry meterRegistry) {
+        // histogram(true) 없이 create()만 쓰면 _bucket 시리즈가 안 생겨서 histogram_quantile()(p95 등)이 동작하지 않음
+        MicrometerOptions options = MicrometerOptions.builder()
+                .histogram(true)
+                .build();
         return builder -> builder.commandLatencyRecorder(
-                new MicrometerCommandLatencyRecorder(meterRegistry, MicrometerOptions.create())
+                new MicrometerCommandLatencyRecorder(meterRegistry, options)
         );
     }
 
