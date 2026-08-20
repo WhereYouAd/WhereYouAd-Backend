@@ -72,7 +72,16 @@ public class SecurityConfig {
                 .securityMatcher("/actuator/**")
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("METRICS"))
+                .authorizeHttpRequests(auth -> auth
+                        // METRICS 계정은 Prometheus 스크레이핑용이라 필요한 최소 범위만 허용
+                        // (env/loggers 등은 계정 유출 시 파급력이 커서 아예 접근 자체를 차단)
+                        .requestMatchers(
+                                "/actuator/prometheus",
+                                "/actuator/health",
+                                "/actuator/health/**"
+                        ).hasRole("METRICS")
+                        .anyRequest().denyAll()
+                )
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();
