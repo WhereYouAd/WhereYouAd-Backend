@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Slf4j
@@ -22,10 +23,10 @@ public class NotificationCleanupScheduler {
     private final NotificationRepository notificationRepository;
     private final NotificationCleanupExecutor notificationCleanupExecutor;
 
-    @Scheduled(cron = "0 0 5 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void deleteOldNotifications() {
         // 스케줄러 실행 시점으로 부터 만료 기준일 (30일 과거) 설정
-        LocalDateTime threshold = LocalDate.now().minusDays(RETENTION_DAYS).atStartOfDay();
+        LocalDateTime threshold = LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(RETENTION_DAYS).atStartOfDay();
         log.info("오래된 알림 내역 삭제 스케줄러 실행 - threshold: {}", threshold);
 
         int totalDeleted = 0;
