@@ -229,6 +229,8 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true   # p95/p99 latency 계산용 histogram bucket 생성
+        spring.kafka.listener: true  # Kafka Consumer 처리시간 p95/p99 (없으면 _bucket 자체가 안 생김)
+        spring.kafka.template: true  # Kafka Producer 전송시간 p95/p99
     enable:
       hibernate: true                # N+1 검증용 hibernate.* 지표 활성화
   endpoint:
