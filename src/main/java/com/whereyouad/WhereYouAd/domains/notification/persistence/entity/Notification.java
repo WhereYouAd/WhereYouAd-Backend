@@ -12,7 +12,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notification")
+@Table(name = "notification", indexes = {
+        // 오래된 알림 삭제 스케줄러의 청크 조회용 인덱스
+        @Index(name = "idx_notification_created_at_id", columnList = "created_at, notification_id")
+})
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Builder
