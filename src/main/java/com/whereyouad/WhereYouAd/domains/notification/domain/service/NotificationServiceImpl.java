@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.notification.application.dto.request.No
 import com.whereyouad.WhereYouAd.domains.notification.application.dto.response.NotificationResponse;
 import com.whereyouad.WhereYouAd.domains.notification.application.mapper.NotificationConverter;
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.NotificationType;
+import com.whereyouad.WhereYouAd.domains.notification.domain.service.push.BrowserPushDataAccess;
 import com.whereyouad.WhereYouAd.domains.notification.exception.NotificationException;
 import com.whereyouad.WhereYouAd.domains.notification.exception.code.NotificationErrorCode;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgMemberNotificationSetting;
@@ -57,6 +58,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final SlackWebhookClient slackClient;
     private final AESUtil aesUtil;
     private final UserNotificationRepository userNotificationRepository;
+    private final BrowserPushDataAccess browserPushDataAccess;
+    private final PushNotificationEventProducer pushNotificationEventProducer;
 
     // 현재 내 알림 설정 조회
     @Override
@@ -281,6 +284,27 @@ public class NotificationServiceImpl implements NotificationService {
 
         // 외부 알림 설정된 조직만 실질적 알림 전송
         sendApiAlarm(setting, orgId, title, message);
+    }
+
+    // 브라우저 푸시 발송 트리거.
+    // 1) DB 저장 (Notification/UserNotification/NotificationDelivery PENDING)
+    // 2) Kafka 로 이벤트 발행 (Consumer 가 실제 Web Push 호출 담당)
+    // 대상 멤버가 없으면 DB 저장/Kafka 발행 모두 skip
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void sendBrowserPushToOrg(Long orgId, NotificationType type, String title, String body, String linkUrl) {
+        try {
+            Long notificationId = browserPushDataAccess.persistPushNotification(orgId, type, title, body, linkUrl);
+            if (notificationId == null) {
+                log.debug("[웹푸시 발송 skip] 대상 없음 orgId={}, type={}", orgId, type);
+                return;
+            }
+            pushNotificationEventProducer.produce(
+                    NotificationConverter.toPushNotificationEvent(orgId, notificationId, type, title, body, linkUrl));
+        } catch (Exception e) {
+            // 외부 채널(슬랙/디스코드) 발송에 영향 주지 않도록 격리
+            log.error("[웹푸시] 트리거 실패 orgId={}, type={}", orgId, type, e);
+        }
     }
 
     // 알림 발송 테스트용 (설정한 채널이 실제로 동작하는지 확인)

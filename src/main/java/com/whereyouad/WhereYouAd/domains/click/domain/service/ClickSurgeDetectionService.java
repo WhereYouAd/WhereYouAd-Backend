@@ -280,6 +280,7 @@ public class ClickSurgeDetectionService {
                         .map(alert -> formatAlertLine(alert, adNameById))
                         .collect(Collectors.joining("\n"));
                 notificationService.sendApiAlarmToOrg(orgId, NotificationType.CLICKS_INCREASE, title, message);
+                notificationService.sendBrowserPushToOrg(orgId, NotificationType.CLICKS_INCREASE, title, message, null);
             } catch (Exception e) {
                 // 조직별 발송 실패 격리 - 다른 조직 알림에 영향 없도록. 실패 시 notified=false 유지
                 releaseCooldowns(alerts);
