@@ -68,4 +68,32 @@ public class NotificationRequest {
             @NotBlank(message = "메시지는 필수입니다.")
             String message
     ) {}
+
+    // 브라우저 pushManager.subscribe() 결과를 그대로 담는 구조
+    public record PushSubscribe(
+            @NotBlank(message = "endpoint 는 필수입니다.")
+            String endpoint,
+
+            @NotNull(message = "keys 는 필수입니다.")
+            @Valid
+            Keys keys,
+
+            // 브라우저가 반환하는 만료 시각(ms epoch). 대개 null.
+            Long expirationTime,
+
+            String userAgent
+    ) {
+        public record Keys(
+                @NotBlank(message = "keys.p256dh 는 필수입니다.")
+                String p256dh,
+
+                @NotBlank(message = "keys.auth 는 필수입니다.")
+                String auth
+        ) {}
+    }
+
+    public record PushUnsubscribe(
+            @NotBlank(message = "endpoint 는 필수입니다.")
+            String endpoint
+    ) {}
 }
