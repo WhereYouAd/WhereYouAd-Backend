@@ -1,8 +1,12 @@
 package com.whereyouad.WhereYouAd.domains.notification.application.dto.request;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Base64;
 import java.util.List;
 
 import jakarta.validation.constraints.NotBlank;
@@ -83,13 +87,54 @@ public class NotificationRequest {
 
             String userAgent
     ) {
+        @AssertTrue(message = "endpoint 는 유효한 HTTPS URI여야 합니다.")
+        public boolean isEndpointValid() {
+            if (endpoint == null || endpoint.isBlank()) {
+                return false;
+            }
+            try {
+                URI uri = new URI(endpoint);
+                return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null;
+            } catch (URISyntaxException e) {
+                return false;
+            }
+        }
+
+        public boolean isValidPushSubscription() {
+            return isEndpointValid() && keys != null && keys.isP256dhValid() && keys.isAuthValid();
+        }
+
         public record Keys(
                 @NotBlank(message = "keys.p256dh 는 필수입니다.")
                 String p256dh,
 
                 @NotBlank(message = "keys.auth 는 필수입니다.")
                 String auth
-        ) {}
+        ) {
+            private static final java.util.regex.Pattern BASE64_URL_PATTERN =
+                    java.util.regex.Pattern.compile("^[A-Za-z0-9_-]+={0,2}$");
+
+            @AssertTrue(message = "keys.p256dh 는 65바이트 Base64URL 값이어야 합니다.")
+            public boolean isP256dhValid() {
+                return hasDecodedLength(p256dh, 65);
+            }
+
+            @AssertTrue(message = "keys.auth 는 16바이트 Base64URL 값이어야 합니다.")
+            public boolean isAuthValid() {
+                return hasDecodedLength(auth, 16);
+            }
+
+            private static boolean hasDecodedLength(String value, int expectedLength) {
+                if (value == null || value.isBlank() || !BASE64_URL_PATTERN.matcher(value).matches()) {
+                    return false;
+                }
+                try {
+                    return Base64.getUrlDecoder().decode(value).length == expectedLength;
+                } catch (IllegalArgumentException e) {
+                    return false;
+                }
+            }
+        }
     }
 
     public record PushUnsubscribe(

@@ -8,6 +8,8 @@ import com.whereyouad.WhereYouAd.domains.notification.application.dto.response.N
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryChannel;
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryStatus;
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.NotificationType;
+import com.whereyouad.WhereYouAd.domains.notification.exception.NotificationException;
+import com.whereyouad.WhereYouAd.domains.notification.exception.code.NotificationErrorCode;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.Notification;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.NotificationDelivery;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.OrgMemberNotificationSetting;
@@ -200,6 +202,9 @@ public class NotificationConverter {
             NotificationRequest.PushSubscribe request,
             LocalDateTime expirationTime
     ) {
+        if (request == null || !request.isValidPushSubscription()) {
+            throw new NotificationException(NotificationErrorCode.INVALID_PUSH_SUBSCRIPTION);
+        }
         return PushSubscription.builder()
                 .orgMember(member)
                 .endpoint(request.endpoint())

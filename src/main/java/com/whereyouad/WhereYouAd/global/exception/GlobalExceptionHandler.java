@@ -1,6 +1,8 @@
 package com.whereyouad.WhereYouAd.global.exception;
 
 import com.whereyouad.WhereYouAd.domains.dashboard.exception.code.DashboardErrorCode;
+import com.whereyouad.WhereYouAd.domains.notification.application.dto.request.NotificationRequest;
+import com.whereyouad.WhereYouAd.domains.notification.exception.code.NotificationErrorCode;
 import com.whereyouad.WhereYouAd.domains.user.exception.code.AuthErrorCode;
 import com.whereyouad.WhereYouAd.global.response.ErrorResponse;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -85,14 +87,15 @@ public class GlobalExceptionHandler {
         log.error("MethodArgumentNotValidException 발생: {}", errors);
         log.error("에러가 발생한 지점 {}, {}", request.getMethod(), request.getRequestURI());
 
-        ErrorResponse errorResponse = ErrorResponse.of(
-                ErrorCode.INVALID_PARAMETER,
-                request,
-                errors
-        );
+        boolean invalidPushSubscription = e.getBindingResult().getTarget()
+                instanceof NotificationRequest.PushSubscribe;
+        BaseErrorCode errorCode = invalidPushSubscription
+                ? NotificationErrorCode.INVALID_PUSH_SUBSCRIPTION
+                : ErrorCode.INVALID_PARAMETER;
+        ErrorResponse errorResponse = ErrorResponse.of(errorCode, request, errors);
 
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(errorCode.getHttpStatus())
                 .body(errorResponse);
     }
 
