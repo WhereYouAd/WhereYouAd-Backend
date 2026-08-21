@@ -29,6 +29,8 @@ public interface NotificationService {
 
     boolean isExternalAlarmActive(Long orgId, NotificationType type);
 
+    boolean isAnyAlarmActive(Long orgId, NotificationType type);
+
     // 설정한 채널이 실제로 동작하는지 테스트 발송
     void sendTest(Long orgId, NotificationRequest.TestSend request);
 

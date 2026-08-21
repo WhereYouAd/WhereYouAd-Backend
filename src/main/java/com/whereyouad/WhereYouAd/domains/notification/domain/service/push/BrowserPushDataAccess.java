@@ -44,6 +44,12 @@ public class BrowserPushDataAccess {
     private final PushSubscriptionRepository subscriptionRepository;
     private final OrgRepository orgRepository;
 
+    @Transactional(readOnly = true)
+    public boolean hasPushTargets(Long orgId, NotificationType type) {
+        return !memberSettingRepository.findPushEnabledForOrg(
+                orgId, isClickType(type), isReportType(type)).isEmpty();
+    }
+
     // 발송 최초 트리거: Notification + 각 대상 멤버의 UserNotification/NotificationDelivery(PENDING) 를 원자적으로 저장.
     // 대상 멤버가 없으면 null 반환 (호출자는 Kafka 발행 skip)
     @Transactional

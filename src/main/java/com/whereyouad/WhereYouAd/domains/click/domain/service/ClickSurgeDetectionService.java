@@ -100,7 +100,7 @@ public class ClickSurgeDetectionService {
 
         List<ClickBaselineStat> statsToSave = new ArrayList<>();
         Map<Long, List<SurgeAlert>> alertsByOrg = new HashMap<>();
-        // 조직별 클릭 알림 활성 여부 캐시 - 같은 조직 광고마다 설정을 중복 조회하지 않도록
+        // 조직별 수신 가능 채널 존재 여부 캐시 - 같은 조직 광고마다 설정을 중복 조회하지 않도록
         Map<Long, Boolean> alarmActiveByOrg = new HashMap<>();
 
         // 4. 광고별 판정 루프
@@ -132,7 +132,7 @@ public class ClickSurgeDetectionService {
                 CooldownClaim cooldownClaim = null;
                 if (properties.isNotifyEnabled() && streak >= properties.getStreakRequired()
                         && alarmActiveByOrg.computeIfAbsent(orgId,
-                                key -> notificationService.isExternalAlarmActive(key, NotificationType.CLICKS_INCREASE))) {
+                                key -> notificationService.isAnyAlarmActive(key, NotificationType.CLICKS_INCREASE))) {
                     cooldownClaim = acquireCooldown(adContentId);
                 }
                 if (cooldownClaim != null) {

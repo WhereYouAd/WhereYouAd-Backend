@@ -333,6 +333,13 @@ public class NotificationServiceImpl implements NotificationService {
                 .isPresent();
     }
 
+    // 외부 채널 또는 브라우저 푸시 중 하나라도 실제 수신 대상이 있는지 판별
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isAnyAlarmActive(Long orgId, NotificationType type) {
+        return isExternalAlarmActive(orgId, type) || browserPushDataAccess.hasPushTargets(orgId, type);
+    }
+
     // 실질적 외부 채널 알림 전송 메서드
     private void sendApiAlarm(OrgNotificationSetting setting, Long orgId, String title, String message) {
         if (setting.hasSlack() && setting.isSlackEnabled()) {
