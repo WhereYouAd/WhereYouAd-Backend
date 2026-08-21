@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserNotificationRepository extends JpaRepository<UserNotification, Long> {
@@ -56,4 +57,8 @@ public interface UserNotificationRepository extends JpaRepository<UserNotificati
                       @Param("orgId") Long orgId,
                       @Param("now") LocalDateTime now);
 
+    // 만료 알림 정리용 - 회원별 알림 내역 벌크 삭제
+    @Modifying
+    @Query("DELETE FROM UserNotification un WHERE un.notification.id IN :notificationIds")
+    int deleteByNotificationIdIn(@Param("notificationIds") List<Long> notificationIds);
 }

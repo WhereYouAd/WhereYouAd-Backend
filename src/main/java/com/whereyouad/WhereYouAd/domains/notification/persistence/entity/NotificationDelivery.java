@@ -48,6 +48,7 @@ public class NotificationDelivery extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "notification_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Notification notification;
 
     @ManyToOne(fetch = FetchType.LAZY)
