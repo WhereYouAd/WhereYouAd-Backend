@@ -7,6 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -18,15 +22,21 @@ public class KafkaPushNotificationEventProducer implements PushNotificationEvent
 
     @Override
     public void produce(PushNotificationEvent event) {
-        kafkaTemplate.send(TOPIC, String.valueOf(event.getOrgId()), event)
-                .whenComplete((result, ex) -> {
-                    if (ex != null) {
-                        log.error("[Kafka] 웹 푸시 이벤트 발행 실패: orgId={}, notificationId={}",
-                                event.getOrgId(), event.getNotificationId(), ex);
-                    } else {
-                        log.debug("[Kafka] 웹 푸시 이벤트 발행 성공: orgId={}, notificationId={}",
-                                event.getOrgId(), event.getNotificationId());
-                    }
-                });
+        try {
+            kafkaTemplate.send(TOPIC, String.valueOf(event.getOrgId()), event).get(10, TimeUnit.SECONDS);
+            log.debug("[Kafka] 웹 푸시 이벤트 발행 성공: orgId={}, notificationId={}",
+                    event.getOrgId(), event.getNotificationId());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw publicationException(event, e);
+        } catch (ExecutionException | TimeoutException e) {
+            throw publicationException(event, e);
+        }
+    }
+
+    private IllegalStateException publicationException(PushNotificationEvent event, Exception cause) {
+        log.error("[Kafka] 웹 푸시 이벤트 발행 실패: orgId={}, notificationId={}",
+                event.getOrgId(), event.getNotificationId(), cause);
+        return new IllegalStateException("웹 푸시 Kafka 이벤트 발행 실패", cause);
     }
 }

@@ -3,16 +3,21 @@ package com.whereyouad.WhereYouAd.domains.notification.persistence.repository;
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryChannel;
 import com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryStatus;
 import com.whereyouad.WhereYouAd.domains.notification.persistence.entity.NotificationDelivery;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 
 public interface NotificationDeliveryRepository extends JpaRepository<NotificationDelivery, Long> {
 
     // 특정 알림의 채널별 미완료(PENDING/FAILED) 발송 기록. 재시도 시에도 재사용
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT nd FROM NotificationDelivery nd " +
             "JOIN FETCH nd.orgMember om " +
             "JOIN FETCH nd.notification n " +
@@ -30,9 +35,22 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
             "JOIN FETCH n.organization o " +
             "WHERE nd.channel = :channel " +
             "AND nd.status = :status " +
-            "AND nd.retryCount < :maxRetryCount")
+            "AND nd.retryCount < :maxRetryCount " +
+            "ORDER BY nd.id")
     List<NotificationDelivery> findRetryTargets(
             @Param("channel") DeliveryChannel channel,
             @Param("status") DeliveryStatus status,
-            @Param("maxRetryCount") int maxRetryCount);
+            @Param("maxRetryCount") int maxRetryCount,
+            Pageable pageable);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT nd FROM NotificationDelivery nd " +
+            "WHERE nd.channel = :channel " +
+            "AND nd.status = :status " +
+            "AND nd.processingStartedAt < :cutoff")
+    List<NotificationDelivery> findStaleProcessing(
+            @Param("channel") DeliveryChannel channel,
+            @Param("status") DeliveryStatus status,
+            @Param("cutoff") LocalDateTime cutoff,
+            Pageable pageable);
 }

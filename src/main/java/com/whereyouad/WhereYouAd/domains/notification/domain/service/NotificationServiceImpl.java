@@ -293,8 +293,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendBrowserPushToOrg(Long orgId, NotificationType type, String title, String body, String linkUrl) {
+        Long notificationId = null;
         try {
-            Long notificationId = browserPushDataAccess.persistPushNotification(orgId, type, title, body, linkUrl);
+            notificationId = browserPushDataAccess.persistPushNotification(orgId, type, title, body, linkUrl);
             if (notificationId == null) {
                 log.debug("[웹푸시 발송 skip] 대상 없음 orgId={}, type={}", orgId, type);
                 return;
@@ -302,6 +303,14 @@ public class NotificationServiceImpl implements NotificationService {
             pushNotificationEventProducer.produce(
                     NotificationConverter.toPushNotificationEvent(orgId, notificationId, type, title, body, linkUrl));
         } catch (Exception e) {
+            if (notificationId != null) {
+                try {
+                    browserPushDataAccess.markPublicationFailed(notificationId, e.getMessage());
+                } catch (Exception markFailureException) {
+                    log.error("[웹푸시] Kafka 발행 실패 상태 기록 실패 notificationId={}",
+                            notificationId, markFailureException);
+                }
+            }
             // 외부 채널(슬랙/디스코드) 발송에 영향 주지 않도록 격리
             log.error("[웹푸시] 트리거 실패 orgId={}, type={}", orgId, type, e);
         }

@@ -23,7 +23,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +40,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class BrowserPushDataAccess {
+
+    private static final long PROCESSING_TIMEOUT_MINUTES = 10;
 
     private final NotificationRepository notificationRepository;
     private final UserNotificationRepository userNotificationRepository;
@@ -83,13 +87,14 @@ public class BrowserPushDataAccess {
     }
 
     // Consumer 가 발송 직전 대상 로드. delivery + 각 멤버의 subscription 을 카티지언 없이 2단계 조회
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PushDeliveryTarget> loadTargets(Long notificationId) {
         List<NotificationDelivery> deliveries = deliveryRepository
                 .findPendingOrFailedByNotificationAndChannel(notificationId, DeliveryChannel.BROWSER_PUSH);
         if (deliveries.isEmpty()) {
             return List.of();
         }
+        deliveries.forEach(NotificationDelivery::markProcessing);
 
         List<Long> membershipIds = deliveries.stream()
                 .map(d -> d.getOrgMember().getId())
@@ -128,7 +133,7 @@ public class BrowserPushDataAccess {
 
         for (Map.Entry<Long, List<PushDeliveryResult>> entry : resultsByDelivery.entrySet()) {
             NotificationDelivery delivery = deliveriesById.get(entry.getKey());
-            if (delivery == null) continue;
+            if (delivery == null || delivery.getStatus() != DeliveryStatus.PROCESSING) continue;
 
             List<PushDeliveryResult> perDelivery = entry.getValue();
             boolean anySuccess = perDelivery.stream().anyMatch(PushDeliveryResult::isSuccess);
@@ -160,10 +165,31 @@ public class BrowserPushDataAccess {
         }
     }
 
+    @Transactional
+    public void markPublicationFailed(Long notificationId, String reason) {
+        String failureReason = reason == null || reason.isBlank() ? "Kafka publication failed" : reason;
+        deliveryRepository.findPendingOrFailedByNotificationAndChannel(
+                        notificationId, DeliveryChannel.BROWSER_PUSH).stream()
+                .filter(delivery -> delivery.getStatus() == DeliveryStatus.PENDING)
+                .forEach(delivery -> delivery.markFailed(truncate(failureReason)));
+    }
+
     // 재시도 스케줄러가 대상 delivery 를 조회해 Kafka 재발행용 이벤트로 변환
-    @Transactional(readOnly = true)
-    public List<PushNotificationEvent> loadRetryEvents(int maxRetryCount) {
-        return deliveryRepository.findRetryTargets(DeliveryChannel.BROWSER_PUSH, DeliveryStatus.FAILED, maxRetryCount)
+    @Transactional
+    public List<PushNotificationEvent> loadRetryEvents(int maxRetryCount, int batchSize) {
+        LocalDateTime staleCutoff = LocalDateTime.now().minusMinutes(PROCESSING_TIMEOUT_MINUTES);
+        deliveryRepository.findStaleProcessing(
+                        DeliveryChannel.BROWSER_PUSH,
+                        DeliveryStatus.PROCESSING,
+                        staleCutoff,
+                        PageRequest.of(0, batchSize))
+                .forEach(delivery -> delivery.markFailed("processing claim timed out"));
+
+        return deliveryRepository.findRetryTargets(
+                        DeliveryChannel.BROWSER_PUSH,
+                        DeliveryStatus.FAILED,
+                        maxRetryCount,
+                        PageRequest.of(0, batchSize))
                 .stream()
                 .map(NotificationDelivery::getNotification)
                 .distinct()

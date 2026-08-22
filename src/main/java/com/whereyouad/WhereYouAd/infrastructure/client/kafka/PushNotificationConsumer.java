@@ -32,7 +32,10 @@ public class PushNotificationConsumer {
     // 1) delivery + subscription 로드 (짧은 read tx)
     // 2) 각 subscription 으로 Web Push 전송 (트랜잭션 밖)
     // 3) 결과 일괄 반영 (짧은 write tx)
-    @KafkaListener(topics = "${web-push.topic:notification-push-events}", groupId = "where-you-ad-group")
+    @KafkaListener(
+            topics = "${web-push.topic:notification-push-events}",
+            groupId = "where-you-ad-group",
+            containerFactory = "pushKafkaListenerContainerFactory")
     public void consume(PushNotificationEvent event) {
         try {
             List<PushDeliveryTarget> targets = dataAccess.loadTargets(event.getNotificationId());
@@ -56,9 +59,12 @@ public class PushNotificationConsumer {
             log.info("[웹푸시] 발송 완료 orgId={}, notificationId={}, 발송={}",
                     event.getOrgId(), event.getNotificationId(), results.size());
         } catch (Exception e) {
-            // consumer 최상단 예외 격리 - 다른 파티션 메시지에 영향 없도록
             log.error("[웹푸시] 발송 처리 실패 orgId={}, notificationId={}",
                     event.getOrgId(), event.getNotificationId(), e);
+            if (e instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new IllegalStateException("웹푸시 발송 처리 실패", e);
         }
     }
 

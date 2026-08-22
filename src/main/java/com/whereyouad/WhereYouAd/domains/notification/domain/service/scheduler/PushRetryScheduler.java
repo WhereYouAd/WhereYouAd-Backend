@@ -11,6 +11,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 // 웹 푸시 실패 delivery 재큐잉.
 // - status=FAILED AND retryCount < max 만 대상
@@ -28,30 +30,51 @@ public class PushRetryScheduler {
     @Value("${web-push.retry.max-count:3}")
     private int maxRetryCount;
 
+    @Value("${web-push.retry.batch-size:20}")
+    private int batchSize;
+
     private static final String LOCK_KEY = "lock:scheduler:push-retry";
     private static final long LOCK_TTL_SECONDS = 240;
+    private static final int MAX_BATCH_SIZE = 100;
 
     // application.yml 의 web-push.retry.interval-minutes 와 맞춰 5분(300초)마다 실행
     @Scheduled(fixedDelayString = "${web-push.retry.interval-minutes:5}", timeUnit = java.util.concurrent.TimeUnit.MINUTES)
     public void retryFailed() {
-        // 다중 인스턴스 대비 리더락 - 락 TTL 은 스케줄 간격보다 살짝 짧게
-        if (!Boolean.TRUE.equals(redisUtil.setIfAbsent(LOCK_KEY, "1", LOCK_TTL_SECONDS))) {
+        String ownershipToken = UUID.randomUUID().toString();
+        if (!Boolean.TRUE.equals(redisUtil.setIfAbsent(LOCK_KEY, ownershipToken, LOCK_TTL_SECONDS))) {
             log.debug("[웹푸시 재시도] 다른 인스턴스가 처리 중, skip");
             return;
         }
 
-        List<PushNotificationEvent> retryEvents = dataAccess.loadRetryEvents(maxRetryCount);
-        if (retryEvents.isEmpty()) {
-            return;
-        }
-
-        log.info("[웹푸시 재시도] 재큐잉 대상 알림 수={}", retryEvents.size());
-        for (PushNotificationEvent event : retryEvents) {
-            try {
-                pushNotificationEventProducer.produce(event);
-            } catch (Exception e) {
-                log.error("[웹푸시 재시도] Kafka 재발행 실패 notificationId={}", event.getNotificationId(), e);
+        try {
+            int effectiveBatchSize = Math.max(1, Math.min(batchSize, MAX_BATCH_SIZE));
+            List<PushNotificationEvent> retryEvents = dataAccess.loadRetryEvents(maxRetryCount, effectiveBatchSize);
+            if (retryEvents.isEmpty()) {
+                return;
             }
+            if (!redisUtil.renewIfValueMatches(LOCK_KEY, ownershipToken, LOCK_TTL_SECONDS)) {
+                log.warn("[웹푸시 재시도] 조회 중 락 소유권 상실, 발행 중단");
+                return;
+            }
+
+            long renewAt = System.nanoTime() + TimeUnit.SECONDS.toNanos(LOCK_TTL_SECONDS / 2);
+            log.info("[웹푸시 재시도] 재큐잉 대상 알림 수={}", retryEvents.size());
+            for (PushNotificationEvent event : retryEvents) {
+                if (System.nanoTime() >= renewAt) {
+                    if (!redisUtil.renewIfValueMatches(LOCK_KEY, ownershipToken, LOCK_TTL_SECONDS)) {
+                        log.warn("[웹푸시 재시도] 발행 중 락 소유권 상실, 남은 작업 중단");
+                        return;
+                    }
+                    renewAt = System.nanoTime() + TimeUnit.SECONDS.toNanos(LOCK_TTL_SECONDS / 2);
+                }
+                try {
+                    pushNotificationEventProducer.produce(event);
+                } catch (Exception e) {
+                    log.error("[웹푸시 재시도] Kafka 재발행 실패 notificationId={}", event.getNotificationId(), e);
+                }
+            }
+        } finally {
+            redisUtil.deleteIfValueMatches(LOCK_KEY, ownershipToken);
         }
     }
 }
