@@ -33,7 +33,7 @@ public class PushNotificationConsumer {
     // 2) 각 subscription 으로 Web Push 전송 (트랜잭션 밖)
     // 3) 결과 일괄 반영 (짧은 write tx)
     @KafkaListener(
-            topics = "${web-push.topic:notification-push-events}",
+            topics = KafkaPushNotificationEventProducer.TOPIC,
             groupId = "where-you-ad-group",
             containerFactory = "pushKafkaListenerContainerFactory")
     public void consume(PushNotificationEvent event) {

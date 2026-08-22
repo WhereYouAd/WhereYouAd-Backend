@@ -16,7 +16,7 @@ import java.util.concurrent.TimeoutException;
 @RequiredArgsConstructor
 public class KafkaPushNotificationEventProducer implements PushNotificationEventProducer {
 
-    private static final String TOPIC = "notification-push-events";
+    static final String TOPIC = "notification-push-events";
 
     private final KafkaTemplate<String, PushNotificationEvent> kafkaTemplate;
 
