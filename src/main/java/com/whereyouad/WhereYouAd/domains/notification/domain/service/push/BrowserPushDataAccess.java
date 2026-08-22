@@ -25,8 +25,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 // 브라우저 푸시 발송 파이프라인의 DB 접근 계층.
@@ -119,9 +121,13 @@ public class BrowserPushDataAccess {
     public void recordResults(List<PushDeliveryResult> results) {
         Map<Long, List<PushDeliveryResult>> resultsByDelivery = results.stream()
                 .collect(Collectors.groupingBy(PushDeliveryResult::deliveryId));
+        Map<Long, NotificationDelivery> deliveriesById = deliveryRepository
+                .findAllById(resultsByDelivery.keySet()).stream()
+                .collect(Collectors.toMap(NotificationDelivery::getId, delivery -> delivery));
+        Set<Long> expiredSubscriptionIds = new HashSet<>();
 
         for (Map.Entry<Long, List<PushDeliveryResult>> entry : resultsByDelivery.entrySet()) {
-            NotificationDelivery delivery = deliveryRepository.findById(entry.getKey()).orElse(null);
+            NotificationDelivery delivery = deliveriesById.get(entry.getKey());
             if (delivery == null) continue;
 
             List<PushDeliveryResult> perDelivery = entry.getValue();
@@ -142,14 +148,15 @@ public class BrowserPushDataAccess {
                     .filter(PushDeliveryResult::isExpired)
                     .map(PushDeliveryResult::subscriptionId)
                     .filter(java.util.Objects::nonNull)
-                    .distinct()
-                    .forEach(subId -> {
-                        try {
-                            subscriptionRepository.deleteById(subId);
-                        } catch (Exception e) {
-                            log.warn("[웹푸시] 만료 구독 삭제 실패 subscriptionId={}", subId, e);
-                        }
-                    });
+                    .forEach(expiredSubscriptionIds::add);
+        }
+
+        if (!expiredSubscriptionIds.isEmpty()) {
+            try {
+                subscriptionRepository.deleteAllByIdInBatch(expiredSubscriptionIds);
+            } catch (Exception e) {
+                log.warn("[웹푸시] 만료 구독 일괄 삭제 실패 subscriptionIds={}", expiredSubscriptionIds, e);
+            }
         }
     }
 
