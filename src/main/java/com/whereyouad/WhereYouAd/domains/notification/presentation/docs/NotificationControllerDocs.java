@@ -168,7 +168,7 @@ public interface NotificationControllerDocs {
     @Operation(
             summary = "브라우저 푸시 구독 등록",
             description = "프론트가 서비스 워커에서 pushManager.subscribe() 결과로 얻은 subscription 을 서버에 저장합니다. " +
-                    "endpoint 가 이미 등록돼 있으면 소유 멤버를 갱신하는 upsert 동작합니다."
+                    "같은 멤버십에 endpoint 가 이미 등록돼 있으면 해당 구독 정보를 갱신합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "구독 등록 성공"),
@@ -187,6 +187,7 @@ public interface NotificationControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "구독 해제 성공"),
+            @ApiResponse(responseCode = "400", description = "COMMON_400_2 : endpoint 는 필수입니다."),
             @ApiResponse(responseCode = "404", description = "NOTIFICATION_404_1 : 해당 조직의 멤버가 아닙니다.")
     })
     ResponseEntity<DataResponse<Void>> unsubscribePush(
