@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class NotificationAlertEvent {
+    private String eventId;
     private Long orgId;
     private NotificationType type;
     private String title;
