@@ -33,29 +33,29 @@ public class PushSubscriptionService {
         return vapidPublicKey;
     }
 
-    // 프론트가 pushManager.subscribe() 결과를 서버에 보낼 때 호출. endpoint 유니크 기반 upsert
+    // 프론트가 pushManager.subscribe() 결과를 서버에 보낼 때 호출. 멤버십+endpoint 기반 upsert
     public void subscribe(Long userId, Long orgId, NotificationRequest.PushSubscribe request) {
         OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new NotificationException(NotificationErrorCode.MEMBER_NOT_FOUND));
 
         LocalDateTime expiration = request.expirationTime() == null ? null
                 : LocalDateTime.ofInstant(Instant.ofEpochMilli(request.expirationTime()), ZoneId.systemDefault());
+        var validatedSubscription = NotificationConverter.toPushSubscription(member, request, expiration);
 
-        subscriptionRepository.findByEndpoint(request.endpoint())
+        subscriptionRepository.findByOrgMember_IdAndEndpoint(member.getId(), request.endpoint())
                 .ifPresentOrElse(
-                        existing -> {
-                            // 다른 멤버가 같은 endpoint 로 재구독 -> 삭제 후 재생성 (기기 소유권 이전)
-                            subscriptionRepository.delete(existing);
-                            subscriptionRepository.flush();
-                            subscriptionRepository.save(NotificationConverter.toPushSubscription(member, request, expiration));
-                        },
-                        () -> subscriptionRepository.save(NotificationConverter.toPushSubscription(member, request, expiration))
+                        existing -> existing.update(
+                                validatedSubscription.getP256dhKey(),
+                                validatedSubscription.getAuthSecret(),
+                                validatedSubscription.getUserAgent(),
+                                validatedSubscription.getExpirationTime()),
+                        () -> subscriptionRepository.save(validatedSubscription)
                 );
     }
 
     public void unsubscribe(Long userId, Long orgId, String endpoint) {
-        orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
+        OrgMember member = orgMemberRepository.findByUserIdAndOrgId(userId, orgId)
                 .orElseThrow(() -> new NotificationException(NotificationErrorCode.MEMBER_NOT_FOUND));
-        subscriptionRepository.deleteByEndpoint(endpoint);
+        subscriptionRepository.deleteByOrgMember_IdAndEndpoint(member.getId(), endpoint);
     }
 }

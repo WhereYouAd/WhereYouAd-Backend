@@ -12,7 +12,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "push_subscription",
-        uniqueConstraints = @UniqueConstraint(name = "uk_push_subscription_endpoint", columnNames = "endpoint"),
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_push_subscription_membership_endpoint",
+                columnNames = {"membership_id", "endpoint"}),
         indexes = @Index(name = "idx_push_subscription_membership", columnList = "membership_id")
 )
 @Getter
@@ -49,4 +51,11 @@ public class PushSubscription extends BaseEntity {
     // 브라우저가 알려주는 만료 시각 (선택, 대개 null)
     @Column(name = "expiration_time")
     private LocalDateTime expirationTime;
+
+    public void update(String p256dhKey, String authSecret, String userAgent, LocalDateTime expirationTime) {
+        this.p256dhKey = p256dhKey;
+        this.authSecret = authSecret;
+        this.userAgent = userAgent;
+        this.expirationTime = expirationTime;
+    }
 }

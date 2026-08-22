@@ -11,11 +11,11 @@ import java.util.Optional;
 
 public interface PushSubscriptionRepository extends JpaRepository<PushSubscription, Long> {
 
-    Optional<PushSubscription> findByEndpoint(String endpoint);
+    Optional<PushSubscription> findByOrgMember_IdAndEndpoint(Long membershipId, String endpoint);
 
     List<PushSubscription> findAllByOrgMember_IdIn(Collection<Long> membershipIds);
 
-    void deleteByEndpoint(String endpoint);
+    void deleteByOrgMember_IdAndEndpoint(Long membershipId, String endpoint);
 
     // 조직 내 멤버들에 매핑된 구독 일괄 조회 (발송 대상 로딩용)
     @Query("SELECT ps FROM PushSubscription ps " +
