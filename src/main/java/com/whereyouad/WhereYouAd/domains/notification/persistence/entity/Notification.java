@@ -4,13 +4,18 @@ import com.whereyouad.WhereYouAd.domains.notification.domain.constant.Notificati
 import com.whereyouad.WhereYouAd.domains.organization.persistence.entity.Organization;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notification")
+@Table(name = "notification", indexes = {
+        // 오래된 알림 삭제 스케줄러의 청크 조회용 인덱스
+        @Index(name = "idx_notification_created_at_id", columnList = "created_at, notification_id")
+})
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Builder
@@ -42,6 +47,7 @@ public class Notification {
     // 연관 관계
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Organization organization;
 
     @Enumerated(EnumType.STRING)

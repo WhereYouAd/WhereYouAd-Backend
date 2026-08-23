@@ -5,6 +5,8 @@ import com.whereyouad.WhereYouAd.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.util.StringUtils;
 
 @Entity
@@ -22,6 +24,7 @@ public class OrgNotificationSetting extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId // PK == FK(식별 관계)
     @JoinColumn(name = "org_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Organization organization;
 
     @Column(name = "slack_webhook_url", length = 512)

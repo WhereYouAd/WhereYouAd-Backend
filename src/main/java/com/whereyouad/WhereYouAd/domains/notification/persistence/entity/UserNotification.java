@@ -4,6 +4,8 @@ import com.whereyouad.WhereYouAd.domains.user.persistence.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -30,10 +32,12 @@ public class UserNotification {
     // 연관관계
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "notification_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Notification notification;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     // 알림 읽음 처리
