@@ -263,6 +263,22 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendApiAlarmToOrg(Long orgId, NotificationType type, String title, String message) {
+        sendApiAlarmToOrg(orgId, type, title, message, false);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void sendApiAlarmToOrgOrThrow(Long orgId, NotificationType type, String title, String message) {
+        sendApiAlarmToOrg(orgId, type, title, message, true);
+    }
+
+    private void sendApiAlarmToOrg(
+            Long orgId,
+            NotificationType type,
+            String title,
+            String message,
+            boolean propagateFailure
+    ) {
 
         OrgNotificationSetting setting = orgSettingRepository.findById(orgId).orElse(null);
 
@@ -283,7 +299,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         // 외부 알림 설정된 조직만 실질적 알림 전송
-        sendApiAlarm(setting, orgId, title, message);
+        sendApiAlarm(setting, orgId, title, message, propagateFailure);
     }
 
     // 브라우저 푸시 발송 트리거.
@@ -293,6 +309,29 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendBrowserPushToOrg(Long orgId, NotificationType type, String title, String body, String linkUrl) {
+        sendBrowserPushToOrg(orgId, type, title, body, linkUrl, false);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void sendBrowserPushToOrgOrThrow(
+            Long orgId,
+            NotificationType type,
+            String title,
+            String body,
+            String linkUrl
+    ) {
+        sendBrowserPushToOrg(orgId, type, title, body, linkUrl, true);
+    }
+
+    private void sendBrowserPushToOrg(
+            Long orgId,
+            NotificationType type,
+            String title,
+            String body,
+            String linkUrl,
+            boolean propagateFailure
+    ) {
         Long notificationId = null;
         try {
             notificationId = browserPushDataAccess.persistPushNotification(orgId, type, title, body, linkUrl);
@@ -309,10 +348,16 @@ public class NotificationServiceImpl implements NotificationService {
                 } catch (Exception markFailureException) {
                     log.error("[웹푸시] Kafka 발행 실패 상태 기록 실패 notificationId={}",
                             notificationId, markFailureException);
+                    e.addSuppressed(markFailureException);
                 }
             }
-            // 외부 채널(슬랙/디스코드) 발송에 영향 주지 않도록 격리
             log.error("[웹푸시] 트리거 실패 orgId={}, type={}", orgId, type, e);
+            if (propagateFailure) {
+                if (e instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                throw new IllegalStateException("웹푸시 트리거 실패", e);
+            }
         }
     }
 
@@ -327,7 +372,7 @@ public class NotificationServiceImpl implements NotificationService {
             throw new NotificationException(NotificationErrorCode.NO_CHANNEL_CONFIGURED);
         }
 
-        sendApiAlarm(setting, orgId, request.title(), request.message());
+        sendApiAlarm(setting, orgId, request.title(), request.message(), false);
     }
 
     // 조직이 해당 알림 종류를 외부 채널(디스코드 / 슬랙)로 수신할 수 있는 상태인지 판별
@@ -350,15 +395,23 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     // 실질적 외부 채널 알림 전송 메서드
-    private void sendApiAlarm(OrgNotificationSetting setting, Long orgId, String title, String message) {
+    private void sendApiAlarm(
+            OrgNotificationSetting setting,
+            Long orgId,
+            String title,
+            String message,
+            boolean propagateFailure
+    ) {
         if (setting.hasSlack() && setting.isSlackEnabled()) {
             dispatch(DeliveryChannel.SLACK, setting.getSlackWebhookUrl(), orgId,
-                    uri -> slackClient.send(uri, NotificationConverter.toSlackMessage(title, message)));
+                    uri -> slackClient.send(uri, NotificationConverter.toSlackMessage(title, message)),
+                    propagateFailure);
         }
 
         if (setting.hasDiscord() && setting.isDiscordEnabled()) {
             dispatch(DeliveryChannel.DISCORD, setting.getDiscordWebhookUrl(), orgId,
-                    uri -> discordClient.send(uri, NotificationConverter.toDiscordMessage(title, message)));
+                    uri -> discordClient.send(uri, NotificationConverter.toDiscordMessage(title, message)),
+                    propagateFailure);
         }
     }
 
@@ -442,14 +495,23 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    // 웹훅 URL 복호화 -> 알림 발송 -> 채널별 실패 격리 -> 로깅
-    private void dispatch(DeliveryChannel channel, String encryptedUrl, Long orgId, Consumer<URI> sendAction) {
+    // 웹훅 URL 복호화 -> 알림 발송. 일반 호출은 채널 실패를 격리하고 inbox 호출은 재시도를 위해 전파
+    private void dispatch(
+            DeliveryChannel channel,
+            String encryptedUrl,
+            Long orgId,
+            Consumer<URI> sendAction,
+            boolean propagateFailure
+    ) {
         try {
             String url = new String(aesUtil.decryptAES(encryptedUrl), StandardCharsets.UTF_8).trim();
             sendAction.accept(URI.create(url));
             log.info("[알림 발송 성공] channel={}, orgId={}", channel, orgId);
         } catch (Exception e) {
             log.error("[알림 발송 실패] channel={}, orgId={}, reason={}", channel, orgId, e.getMessage(), e);
+            if (propagateFailure) {
+                throw new IllegalStateException(channel + " 알림 발송 실패", e);
+            }
         }
     }
 }

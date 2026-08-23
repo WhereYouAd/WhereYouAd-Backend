@@ -22,10 +22,14 @@ public interface NotificationService {
 
     void sendApiAlarmToOrg(Long orgId, NotificationType type, String title, String message);
 
+    void sendApiAlarmToOrgOrThrow(Long orgId, NotificationType type, String title, String message);
+
     // 조직 대상 브라우저 푸시(웹 푸시) 발송.
     // 내부에서 Notification/UserNotification/NotificationDelivery(PENDING) 를 저장하고 Kafka 로 발행하며,
     // 실제 웹 푸시 전송은 Consumer 가 트랜잭션 밖에서 수행한다. linkUrl 은 Service Worker 가 클릭 시 사용.
     void sendBrowserPushToOrg(Long orgId, NotificationType type, String title, String body, String linkUrl);
+
+    void sendBrowserPushToOrgOrThrow(Long orgId, NotificationType type, String title, String body, String linkUrl);
 
     boolean isExternalAlarmActive(Long orgId, NotificationType type);
 
