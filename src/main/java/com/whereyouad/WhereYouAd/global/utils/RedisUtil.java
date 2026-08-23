@@ -42,6 +42,13 @@ public class RedisUtil {
             return 0
             """, Long.class);
 
+    private static final DefaultRedisScript<Long> RENEW_IF_VALUE_MATCHES_SCRIPT = new DefaultRedisScript<>("""
+            if redis.call('GET', KEYS[1]) == ARGV[1] then
+                return redis.call('EXPIRE', KEYS[1], ARGV[2])
+            end
+            return 0
+            """, Long.class);
+
     private final StringRedisTemplate template;
 
     //Redis 에 데이터 저장(유효시간 설정)
@@ -78,6 +85,18 @@ public class RedisUtil {
                 Collections.singletonList(key),
                 expectedValue);
         return deleted != null && deleted > 0;
+    }
+
+    /**
+     * 키 값이 아직 {@code expectedValue}와 같을 때만 TTL을 갱신한다.
+     */
+    public boolean renewIfValueMatches(String key, String expectedValue, long durationSeconds) {
+        Long renewed = template.execute(
+                RENEW_IF_VALUE_MATCHES_SCRIPT,
+                Collections.singletonList(key),
+                expectedValue,
+                String.valueOf(durationSeconds));
+        return renewed != null && renewed > 0;
     }
 
     //Redis 에서 데이터 꺼내기(Value 꺼내기)

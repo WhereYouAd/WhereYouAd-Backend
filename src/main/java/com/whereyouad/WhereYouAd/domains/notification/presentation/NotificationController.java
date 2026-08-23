@@ -4,6 +4,7 @@ import com.whereyouad.WhereYouAd.domains.notification.application.dto.request.No
 import com.whereyouad.WhereYouAd.domains.notification.application.dto.response.NotificationResponse;
 import com.whereyouad.WhereYouAd.domains.notification.domain.service.NotificationService;
 import com.whereyouad.WhereYouAd.domains.notification.domain.service.WeeklyReportNotificationService;
+import com.whereyouad.WhereYouAd.domains.notification.domain.service.push.PushSubscriptionService;
 import com.whereyouad.WhereYouAd.domains.notification.presentation.docs.NotificationControllerDocs;
 import com.whereyouad.WhereYouAd.global.response.DataResponse;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -20,6 +21,7 @@ public class NotificationController implements NotificationControllerDocs {
 
     private final NotificationService notificationService;
     private final WeeklyReportNotificationService weeklyReportNotificationService;
+    private final PushSubscriptionService pushSubscriptionService;
 
     @GetMapping("/settings/{orgId}")
     @Override
@@ -148,5 +150,35 @@ public class NotificationController implements NotificationControllerDocs {
         notificationService.sendTest(orgId, request);
 
         return ResponseEntity.ok(DataResponse.from("테스트 알림을 발송했습니다."));
+    }
+
+    @GetMapping("/push/vapid-public-key")
+    @Override
+    public ResponseEntity<DataResponse<NotificationResponse.VapidPublicKey>> getVapidPublicKey() {
+        return ResponseEntity.ok(DataResponse.from(
+                new NotificationResponse.VapidPublicKey(pushSubscriptionService.getVapidPublicKey())
+        ));
+    }
+
+    @PostMapping("/push/subscriptions/{orgId}")
+    @Override
+    public ResponseEntity<DataResponse<Void>> subscribePush(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody @Valid NotificationRequest.PushSubscribe request
+    ) {
+        pushSubscriptionService.subscribe(userId, orgId, request);
+        return ResponseEntity.ok(DataResponse.ok());
+    }
+
+    @DeleteMapping("/push/subscriptions/{orgId}")
+    @Override
+    public ResponseEntity<DataResponse<Void>> unsubscribePush(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody @Valid NotificationRequest.PushUnsubscribe request
+    ) {
+        pushSubscriptionService.unsubscribe(userId, orgId, request.endpoint());
+        return ResponseEntity.ok(DataResponse.ok());
     }
 }

@@ -123,6 +123,7 @@ public class WeeklyReportNotificationService {
             // 실제 발송 조건 판정(웹훅 등록 여부 / 채널 수신 토글 ON / alertReport ON)과
             // 채널별 실패 격리는 NotificationService.sendApiAlarmToOrg() 내부 처리
             notificationService.sendApiAlarmToOrg(orgId, NotificationType.REPORT, title, message);
+            notificationService.sendBrowserPushToOrg(orgId, NotificationType.REPORT, title, message, null);
         } catch (Exception e) {
             log.error("[WeeklyReport] 조직={} 외부 채널(슬랙/디스코드) 리포트 알림 발송 실패: {}", orgId, e.getMessage(), e);
         }
