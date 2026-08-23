@@ -94,7 +94,12 @@ public class NotificationRequest {
             }
             try {
                 URI uri = new URI(endpoint);
-                return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null;
+                return uri.isAbsolute()
+                        && "https".equalsIgnoreCase(uri.getScheme())
+                        && uri.getHost() != null
+                        && !uri.getHost().isBlank()
+                        && uri.getRawUserInfo() == null
+                        && uri.getRawFragment() == null;
             } catch (URISyntaxException e) {
                 return false;
             }
