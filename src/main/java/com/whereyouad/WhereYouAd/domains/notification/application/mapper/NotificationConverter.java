@@ -178,6 +178,7 @@ public class NotificationConverter {
         return PushNotificationEvent.builder()
                 .orgId(orgId)
                 .notificationId(notificationId)
+                .deliveryIds(null)
                 .type(type)
                 .title(title)
                 .body(body)
@@ -186,14 +187,16 @@ public class NotificationConverter {
     }
 
     // 웹 푸시 Kafka 이벤트 조립 (재시도 스케줄러) - 저장된 Notification 엔티티에서 재구성
-    public static PushNotificationEvent toPushNotificationEvent(Notification n) {
-        return toPushNotificationEvent(
+    public static PushNotificationEvent toPushNotificationEvent(Notification n, List<Long> deliveryIds) {
+        PushNotificationEvent event = toPushNotificationEvent(
                 n.getOrganization().getId(),
                 n.getId(),
                 n.getType(),
                 n.getTitle(),
                 n.getMessage(),
                 n.getLinkUrl());
+        event.setDeliveryIds(List.copyOf(deliveryIds));
+        return event;
     }
 
     // 브라우저 pushManager.subscribe() 결과 -> PushSubscription 엔티티

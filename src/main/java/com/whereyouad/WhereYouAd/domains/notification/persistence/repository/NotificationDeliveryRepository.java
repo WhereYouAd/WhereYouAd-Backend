@@ -29,6 +29,20 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
             @Param("notificationId") Long notificationId,
             @Param("channel") DeliveryChannel channel);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT nd FROM NotificationDelivery nd " +
+            "JOIN FETCH nd.orgMember om " +
+            "JOIN FETCH nd.notification n " +
+            "WHERE nd.notification.id = :notificationId " +
+            "AND nd.id IN :deliveryIds " +
+            "AND nd.channel = :channel " +
+            "AND nd.status IN (com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryStatus.PENDING," +
+            "                  com.whereyouad.WhereYouAd.domains.notification.domain.constant.DeliveryStatus.FAILED)")
+    List<NotificationDelivery> findPendingOrFailedByIdsAndNotificationAndChannel(
+            @Param("deliveryIds") List<Long> deliveryIds,
+            @Param("notificationId") Long notificationId,
+            @Param("channel") DeliveryChannel channel);
+
     // 재시도 스케줄러가 대상으로 삼을 실패 delivery. notification 을 join fetch 해 Kafka 이벤트 재구성에 사용
     @Query("SELECT nd FROM NotificationDelivery nd " +
             "JOIN FETCH nd.notification n " +
@@ -47,7 +61,8 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
     @Query("SELECT nd FROM NotificationDelivery nd " +
             "WHERE nd.channel = :channel " +
             "AND nd.status = :status " +
-            "AND nd.processingStartedAt < :cutoff")
+            "AND nd.processingStartedAt < :cutoff " +
+            "ORDER BY nd.id")
     List<NotificationDelivery> findStaleProcessing(
             @Param("channel") DeliveryChannel channel,
             @Param("status") DeliveryStatus status,

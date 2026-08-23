@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -88,9 +89,12 @@ public class BrowserPushDataAccess {
 
     // Consumer 가 발송 직전 대상 로드. delivery + 각 멤버의 subscription 을 카티지언 없이 2단계 조회
     @Transactional
-    public List<PushDeliveryTarget> loadTargets(Long notificationId) {
-        List<NotificationDelivery> deliveries = deliveryRepository
-                .findPendingOrFailedByNotificationAndChannel(notificationId, DeliveryChannel.BROWSER_PUSH);
+    public List<PushDeliveryTarget> loadTargets(Long notificationId, List<Long> deliveryIds) {
+        List<NotificationDelivery> deliveries = deliveryIds == null || deliveryIds.isEmpty()
+                ? deliveryRepository.findPendingOrFailedByNotificationAndChannel(
+                        notificationId, DeliveryChannel.BROWSER_PUSH)
+                : deliveryRepository.findPendingOrFailedByIdsAndNotificationAndChannel(
+                        deliveryIds, notificationId, DeliveryChannel.BROWSER_PUSH);
         if (deliveries.isEmpty()) {
             return List.of();
         }
@@ -185,15 +189,21 @@ public class BrowserPushDataAccess {
                         PageRequest.of(0, batchSize))
                 .forEach(delivery -> delivery.markFailed("processing claim timed out"));
 
-        return deliveryRepository.findRetryTargets(
+        Map<Long, List<NotificationDelivery>> deliveriesByNotification = deliveryRepository.findRetryTargets(
                         DeliveryChannel.BROWSER_PUSH,
                         DeliveryStatus.FAILED,
                         maxRetryCount,
                         PageRequest.of(0, batchSize))
                 .stream()
-                .map(NotificationDelivery::getNotification)
-                .distinct()
-                .map(NotificationConverter::toPushNotificationEvent)
+                .collect(Collectors.groupingBy(
+                        delivery -> delivery.getNotification().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        return deliveriesByNotification.values().stream()
+                .map(deliveries -> NotificationConverter.toPushNotificationEvent(
+                        deliveries.get(0).getNotification(),
+                        deliveries.stream().map(NotificationDelivery::getId).toList()))
                 .toList();
     }
 

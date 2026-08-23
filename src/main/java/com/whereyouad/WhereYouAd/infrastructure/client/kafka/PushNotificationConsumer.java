@@ -38,7 +38,8 @@ public class PushNotificationConsumer {
             containerFactory = "pushKafkaListenerContainerFactory")
     public void consume(PushNotificationEvent event) {
         try {
-            List<PushDeliveryTarget> targets = dataAccess.loadTargets(event.getNotificationId());
+            List<PushDeliveryTarget> targets = dataAccess.loadTargets(
+                    event.getNotificationId(), event.getDeliveryIds());
             if (targets.isEmpty()) {
                 log.debug("[웹푸시] 발송 대상 없음 orgId={}, notificationId={}",
                         event.getOrgId(), event.getNotificationId());
