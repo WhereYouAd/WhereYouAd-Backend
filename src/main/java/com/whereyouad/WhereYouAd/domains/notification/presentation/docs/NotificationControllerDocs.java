@@ -183,7 +183,7 @@ public interface NotificationControllerDocs {
 
     @Operation(
             summary = "브라우저 푸시 구독 해제",
-            description = "endpoint 를 body 로 받아 해당 구독을 삭제합니다. 브라우저에서 pushManager.unsubscribe() 호출 후 서버 상태를 정리할 때 사용합니다."
+            description = "endpoint 를 body 로 받아 현재 조직 멤버십의 서버 구독만 삭제합니다. 다른 조직에서도 사용할 수 있으므로 브라우저의 pushManager.unsubscribe()는 호출하지 않습니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "구독 해제 성공"),
