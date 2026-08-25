@@ -24,9 +24,4 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Modifying
     @Query("UPDATE Project p SET p.status = :status WHERE p.organization.id = :orgId")
     void updateStatusByOrganizationId(@Param("orgId") Long orgId, @Param("status") Status status);
-
-    // 조직 Hard Delete 시 소속 Project 엔티티 일괄 삭제
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("DELETE FROM Project p WHERE p.organization.id = :orgId")
-    void deleteByOrganizationId(@Param("orgId") Long orgId);
 }
