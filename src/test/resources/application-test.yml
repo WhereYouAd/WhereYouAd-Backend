@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/whereyouad_test?createDatabaseIfNotExist=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    # createDatabaseIfNotExist=true 이 필드를 통해 실행되는 환경에 whereyouad_test 라는 데이터베이스를 없으면 자동 생성
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 테스트를 위해 DB 테이블 생성 후, 테스트 종료시 모든 테이블 삭제
+    show-sql: true
