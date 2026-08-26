@@ -3,6 +3,8 @@ package com.whereyouad.WhereYouAd.domains.platform.domain.service.scheduler;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.entity.AdCampaign;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdCampaignRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.MetricFactRepository;
+import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickAnomalyEventRepository;
+import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickBaselineStatRepository;
 import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickLogRepository;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformAccount;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
@@ -30,11 +32,25 @@ public class PlatformDataCleanupExecutor {
     private final ProjectRepository projectRepository;
     private final ClickLogRepository clickLogRepository;
     private final MetricFactRepository metricFactRepository;
+    private final ClickAnomalyEventRepository clickAnomalyEventRepository;
+    private final ClickBaselineStatRepository clickBaselineStatRepository;
 
     // 삭제에 영향받는 projectId 수집 (수동 연동 해제 정리 / 회원 탈퇴 스케줄러 등 시스템 내부 호출용)
     @Transactional(readOnly = true)
     public List<Long> collectProjectIds(Long accountId) {
         return adCampaignRepository.findDistinctProjectIdsByPlatformAccountId(accountId);
+    }
+
+    // 청크 단위로 ClickAnomalyEvent 삭제 — ad_content_id 가 FK 가 아니라 자동 정리되지 않는다
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int deleteClickAnomalyEventChunk(Long platformAccountId) {
+        return clickAnomalyEventRepository.deleteByPlatformAccountIdInBatch(platformAccountId, BATCH_SIZE);
+    }
+
+    // 청크 단위로 ClickBaselineStat 삭제
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int deleteClickBaselineStatChunk(Long platformAccountId) {
+        return clickBaselineStatRepository.deleteByPlatformAccountIdInBatch(platformAccountId, BATCH_SIZE);
     }
 
     // 청크 단위로 ClickLog 삭제 — 메인 트랜잭션과 분리
