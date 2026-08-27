@@ -15,7 +15,7 @@ public interface ClickBaselineStatRepository extends JpaRepository<ClickBaseline
     List<ClickBaselineStat> findByAdContentIdInAndWeekdayAndHourOfDay(
             Collection<Long> adContentIds, int weekday, int hourOfDay);
 
-    // 광고계정 연동 해제 정리용 (조직 정보가 없어 조인 경로로만 접근 가능)
+    // 광고계정 연동 해제 정리용 (조직 정보가 없어 JOIN 사용)
     @Modifying
     @Query(value = "DELETE FROM click_baseline_stat " +
             "WHERE ad_content_id IN (" +

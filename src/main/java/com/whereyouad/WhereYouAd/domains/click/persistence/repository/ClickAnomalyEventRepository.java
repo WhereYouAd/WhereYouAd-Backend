@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 public interface ClickAnomalyEventRepository extends JpaRepository<ClickAnomalyEvent, Long> {
 
     // 광고계정 연동 해제 정리용
-    // ad_content_id 는 FK 가 아니라 순수 컬럼이므로 조인 경로로 대상을 좁힌다
+    // ad_content_id 는 FK 가 아니라 순수 컬럼이므로 JOIN 사용
     // AdContent 가 cascade 로 삭제되기 전에 호출되어야 한다
     @Modifying
     @Query(value = "DELETE FROM click_anomaly_event " +
@@ -25,7 +25,7 @@ public interface ClickAnomalyEventRepository extends JpaRepository<ClickAnomalyE
                                          @Param("batchSize") int batchSize);
 
     // 조직 Hard Delete 정리용 안전망
-    // org_id 도 FK 가 아니라 순수 컬럼이므로 조직 삭제로는 자동 정리되지 않는다
+    // org_id 도 FK 가 아니라 순수 컬럼이므로 조직 삭제로는 자동 정리 X
     @Modifying
     @Query("DELETE FROM ClickAnomalyEvent e WHERE e.orgId = :orgId")
     void deleteByOrgId(@Param("orgId") Long orgId);
