@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// 삭제 안전망: 조직/회원을 참조하는 스키마 구조가 바뀌면 실패한다.
-// 새 엔티티를 추가한 사람이 "이건 조직/회원 삭제 시 어떻게 정리되지?" 를 반드시 한 번 생각하게 만드는 게 목적.
-// 검토를 마쳤다면 아래 상수에 새 항목을 추가하고 삭제 로직도 함께 반영 필요
+// 엔티티 삭제 오류 방지 : Organization/User 엔티티를 참조하는 스키마 구조가 바뀌면 실패
+// 새 엔티티를 추가한 시점에 "이건 조직/회원 삭제 시 어떻게 정리되지?" 를 생각하게 만드는 목적.
+// 검토, 처리 이후 아래 상수에 새 항목을 추가하고 삭제 로직도 함께 반영 필요
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -27,18 +27,18 @@ class DeletionSafetyGuardTest {
 
     // organization 을 참조하는 FK 전체 - "테이블.컬럼:삭제규칙"
     private static final Set<String> EXPECTED_ORG_FK = Set.of(
-            // (1) 조직 Hard Delete 가 명시적으로 삭제
+            // 조직 Hard Delete 가 명시적으로 삭제
             "ai_insight_report.org_id:NO ACTION",   // aiInsightReportRepository.deleteByOrganizationId
             "org_invitation.org_id:NO ACTION",      // orgInvitationRepository.deleteByOrganizationId
             "org_member.org_id:NO ACTION",          // orgMemberRepository.deleteAll
             "timeline.org_id:NO ACTION",            // timelineRepository.deleteByOrganizationId
 
-            // (2) DB FK 의 ON DELETE CASCADE 가 정리
+            // DB FK 의 ON DELETE CASCADE 가 정리
             "notification.org_id:CASCADE",
             "org_notification_setting.org_id:CASCADE",
 
-            // (3) "조직 삭제 전 광고 계정 연동이 해제되어 있다"는 전제에 의존
-            //     연동 해제(PlatformDataCleanupExecutor.deleteAccountAndRelations)가 미리 지워준다
+            // "조직 삭제 전 광고 계정 연동이 해제되어 있다"는 전제에 의존
+            // 연동 해제(PlatformDataCleanupExecutor.deleteAccountAndRelations)가 미리 지워준다
             "ad_campaign.org_id:NO ACTION",
             "platform_account.org_id:NO ACTION",
             "project.org_id:NO ACTION"
@@ -46,19 +46,19 @@ class DeletionSafetyGuardTest {
 
     // users 를 참조하는 FK 전체
     private static final Set<String> EXPECTED_USER_FK = Set.of(
-            // (1) 회원 Hard Delete 가 명시적으로 삭제
+            // 회원 Hard Delete 가 명시적으로 삭제
             "auth_provider_account.user_id:NO ACTION",  // authProviderAccountRepository.deleteByUserId
             "org_member.user_id:NO ACTION",             // orgMemberRepository.deleteByUserId
 
-            // (2) DB FK 의 ON DELETE CASCADE 가 정리
+            // DB FK 의 ON DELETE CASCADE 가 정리
             "user_notification.user_id:CASCADE",
 
-            // (3) 회원 삭제 전 스케줄러가 광고 계정 연동을 해제하며 정리
-            //     정리 실패 시 UserDeleteScheduler 가 해당 회원 삭제를 보류한다
+            // 회원 삭제 전 스케줄러가 광고 계정 연동을 해제하며 정리
+            // 정리 실패 시 UserDeleteScheduler 가 해당 회원 삭제를 보류한다
             "platform_connection.user_id:NO ACTION"
     );
 
-    // org 를 가리키지만 FK 가 아닌 컬럼 - DB 가 정리해주지 않으므로 코드가 책임져야 한다
+    // org 를 가리키지만 FK 가 아닌 컬럼
     private static final Set<String> EXPECTED_ORG_PLAIN_REFERENCES = Set.of(
             "click_anomaly_event.org_id",   // 조직 Hard Delete 시 deleteByOrgId 로 직접 삭제
             "users.current_org_id"          // 조직 삭제 시 해당 멤버들의 값을 null 로 초기화
@@ -122,8 +122,7 @@ class DeletionSafetyGuardTest {
                 .collect(Collectors.toSet());
     }
 
-    // FK 도 PK 도 아닌 참조성 컬럼을 찾는다.
-    // namePredicate 는 이 클래스 안의 상수 문자열만 넘어오므로 주입 위험은 없다.
+    // FK 도 PK 도 아닌 참조성 컬럼을 찾기
     @SuppressWarnings("unchecked")
     private Set<String> plainReferenceColumns(String namePredicate) {
         List<Object[]> rows = em.createNativeQuery(
