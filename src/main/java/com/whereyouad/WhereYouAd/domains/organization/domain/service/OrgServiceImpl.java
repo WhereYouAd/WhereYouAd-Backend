@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.organization.domain.service;
 
 import com.whereyouad.WhereYouAd.domains.ai.persistence.repository.AIInsightReportRepository;
+import com.whereyouad.WhereYouAd.domains.click.persistence.repository.ClickAnomalyEventRepository;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.request.OrgRequest;
 import com.whereyouad.WhereYouAd.domains.organization.application.dto.response.OrgResponse;
 import com.whereyouad.WhereYouAd.domains.organization.application.mapper.OrgConverter;
@@ -47,6 +48,7 @@ public class OrgServiceImpl implements OrgService {
     private final AIInsightReportRepository aiInsightReportRepository;
     private final UserRepository userRepository;
     private final PlatformConnectionRepository platformConnectionRepository;
+    private final ClickAnomalyEventRepository clickAnomalyEventRepository;
 
     private final RedisUtil redisUtil;
     private final EmailService emailService;
@@ -268,6 +270,7 @@ public class OrgServiceImpl implements OrgService {
         timelineRepository.deleteByOrganizationId(orgId);
         aiInsightReportRepository.deleteByOrganizationId(orgId);
         orgInvitationRepository.deleteByOrganizationId(orgId);
+        clickAnomalyEventRepository.deleteByOrgId(orgId);
 
         String logoUrl = organization.getLogoUrl();
 
@@ -364,6 +367,7 @@ public class OrgServiceImpl implements OrgService {
             timelineRepository.deleteByOrganizationId(orgId);
             aiInsightReportRepository.deleteByOrganizationId(orgId);
             orgInvitationRepository.deleteByOrganizationId(orgId);
+            clickAnomalyEventRepository.deleteByOrgId(orgId);
 
             // 조직 Hard Delete
             orgRepository.delete(organization);
