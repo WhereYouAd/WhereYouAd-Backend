@@ -4,7 +4,7 @@
 
 **분산된 광고 데이터를 하나의 대시보드로 광고 성과를 통합하고 AI가 분석해 드립니다**
 
-<img width="3145" height="1769" alt="wyad" src="https://github.com/user-attachments/assets/9c284495-258e-4fd1-97f7-027a5034774f" />
+<img width="3145" height="1769" alt="wyad" src="docs/assets/wyad.png" />
 
 ![Java][java]
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.9-6DB33F?logo=springboot&logoColor=white)
@@ -12,6 +12,8 @@
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
 ![Kafka](https://img.shields.io/badge/Apache_Kafka-3.7.0-231F20?logo=apachekafka&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?logo=grafana&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker_+_AWS_EC2-2496ED?logo=docker&logoColor=white)
 
 🏆 상명대학교 교내 창업아이디어 경진대회 **대상**
@@ -39,7 +41,10 @@ WhereYouAd Backend는 Spring Boot 기반의 2026 캡스톤 졸업 프로젝트�
 - OpenAI 기반 AI 분석 리포트 비동기 생성 및 이메일 발송
 - 조직(워크스페이스) · 멤버 초대 · RBAC 권한 관리
 - 기간 비교 기반 타임라인 성과 분석
-- 주간 리포트 스케줄러 + Discord / Slack Webhook 알림
+- 4채널 알림 발송(Email · Slack · Discord · Browser Push) + 조직/멤버 2단 수신 설정
+- Kafka 기반 알림 파이프라인 — Inbox 멱등 처리 · 채널별 발송 이력 · 실패 재시도
+- 주간 리포트 · 봇 클릭 일일 요약 · 클릭 급증 실시간 알림
+- Actuator/Micrometer 지표 수집 → Prometheus·Grafana 모니터링 (API p95 · N+1 · Kafka · Redis · 스케줄러)
 
 <br>
 
@@ -63,17 +68,18 @@ WhereYouAd Backend는 Spring Boot 기반의 2026 캡스톤 졸업 프로젝트�
 | Security      | Spring Security, OAuth2 Client (Naver·Google·Kakao), JWT(jjwt 0.11.5), AES |
 | Persistence   | MySQL 8.0, Spring Data JPA (Hibernate)                                     |
 | Cache         | Redis (RefreshToken · 인증 코드 · 토큰 캐시)                               |
-| Messaging     | Apache Kafka 3.7.0 (클릭 이벤트 Producer / Consumer)                       |
+| Messaging     | Apache Kafka 3.7.0 (클릭 이벤트 · 알림 이벤트 · 웹 푸시 3개 토픽)          |
 | Realtime      | SSE (`SseEmitter` + `SseEmitterRepository`)                                |
 | HTTP Client   | OpenFeign (OpenAI), WebClient (Google·Meta·Naver Ads)                      |
 | Ad Platform   | Google Ads API 42.0.0, Meta Marketing API, Naver Search Ad API             |
 | AI            | OpenAI API (분석 리포트 · 예산 추천)                                       |
-| Notification  | Gmail SMTP + Thymeleaf, Discord / Slack Webhook, CoolSMS(nurigo 4.3.0)     |
+| Notification  | Gmail SMTP + Thymeleaf, Discord / Slack Webhook, Web Push(VAPID, web-push 5.1.1), CoolSMS(nurigo 4.3.0) |
 | Storage       | AWS S3 (Spring Cloud AWS 3.4.2)                                            |
 | Resilience    | Spring Retry + Spring AOP (외부 API 재시도)                                |
 | Scheduling    | Spring Scheduler (플랫폼 동기화 · 주간 리포트 · 계정 정리)                 |
 | Docs          | Springdoc OpenAPI 2.8.0 (Swagger UI)                                       |
 | Config        | Spring Dotenv 4.0.0 (`.env` 로딩)                                          |
+| Monitoring    | Spring Boot Actuator, Micrometer, Prometheus, Grafana                      |
 | Test          | JUnit 5, Spring Boot Test, Spring Security Test                            |
 | Deploy        | Docker, Docker Compose, Docker Hub, AWS EC2 (Bastion 경유 배포)           |
 
@@ -128,7 +134,7 @@ docker-compose up -d
 | `./gradlew bootRun`             | 로컬 서버를 실행합니다. (`.env` 필요)             |
 | `docker-compose up -d`          | App + MySQL + Redis + Kafka 전체 스택을 띄웁니다. |
 | `docker-compose logs -f app`    | 애플리케이션 컨테이너 로그를 확인합니다.          |
-
+| `docker-compose -f docker-compose.monitoring.local.yml up -d` | 로컬 Prometheus + Grafana 스택을 띄웁니다. |
 <br>
 
 ## 📁 Project Structure
@@ -146,7 +152,8 @@ src/main/java/com/whereyouad/WhereYouAd
 │   ├── timeline/              # 타임라인 CRUD 및 비교 성과 분석 
 │   ├── click/                 # 트래킹 URL, BotDetector, ClickEventProducer
 │   ├── ai/                    # OpenAI 리포트 비동기 생성 (AIStatus)
-│   ├── notification/          # 알림 설정, 주간 리포트 스케줄러, 발송 이력
+│   ├── notification/          # 알림 설정·발송 이력, 4채널 디스패치, 웹 푸시 구독
+│   │   └── domain/service/{push,scheduler}  # 푸시 구독·발송 / 리포트·요약·재시도·정리
 │   └── image/                 # 이미지 업로드
 │
 │   └── {domain}/              # 공통 계층 구조
@@ -163,7 +170,7 @@ src/main/java/com/whereyouad/WhereYouAd
 │   │   ├── cookie/            # AuthCookieFactory (SameSite·Secure 제어)
 │   │   └── SecurityConfig.java
 │   ├── adapi/                 # AdAuthFactory + AdAuthStrategy (플랫폼 인증 추상화)
-│   ├── config/                # Swagger, Redis, WebClient, OpenAIFeign, Retry
+│   ├── config/                # Swagger, Redis, WebClient, OpenAIFeign, Retry, Metrics
 │   ├── response/              # BaseResponse, DataResponse<T>, ErrorResponse
 │   ├── exception/             # 전역 예외 핸들러 (BaseErrorCode → HTTP 매핑)
 │   ├── sse/                   # SseEmitterRepository (실시간 클릭 스트림)
@@ -176,11 +183,19 @@ src/main/java/com/whereyouad/WhereYouAd
     ├── meta/                  # Meta Marketing API client/config/converter/dto
     ├── naver/                 # Naver Search Ad API client/converter/dto
     ├── openai/                # Feign client + prompt + service
-    ├── kafka/                 # KafkaClickEventProducer, ClickConsumer
+    ├── kafka/                 # 클릭 · 알림 · 푸시 이벤트 Producer / Consumer
     ├── aws/s3/                # S3 이미지 업로드
     ├── mail/                  # AIMailService (Thymeleaf 템플릿)
     ├── discord/               # DiscordWebhookClient
-    └── slack/                 # SlackWebhookClient
+    ├── slack/                 # SlackWebhookClient
+    └── webpush/               # WebPushClient(VAPID 서명), WebPushEndpointValidator(SSRF 방어)
+
+monitoring                     # 모니터링 스택 설정 (프로젝트 루트)
+├── prometheus.yml             # 로컬용 스크레이프 설정 (host.docker.internal:8080)
+├── prometheus.dev.yml.example # dev/prod 템플릿 (실파일은 .gitignore + CD Secret 주입)
+└── grafana/
+    ├── provisioning/          # datasource · dashboard 자동 등록
+    └── dashboards/            # whereyouad-monitoring.json
 ```
 
 <br>
