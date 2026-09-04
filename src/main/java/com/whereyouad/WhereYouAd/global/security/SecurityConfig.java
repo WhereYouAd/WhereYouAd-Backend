@@ -7,16 +7,23 @@ import com.whereyouad.WhereYouAd.global.security.jwt.JwtAuthenticationFilter;
 import com.whereyouad.WhereYouAd.global.security.oauth2.handler.OAuth2AuthenticationSuccessHandler;
 import com.whereyouad.WhereYouAd.global.security.oauth2.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -38,7 +45,50 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final ClientRegistrationRepository clientRegistrationRepository;
 
+    @Value("${actuator-auth.username}")
+    private String actuatorUsername;
+
+    @Value("${actuator-auth.password}")
+    private String actuatorPassword;
+
+    // /actuator/** 전용 필터체인 (JWT 체인보다 먼저 평가되도록 @Order(1))
+    // - Prometheus 스크레이핑용 별도 Basic Auth 계정으로 보호
+    // - 부수 효과: 기존에는 로그인한 일반 사용자(JWT 보유자)도 anyRequest().authenticated()에 걸려
+    //   /actuator/env(환경변수 전체) 조회가 가능했는데, 이 체인으로 분리되면서 그 경로도 함께 막힘
     @Bean
+    @Order(1)
+    public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
+        PasswordEncoder encoder = passwordEncoder();
+        UserDetails metricsUser = User.withUsername(actuatorUsername)
+                .password(encoder.encode(actuatorPassword))
+                .roles("METRICS")
+                .build();
+
+        AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        authBuilder.userDetailsService(new InMemoryUserDetailsManager(metricsUser))
+                .passwordEncoder(encoder);
+
+        http
+                .securityMatcher("/actuator/**")
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // METRICS 계정은 Prometheus 스크레이핑용이라 필요한 최소 범위만 허용
+                        // (env/loggers 등은 계정 유출 시 파급력이 커서 아예 접근 자체를 차단)
+                        .requestMatchers(
+                                "/actuator/prometheus",
+                                "/actuator/health",
+                                "/actuator/health/**"
+                        ).hasRole("METRICS")
+                        .anyRequest().denyAll()
+                )
+                .httpBasic(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) //CORS 추가
@@ -52,6 +102,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() //swagger 접근 허용
+                        // /actuator/** 는 위쪽 actuatorFilterChain(@Order(1))이 먼저 가로채서 여기까지 오지 않음
                         .requestMatchers("/api/users/my", "/api/auth/logout").authenticated() //마이페이지, 로그아웃은 인증 필요
                         .requestMatchers("/api/users/**", "/api/auth/**", "/api/clicks/track/**", "/api/ai/reports/**").permitAll() //로그인, 회원가입, 이메일 인증, 트래킹, AI 리포트 접근 허용
                         .requestMatchers("/api/meta/callback").permitAll()

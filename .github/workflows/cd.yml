@@ -70,7 +70,11 @@ jobs:
             # GitHub Secrets에 저장된 .env 내용을 파일로 생성 (덮어쓰기)
             echo "${{ secrets.PROD_ENV_FILE }}" > .env
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
-            
+
+            # GitHub Secrets에 저장된 Prometheus 스크레이핑 설정(basic_auth 포함) 파일로 생성 (덮어쓰기)
+            # monitoring/prometheus.dev.yml 은 .gitignore 대상이라 git reset으로는 안 만들어짐
+            echo "${{ secrets.PROMETHEUS_DEV_YML }}" > monitoring/prometheus.dev.yml
+
             # Docker Hub에서 최신 이미지 pull
             sudo docker-compose pull
             

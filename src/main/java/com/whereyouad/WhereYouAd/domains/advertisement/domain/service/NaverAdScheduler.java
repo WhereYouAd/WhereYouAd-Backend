@@ -3,6 +3,7 @@ package com.whereyouad.WhereYouAd.domains.advertisement.domain.service;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.entity.PlatformConnection;
 import com.whereyouad.WhereYouAd.domains.platform.persistence.repository.PlatformConnectionRepository;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +22,10 @@ public class NaverAdScheduler {
 
     // 매일 새벽 2시 메타데이터(광고 정보), 통계 정보(Metric_fact) 동기화
     @Scheduled(cron = "0 0 2 * * *")
+    @Timed(
+            value = "scheduler.execution",
+            extraTags = {"job", "naver-ad-sync"}
+    )
     public void syncNaverAdStats() {
         log.info("NAVER 통계 동기화 스케줄러 시작");
 

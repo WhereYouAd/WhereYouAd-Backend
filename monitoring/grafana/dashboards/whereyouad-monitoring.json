@@ -1,0 +1,202 @@
+{
+  "id": null,
+  "uid": "whereyouad-monitoring",
+  "title": "WhereYouAd - Application Monitoring",
+  "description": "Actuator/Prometheus 기반 애플리케이션 모니터링. 리팩토링(N+1 개선, Kafka, 배치, Redis) 전후 비교용.",
+  "tags": ["whereyouad", "spring-boot"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "annotations": {
+    "list": [
+      {
+        "name": "Deploys",
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "iconColor": "orange",
+        "type": "tags",
+        "tags": ["deploy", "refactor"]
+      }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Overview (API)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 2, "type": "timeseries", "title": "요청 처리량 (uri/status별)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(http_server_requests_seconds_count[5m])) by (uri, status)", "legendFormat": "{{uri}} [{{status}}]" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "p95 응답 지연시간",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "{{uri}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "5xx 에러율 (%)",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "100 * sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))", "legendFormat": "error rate" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "min": 0 }, "overrides": [] }
+    },
+
+    { "id": 10, "type": "row", "title": "DB / N+1 검증", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 11, "type": "timeseries", "title": "요청당 실행 쿼리 수 (N+1 핵심 지표)",
+      "description": "특정 API의 uri 라벨을 대상 엔드포인트로 바꿔서 확인. 리팩토링 전/후 계단식 하락이 보이면 N+1 개선 증명.",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "rate(hibernate_statements_total[5m]) / sum(rate(http_server_requests_seconds_count[5m]))", "legendFormat": "queries / request" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+    },
+    {
+      "id": 12, "type": "timeseries", "title": "HikariCP 커넥션 상태",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "hikaricp_connections_active", "legendFormat": "active" },
+        { "expr": "hikaricp_connections_pending", "legendFormat": "pending (대기중이면 N+1/느린쿼리 의심)" },
+        { "expr": "hikaricp_connections_idle", "legendFormat": "idle" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+    },
+    {
+      "id": 13, "type": "timeseries", "title": "평균 커넥션 점유시간",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "rate(hikaricp_connections_usage_seconds_sum[5m]) / rate(hikaricp_connections_usage_seconds_count[5m])", "legendFormat": "avg usage time" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+
+    { "id": 20, "type": "row", "title": "Kafka (Click / Notification)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 21, "type": "timeseries", "title": "Consumer 처리량 (리스너별)",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(spring_kafka_listener_seconds_count[5m])) by (name)", "legendFormat": "{{name}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] }
+    },
+    {
+      "id": 22, "type": "timeseries", "title": "Consumer p95 처리 지연",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(spring_kafka_listener_seconds_bucket[5m])) by (le, name))", "legendFormat": "{{name}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 23, "type": "timeseries", "title": "Consumer 에러율 (리스너별)",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(spring_kafka_listener_seconds_count{exception!=\"none\"}[5m])) by (name)", "legendFormat": "{{name}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] }
+    },
+    {
+      "id": 24, "type": "timeseries", "title": "Producer 전송 지연 (p95)",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(spring_kafka_template_seconds_bucket[5m])) by (le))", "legendFormat": "send p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+
+    { "id": 30, "type": "row", "title": "Redis (Lettuce)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 31, "type": "timeseries", "title": "Redis 커맨드별 p95 레이턴시",
+      "description": "클릭 윈도우/급증 감지 등 RedisTemplate 직접 호출 경로의 커맨드별(GET/SET/EXPIRE/ZADD...) 지연시간",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(lettuce_command_completion_seconds_bucket[5m])) by (le, command))", "legendFormat": "{{command}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 32, "type": "timeseries", "title": "Redis 커맨드 처리량",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(lettuce_command_completion_seconds_count[5m])) by (command)", "legendFormat": "{{command}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] }
+    },
+
+    { "id": 40, "type": "row", "title": "Scheduler / Batch", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 41, "type": "timeseries", "title": "스케줄러 실행시간 (p95, job별)",
+      "description": "각 @Scheduled 메서드에 @Timed(value=\"scheduler.execution\", extraTags={\"job\",\"...\"}) 적용 필요",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 37 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(scheduler_execution_seconds_bucket[5m])) by (le, job))", "legendFormat": "{{job}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 42, "type": "timeseries", "title": "스케줄러 실패 횟수 (1h)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 37 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "increase(scheduler_execution_seconds_count{exception!=\"none\"}[1h])", "legendFormat": "{{job}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+    },
+
+    { "id": 50, "type": "row", "title": "JVM / System", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 51, "type": "timeseries", "title": "Heap 메모리 사용량",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 46 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{area=\"heap\"}", "legendFormat": "{{id}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+    },
+    {
+      "id": 52, "type": "timeseries", "title": "GC Pause Time",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 46 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "rate(jvm_gc_pause_seconds_sum[5m])", "legendFormat": "gc pause" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 53, "type": "timeseries", "title": "CPU 사용률",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 46 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "process_cpu_usage", "legendFormat": "cpu usage" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1, "min": 0 }, "overrides": [] }
+    }
+  ]
+}

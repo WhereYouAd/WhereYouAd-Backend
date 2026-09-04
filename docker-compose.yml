@@ -63,7 +63,6 @@ services:
       GOOGLE_ADS_CLIENT_SECRET: ${GOOGLE_ADS_CLIENT_SECRET}
       GOOGLE_ADS_OAUTH2_REDIRECT_URL: ${GOOGLE_ADS_OAUTH2_REDIRECT_URL}
       GOOGLE_ADS_DEVELOPER_TOKEN: ${GOOGLE_ADS_DEVELOPER_TOKEN}
-      GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${GOOGLE_ADS_LOGIN_CUSTOMER_ID}
       GOOGLE_ADS_FRONTEND_CALLBACK_URL: ${GOOGLE_ADS_FRONTEND_CALLBACK_URL}
 
       COOKIE_SECURE: ${COOKIE_SECURE}
@@ -73,11 +72,15 @@ services:
       # Kafka
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
 
+# 모니터링 (Actuator Basic Auth - monitoring/prometheus.dev.yml 의 basic_auth 값과 일치해야 함)
+      ACTUATOR_METRICS_USERNAME: ${ACTUATOR_METRICS_USERNAME}
+      ACTUATOR_METRICS_PASSWORD: ${ACTUATOR_METRICS_PASSWORD}
+
       # Web Push (VAPID)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT}
-
+      
     depends_on:
       - mysqldb
       - redis
@@ -140,6 +143,48 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     networks:
       - where-you-ad-network
+
+  # 5. Prometheus
+  prometheus:
+    image: prom/prometheus:latest # 가장 최신 정보 가져옴
+    container_name: where-you-ad-prometheus
+    ports:
+      - "127.0.0.1:9090:9090" # Prometheus 자체는 인증이 없어서 외부 공개 금지 - SSH 터널/VPN으로만 접근
+    volumes:
+      # app 컨테이너를 서비스명(app:8080)으로 스크레이핑하는 dev용 설정
+      # (배포 서버에 monitoring/prometheus.dev.yml 이 미리 존재해야 함 - .gitignore 대상, prometheus.dev.yml.example 참고)
+      - ./monitoring/prometheus.dev.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus # 컨테이너 재생성(down/recreate)해도 리팩토링 전후 지표가 남도록 영속화
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d' # 리팩토링 전후 비교를 위해 기본 15일보다 넉넉하게
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    networks:
+      - where-you-ad-network # app 컨테이너를 이름으로 찾으려면 같은 네트워크에 있어야 함
+    restart: always
+
+  # 6. Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: where-you-ad-grafana
+    ports:
+      - "127.0.0.1:3000:3000" # 외부 공개 대신 SSH 터널/VPN으로만 접근 (직접 공개하려면 "3000:3000"로 변경 + 보안그룹 IP 제한 필수)
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - where-you-ad-network
+    depends_on:
+      - prometheus
+    restart: always
+
+volumes:
+  prometheus-data:
+    driver: local
 
 networks:
   where-you-ad-network:
