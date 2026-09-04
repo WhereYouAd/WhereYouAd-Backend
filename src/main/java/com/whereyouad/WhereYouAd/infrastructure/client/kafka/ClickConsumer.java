@@ -157,7 +157,7 @@ public class ClickConsumer {
                     // 디스코드/슬랙 등 외부 채널 알림을 위한 Kafka 이벤트 발행
                     notificationEventProducer.produce(NotificationAlertEvent.builder()
                             .orgId(event.getOrgId())
-                            .type(NotificationType.CLICKS)
+                            .type(NotificationType.BOT_CLICKS)
                             .title("[" + campaignNameStr + "] 비정상 클릭 감지")
                             .message(alertMessage)
                             .build());

@@ -49,4 +49,7 @@ public class NotificationResponse {
             NotificationType type,
             boolean isRead
     ) {}
+
+    // 프론트가 pushManager.subscribe({ applicationServerKey }) 호출 시 사용할 VAPID 공개키 (Base64URL)
+    public record VapidPublicKey(String publicKey) {}
 }

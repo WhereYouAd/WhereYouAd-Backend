@@ -80,3 +80,6 @@ jobs:
           COOKIE_SECURE: false
           COOKIE_DOMAIN: localhost
           COOKIE_SAME_SITE: Lax
+          VAPID_PUBLIC_KEY: test_vapid_public_key
+          VAPID_PRIVATE_KEY: test_vapid_private_key
+          VAPID_SUBJECT: mailto:test@example.com

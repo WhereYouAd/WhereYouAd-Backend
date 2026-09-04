@@ -154,4 +154,45 @@ public interface NotificationControllerDocs {
             @ApiResponse(responseCode = "404", description = "조직을 찾을 수 없습니다.")
     })
     ResponseEntity<DataResponse<String>> testWeeklyReport(@PathVariable Long orgId);
+
+    // ---------------- Web Push (VAPID) ----------------
+
+    @Operation(
+            summary = "VAPID 공개키 조회",
+            description = "프론트에서 pushManager.subscribe({ applicationServerKey }) 호출 시 사용할 VAPID 공개키(Base64URL) 를 반환합니다. " +
+                    "값은 서버에서 환경변수로 고정 관리되며 변하지 않습니다."
+    )
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    ResponseEntity<DataResponse<NotificationResponse.VapidPublicKey>> getVapidPublicKey();
+
+    @Operation(
+            summary = "브라우저 푸시 구독 등록",
+            description = "프론트가 서비스 워커에서 pushManager.subscribe() 결과로 얻은 subscription 을 서버에 저장합니다. " +
+                    "같은 멤버십에 endpoint 가 이미 등록돼 있으면 해당 구독 정보를 갱신합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "구독 등록 성공"),
+            @ApiResponse(responseCode = "400", description = "NOTIFICATION_400_6 : 구독 정보가 올바르지 않습니다."),
+            @ApiResponse(responseCode = "404", description = "NOTIFICATION_404_1 : 해당 조직의 멤버가 아닙니다.")
+    })
+    ResponseEntity<DataResponse<Void>> subscribePush(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody NotificationRequest.PushSubscribe request
+    );
+
+    @Operation(
+            summary = "브라우저 푸시 구독 해제",
+            description = "endpoint 를 body 로 받아 현재 조직 멤버십의 서버 구독만 삭제합니다. 다른 조직에서도 사용할 수 있으므로 브라우저의 pushManager.unsubscribe()는 호출하지 않습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "구독 해제 성공"),
+            @ApiResponse(responseCode = "400", description = "COMMON_400_2 : endpoint 는 필수입니다."),
+            @ApiResponse(responseCode = "404", description = "NOTIFICATION_404_1 : 해당 조직의 멤버가 아닙니다.")
+    })
+    ResponseEntity<DataResponse<Void>> unsubscribePush(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @RequestBody NotificationRequest.PushUnsubscribe request
+    );
 }

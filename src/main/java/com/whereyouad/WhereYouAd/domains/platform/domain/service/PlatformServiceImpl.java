@@ -223,12 +223,15 @@ public class PlatformServiceImpl implements PlatformService {
     }
 
     // 계정 단위 데이터 정리 메서드화
-    // ClickLog / MetricFact 청크 삭제 → AdCampaign + PlatformConnection + PlatformAccount 삭제 → 빈 Project 삭제
+    // 1. ClickLog / MetricFact / ClickAnomalyEvent / ClickBaselineStat 청크 삭제
+    // 2. AdCampaign + PlatformConnection + PlatformAccount 삭제 -> 3. 빈 Project 삭제
     // 대규모 엔티티 삭제를 위해 별도 처리 클래스 (PlatformDataCleanupExecutor) 에서 Chunk 단위 삭제 처리
     private void cleanupAccount(Long accountId, List<Long> projectIds) {
         int chunkDeleted; // 하나의 청크 당 삭제 갯수
         long totalClickLogDeleted = 0L; // ClickLog 전체 삭제 갯수
         long totalMetricFactDeleted = 0L; // MetricFact 전체 삭제 갯수
+        long totalAnomalyEventDeleted = 0L;
+        long totalBaselineStatDeleted = 0L;
 
         // ClickLog 청크 정리 (REQUIRES_NEW)
         do {
@@ -236,6 +239,21 @@ public class PlatformServiceImpl implements PlatformService {
             totalClickLogDeleted += chunkDeleted;
         } while (chunkDeleted > 0);
         log.info("ClickLog 삭제 완료 - platformAccountId={}, totalCount={}", accountId, totalClickLogDeleted);
+
+        // ClickAnomalyEvent 청크 정리 (REQUIRES_NEW)
+        // ad_content 가 cascade 삭제되기 전에 수행해야 조인으로 대상을 특정할 수 있다
+        do {
+            chunkDeleted = platformDataCleanupExecutor.deleteClickAnomalyEventChunk(accountId);
+            totalAnomalyEventDeleted += chunkDeleted;
+        } while (chunkDeleted > 0);
+        log.info("ClickAnomalyEvent 삭제 완료 - platformAccountId={}, totalCount={}", accountId, totalAnomalyEventDeleted);
+
+        // ClickBaselineStat 청크 정리 (REQUIRES_NEW)
+        do {
+            chunkDeleted = platformDataCleanupExecutor.deleteClickBaselineStatChunk(accountId);
+            totalBaselineStatDeleted += chunkDeleted;
+        } while (chunkDeleted > 0);
+        log.info("ClickBaselineStat 삭제 완료 - platformAccountId={}, totalCount={}", accountId, totalBaselineStatDeleted);
 
         // MetricFact 청크 정리 (REQUIRES_NEW) — Project 삭제 단계에서 FK 위반 방지
         do {

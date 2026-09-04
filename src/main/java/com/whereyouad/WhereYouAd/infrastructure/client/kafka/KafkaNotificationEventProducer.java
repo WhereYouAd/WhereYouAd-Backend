@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -18,6 +20,9 @@ public class KafkaNotificationEventProducer implements NotificationEventProducer
 
     @Override
     public void produce(NotificationAlertEvent event) {
+        if (event.getEventId() == null || event.getEventId().isBlank()) {
+            event.setEventId(UUID.randomUUID().toString());
+        }
         kafkaTemplate.send(TOPIC, String.valueOf(event.getOrgId()), event)
                 .whenComplete((result, ex) -> {
                     if (ex != null) {

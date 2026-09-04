@@ -69,7 +69,7 @@ class ClickSurgeDetectionServiceTest {
                 adContentRepository, notificationService, props, transactionManager);
         lenient().when(redisUtil.advanceClickSurgeStreak(anyString(), anyString(), anyString(), anyLong()))
                 .thenReturn(1L);
-        lenient().when(notificationService.isExternalAlarmActive(anyLong(), any()))
+        lenient().when(notificationService.isAnyAlarmActive(anyLong(), any()))
                 .thenReturn(true);
     }
 
@@ -135,7 +135,9 @@ class ClickSurgeDetectionServiceTest {
         ArgumentCaptor<ClickAnomalyEvent> eventCaptor = ArgumentCaptor.forClass(ClickAnomalyEvent.class);
         verify(anomalyEventRepository).save(eventCaptor.capture());
         assertThat(eventCaptor.getValue().isNotified()).isTrue();
-        verify(notificationService).sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS), anyString(), anyString());
+        verify(notificationService).sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS_INCREASE), anyString(), anyString());
+        verify(notificationService).sendBrowserPushToOrg(
+                eq(ORG_ID), eq(NotificationType.CLICKS_INCREASE), anyString(), anyString(), eq(null));
         verify(redisUtil, never()).deleteIfValueMatches(anyString(), anyString());
     }
 
@@ -187,7 +189,7 @@ class ClickSurgeDetectionServiceTest {
 
         service.detectForWindow(windowStart);
 
-        verify(notificationService).sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS), anyString(), anyString());
+        verify(notificationService).sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS_INCREASE), anyString(), anyString());
         verify(redisUtil, never()).deleteIfValueMatches(anyString(), anyString());
     }
 
@@ -272,7 +274,7 @@ class ClickSurgeDetectionServiceTest {
         service.detectForWindow(windowStart);
 
         verify(notificationService, times(1))
-                .sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS), anyString(), anyString());
+                .sendApiAlarmToOrg(eq(ORG_ID), eq(NotificationType.CLICKS_INCREASE), anyString(), anyString());
     }
 
     @Test
@@ -297,7 +299,7 @@ class ClickSurgeDetectionServiceTest {
     @Test
     @DisplayName("클릭 알림이 꺼진 조직은 streak 도달해도 쿨다운 선점·발송 없이 기록만 남김")
     void inactiveOrgAlarmSkipsCooldownAndNotification() {
-        when(notificationService.isExternalAlarmActive(ORG_ID, NotificationType.CLICKS)).thenReturn(false);
+        when(notificationService.isAnyAlarmActive(ORG_ID, NotificationType.CLICKS_INCREASE)).thenReturn(false);
         givenActiveAds(AD_ID + ":" + ORG_ID);
         givenMinuteCounts("40");
         when(baselineStatRepository.findByAdContentIdInAndWeekdayAndHourOfDay(anyCollection(), anyInt(), anyInt()))

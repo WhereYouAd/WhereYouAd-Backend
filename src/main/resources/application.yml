@@ -198,7 +198,18 @@ cookie:
   domain: ${COOKIE_DOMAIN:}
   same-site: ${COOKIE_SAME_SITE:Lax}
 
-# 13. 클릭 이상 감지 설정
+# 13. Web Push (VAPID)
+# 토픽(notification-push-events) 은 기존 클릭/알림 Producer 처럼 KafkaPushNotificationEventProducer 안 static final 로 관리
+web-push:
+  vapid:
+    public-key: ${VAPID_PUBLIC_KEY}
+    private-key: ${VAPID_PRIVATE_KEY}
+    subject: ${VAPID_SUBJECT:mailto:whereyouadofficial@gmail.com}
+  retry:
+    max-count: 3               # 스케줄 재시도 상한 (Consumer 즉시 재시도와 별개)
+    interval-minutes: 5
+
+# 14. 클릭 이상 감지 설정
 click:
   surge:
     enabled: true

@@ -39,6 +39,9 @@ public class NotificationDelivery extends BaseEntity {
     @Column(name = "failed_at")
     private LocalDateTime failedAt;
 
+    @Column(name = "processing_started_at")
+    private LocalDateTime processingStartedAt;
+
     @Column(name = "failure_reason", length = 500)
     private String failureReason;
 
@@ -48,6 +51,7 @@ public class NotificationDelivery extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "notification_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Notification notification;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -55,14 +59,21 @@ public class NotificationDelivery extends BaseEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private OrgMember orgMember;
 
+    public void markProcessing() {
+        this.status = DeliveryStatus.PROCESSING;
+        this.processingStartedAt = LocalDateTime.now();
+    }
+
     public void markSuccess() {
         this.status = DeliveryStatus.SUCCESS;
         this.sentAt = LocalDateTime.now();
+        this.processingStartedAt = null;
     }
 
     public void markFailed(String reason) {
         this.status = DeliveryStatus.FAILED;
         this.failedAt = LocalDateTime.now();
+        this.processingStartedAt = null;
         this.failureReason = reason;
         this.retryCount++;
     }
