@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'whereyouad-spring-boot'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      # 로컬(monitoring/prometheus.yml)과 달리, 여기선 app 컨테이너가 같은
+      # where-you-ad-network 안에 떠 있으므로 서비스명으로 직접 접근
+      - targets: ['app:8080']
+    basic_auth:
+      # .env.prod 의 ACTUATOR_METRICS_USERNAME / ACTUATOR_METRICS_PASSWORD 와 동일한 값으로 채울 것
+      # (Prometheus는 이 파일 안에서 ${...} 환경변수 치환을 지원하지 않으므로 직접 값을 적어야 함)
+      username: metrics
+      password: REPLACE_ME

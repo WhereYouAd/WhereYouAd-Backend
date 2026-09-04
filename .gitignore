@@ -40,5 +40,9 @@ out/
 .env
 .env.prod
 
+# 실제 계정정보(basic_auth)가 들어가는 dev/prod용 Prometheus 스크레이핑 설정
+# (템플릿은 monitoring/prometheus.dev.yml.example 참고)
+monitoring/prometheus.dev.yml
+
 #CLAUDE.md
 CLAUDE.md

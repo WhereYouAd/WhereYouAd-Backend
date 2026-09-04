@@ -1,0 +1,10 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090   # 도커 컴포즈 내부 서비스명 (docker-compose.monitoring.local.yml 기준)
+    isDefault: true
+    editable: true

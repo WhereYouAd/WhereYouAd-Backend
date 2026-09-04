@@ -28,6 +28,7 @@ spring:
     properties:
       hibernate:
         format_sql: true     # SQL 예쁘게 출력
+        generate_statistics: true  # Actuator/Micrometer hibernate 지표(N+1 검증용) 수집을 위해 필요
         jdbc:
           time_zone: Asia/Seoul
     open-in-view: false     #OSIV 비활성화 -> SSE Db 커넥션 풀 고갈 방지
@@ -112,6 +113,10 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+    listener:
+      observation-enabled: true    # @KafkaListener 처리시간/에러 지표(spring.kafka.listener.*)
+    template:
+      observation-enabled: true    # KafkaTemplate.send() 지표(spring.kafka.template.*)
 
   # AWS S3
   cloud:
@@ -221,3 +226,31 @@ click:
     active-set-ttl-seconds: 1800
   bot-summary:
     enabled: true
+
+
+# 14. 모니터링 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info,metrics,env,loggers # 수집할 정보들
+  metrics:
+    tags:
+      application: whereyouad
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true   # p95/p99 latency 계산용 histogram bucket 생성
+        spring.kafka.listener: true  # Kafka Consumer 처리시간 p95/p99 (없으면 _bucket 자체가 안 생김)
+        spring.kafka.template: true  # Kafka Producer 전송시간 p95/p99
+    enable:
+      hibernate: true                # N+1 검증용 hibernate.* 지표 활성화
+  endpoint:
+    health:
+      show-details: always
+
+# Actuator(/actuator/**) 전용 Basic Auth 계정 (Prometheus 스크레이핑용)
+# 로컬은 기본값(local-dev-only)으로 바로 동작 - monitoring/prometheus.yml과 값이 일치해야 함
+# dev/prod는 .env.prod의 값으로 반드시 덮어써야 함 (monitoring/prometheus.dev.yml과 일치)
+actuator-auth:
+  username: ${ACTUATOR_METRICS_USERNAME:metrics}
+  password: ${ACTUATOR_METRICS_PASSWORD:local-dev-only}

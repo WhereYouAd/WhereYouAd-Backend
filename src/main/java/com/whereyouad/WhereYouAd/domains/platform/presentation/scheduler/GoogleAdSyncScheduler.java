@@ -1,6 +1,7 @@
 package com.whereyouad.WhereYouAd.domains.platform.presentation.scheduler;
 
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.service.adapi.google.GoogleAdService;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,6 +15,10 @@ public class GoogleAdSyncScheduler {
     private final GoogleAdService googleAdService;
 
     @Scheduled(cron = "0 0 2 * * *")
+    @Timed(
+            value = "scheduler.execution",
+            extraTags = {"job", "google-ad-sync"}
+    )
     public void runDailySync() {
         log.info("[스케줄러 시작] 구글 광고 데이터 새벽 동기화 배치 실행");
 
