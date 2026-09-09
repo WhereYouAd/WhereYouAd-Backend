@@ -48,7 +48,7 @@ public class ClickServiceImpl implements ClickService {
 
         // 3. 자체 발급한 트래킹 URL이 있을 때만 재사용 (플랫폼 값이면 새로 발급)
         String current = adContent.getTrackingUrl();
-        if (StringUtils.hasText(current) && current.contains("/api/clicks/track/")) {
+        if (StringUtils.hasText(current) && current.startsWith(baseUrl + "/api/clicks/track/")) {
             return new ClickResponse.NewTrackingUrl(current);
         }
 
