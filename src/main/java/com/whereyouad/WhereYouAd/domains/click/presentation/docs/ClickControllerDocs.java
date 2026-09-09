@@ -39,6 +39,23 @@ public interface ClickControllerDocs {
     );
 
     @Operation(
+            summary = "트래킹 링크 삭제 API",
+            description = "광고(adContentId)에 발급된 트래킹 URL을 폐기\n\n" +
+                    "랜딩 URL 변경을 위해선 먼저 이 트래킹 링크 삭제를 진행한 뒤, 기존 트래킹 링크 발급 API 에 새 랜딩 URL 을 입력하는 흐름으로 진행."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공 (폐기된 deletedTrackingUrl 반환)"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "403", description = "해당 조직의 구성원이 아닌 경우"),
+            @ApiResponse(responseCode = "404", description = "해당 adContentId의 광고가 없거나, 발급된 트래킹 URL이 없는 경우(CLICK_404_1)")
+    })
+    ResponseEntity<DataResponse<ClickResponse.DeletedTrackingUrl>> deleteTrackingUrl(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long adContentId
+    );
+
+    @Operation(
             summary = "광고 트래킹 리다이렉트 API",
             description = "발급된 트래킹 링크 접속 시 클릭 이벤트 기록 후 광고 페이지로 리다이렉트"
     )
