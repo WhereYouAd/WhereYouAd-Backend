@@ -40,34 +40,48 @@ public class ClickServiceImpl implements ClickService {
     @Transactional
     public ClickResponse.NewTrackingUrl createTrackingUrl(Long userId, Long adContentId, Long orgId, String landingUrl) {
 
-        // 1. 유저가 해당 조직 구성원인지 검증
-        if (!orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
-            throw new ClickHandler(ClickErrorCode.CLICK_UNAUTHORIZED);
-        }
+        // 1. 조직 구성원 검증 + 해당 조직의 광고인지 검증
+        AdContent adContent = getAuthorizedAdContent(userId, adContentId, orgId);
 
-        // 2. 광고 조회 및 AdContent가 해당 조직것인지 검증
-        AdContent adContent = adContentRepository.findByIdAndOrganizationId(adContentId, orgId)
-                .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
-
-        // 3. 입력받은 landingUrl로 최신화하여 저장
+        // 2. 입력받은 landingUrl로 최신화하여 저장
         adContent.updateLandingUrl(landingUrl);
 
-        // 4. 이미 트래킹 URL이 존재하면 새로 생성하지 않고 기존 URL 반환
-        if (StringUtils.hasText(adContent.getTrackingUrl())) {
-            return new ClickResponse.NewTrackingUrl(adContent.getTrackingUrl());
+        // 3. 자체 발급한 트래킹 URL이 있을 때만 재사용 (플랫폼 값이면 새로 발급)
+        String current = adContent.getTrackingUrl();
+        if (StringUtils.hasText(current) && current.startsWith(baseUrl + "/api/clicks/track/")) {
+            return new ClickResponse.NewTrackingUrl(current);
         }
 
-        // 5. 동일 코드가 DB에 이미 존재하면 재시도
+        // 4. 동일 코드가 DB에 이미 존재하면 재시도
         String trackingUrl;
         do {
             String code = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
             trackingUrl = baseUrl + "/api/clicks/track/" + code;
         } while (adContentRepository.existsByTrackingUrl(trackingUrl));
 
-        // 6. 트래킹 주소 저장(더티 체킹)
+        // 5. 트래킹 주소 저장(더티 체킹)
         adContent.updateTrackingUrl(trackingUrl);
 
         return new ClickResponse.NewTrackingUrl(trackingUrl);
+    }
+
+    @Override
+    @Transactional
+    public ClickResponse.DeletedTrackingUrl deleteTrackingUrl(Long userId, Long adContentId, Long orgId) {
+
+        // 1. 조직 구성원 검증 + 해당 조직의 광고인지 검증
+        AdContent adContent = getAuthorizedAdContent(userId, adContentId, orgId);
+
+        // 2. 삭제할 트래킹 URL이 없으면 예외 처리
+        String deletedTrackingUrl = adContent.getTrackingUrl();
+        if (!StringUtils.hasText(deletedTrackingUrl)) {
+            throw new ClickHandler(ClickErrorCode.TRACKING_URL_NOT_FOUND);
+        }
+
+        // 3. 트래킹 URL 삭제 (더티 체킹) — 랜딩 URL은 유지
+        adContent.updateTrackingUrl(null);
+
+        return new ClickResponse.DeletedTrackingUrl(deletedTrackingUrl);
     }
 
     @Override
@@ -125,5 +139,15 @@ public class ClickServiceImpl implements ClickService {
             result.add(new ClickResponse.RealtimeClickCount(minute, count));
         }
         return result;
+    }
+
+    // 조직 구성원 검증 후 해당 조직의 AdContent 반환
+    private AdContent getAuthorizedAdContent(Long userId, Long adContentId, Long orgId) {
+        if (!orgMemberRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
+            throw new ClickHandler(ClickErrorCode.CLICK_UNAUTHORIZED);
+        }
+
+        return adContentRepository.findByIdAndOrganizationId(adContentId, orgId)
+                .orElseThrow(() -> new AdvertisementHandler(AdvertisementErrorCode.ADCONTENT_NOT_FOUND));
     }
 }

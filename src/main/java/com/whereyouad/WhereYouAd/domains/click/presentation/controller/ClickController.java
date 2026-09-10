@@ -40,6 +40,19 @@ public class ClickController implements ClickControllerDocs {
     }
 
     @Override
+    @DeleteMapping("/{orgId}/{adContentId}/tracking-url")
+    public ResponseEntity<DataResponse<ClickResponse.DeletedTrackingUrl>> deleteTrackingUrl(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable Long orgId,
+            @PathVariable Long adContentId
+    ) {
+        ClickResponse.DeletedTrackingUrl response = clickService.deleteTrackingUrl(userId, adContentId, orgId);
+        return ResponseEntity.ok(
+                DataResponse.from(response)
+        );
+    }
+
+    @Override
     @GetMapping("/track/{code}")
     public ResponseEntity<Void> processTracking(
             @PathVariable String code,

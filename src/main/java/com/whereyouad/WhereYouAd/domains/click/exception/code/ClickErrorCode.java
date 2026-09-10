@@ -14,6 +14,9 @@ public enum ClickErrorCode implements BaseErrorCode {
 
     // 400
     CLICK_INVALID_MODE(HttpStatus.BAD_REQUEST, "CLICK_400_1", "mode는 'real' 또는 'dummy'만 허용됩니다."),
+
+    // 404
+    TRACKING_URL_NOT_FOUND(HttpStatus.NOT_FOUND, "CLICK_404_1", "해당 광고에 발급된 트래킹 URL이 없습니다."),
     ;
 
     private final HttpStatus httpStatus;

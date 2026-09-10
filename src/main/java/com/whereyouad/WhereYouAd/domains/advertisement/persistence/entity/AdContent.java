@@ -70,11 +70,18 @@ public class AdContent extends BaseEntity {
         if (description != null) {
             this.description = description;
         }
-        if (trackingUrl != null) {
+        // 자체 발급한 트래킹 URL은 플랫폼 값으로 덮어쓰지 않는다
+        if (trackingUrl != null && !isTrackingEndpoint(this.trackingUrl)) {
             this.trackingUrl = trackingUrl;
         }
-        if (landingUrl != null) {
+        // 플랫폼 도착지에 우리 트래킹 URL이 등록된 경우, 그 값을 랜딩으로 받으면
+        // 리다이렉트가 자기 자신을 가리키게 되므로 저장하지 않는다
+        if (landingUrl != null && !isTrackingEndpoint(landingUrl)) {
             this.landingUrl = landingUrl;
         }
+    }
+
+    private static boolean isTrackingEndpoint(String url) {
+        return url != null && url.contains("/api/clicks/track/");
     }
 }
