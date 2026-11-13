@@ -151,6 +151,14 @@ services:
       - kafka-data:/var/lib/kafka/data
     networks:
       - where-you-ad-network
+    restart: always # 프로세스가 종료되면 자동 재시작 (이전엔 죽은 채로 방치됨)
+    healthcheck:
+      # JVM 기반 kafka-*.sh 대신 포트 확인만 수행 (t3.micro CPU 부담 최소화)
+      test: ["CMD-SHELL", "nc -z localhost 29092 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   # 5. Prometheus
   prometheus:
