@@ -141,6 +141,10 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # 메시지 저장 경로를 볼륨으로 분리 (기본값은 컨테이너 내부 /tmp 라 용량 파악·정리가 어려웠음)
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka-data:/var/lib/kafka/data
     networks:
       - where-you-ad-network
 
@@ -184,6 +188,8 @@ services:
 
 volumes:
   prometheus-data:
+    driver: local
+  kafka-data:
     driver: local
 
 networks:
