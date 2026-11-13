@@ -103,6 +103,11 @@ spring:
   # kafka
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    # Kafka 연결이 끊겼을 때 재연결 시도 간격 (기본 최대 1초 → 10초)
+    # 브로커가 죽어 있는 동안 재연결 시도와 경고 로그가 쉴 새 없이 반복되는 것을 줄임
+    properties:
+      reconnect.backoff.ms: 1000
+      reconnect.backoff.max.ms: 10000
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -191,6 +196,9 @@ google:
 logging:
   level:
     org.apache.kafka: WARN
+    # 브로커 연결 실패 경고("Connection to node ... could not be established")가 재시도마다 반복 출력되는 것 방지
+    # Kafka 다운 여부는 로그 대신 모니터링 알람으로 확인
+    org.apache.kafka.clients.NetworkClient: ERROR
 
 # 11. 인증 쿠키 설정 (로컬/운영 환경 분리)
 cookie:
