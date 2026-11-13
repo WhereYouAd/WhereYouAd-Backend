@@ -18,6 +18,8 @@ services:
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"       # 로컬 전용 - 로그인 없이 바로 대시보드 확인
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      # 알람 프로비저닝용 (로컬은 미설정 시 더미 URL - 실제 디스코드로 전송되지 않음)
+      DISCORD_ALERT_WEBHOOK_URL: ${DISCORD_ALERT_WEBHOOK_URL:-http://localhost/discord-disabled}
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards

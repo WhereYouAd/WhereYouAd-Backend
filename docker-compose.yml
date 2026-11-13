@@ -220,6 +220,8 @@ services:
       - "127.0.0.1:3000:3000" # 외부 공개 대신 SSH 터널/VPN으로만 접근 (직접 공개하려면 "3000:3000"로 변경 + 보안그룹 IP 제한 필수)
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      # 인프라 알람(디스크·Kafka) 수신용 디스코드 웹훅 (provisioning/alerting/contact-points.yml 에서 사용)
+      DISCORD_ALERT_WEBHOOK_URL: ${DISCORD_ALERT_WEBHOOK_URL}
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards

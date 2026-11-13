@@ -1,0 +1,14 @@
+apiVersion: 1
+
+# 알람 수신처: 디스코드 웹훅
+# 웹훅 URL은 Grafana 컨테이너 환경변수(DISCORD_ALERT_WEBHOOK_URL)에서 주입 (.env / PROD_ENV_FILE 에 설정)
+contactPoints:
+  - orgId: 1
+    name: discord-infra
+    receivers:
+      - uid: discord-infra
+        type: discord
+        settings:
+          url: ${DISCORD_ALERT_WEBHOOK_URL}
+          use_discord_username: false
+        disableResolveMessage: false # 복구되면 해제 알림도 전송
