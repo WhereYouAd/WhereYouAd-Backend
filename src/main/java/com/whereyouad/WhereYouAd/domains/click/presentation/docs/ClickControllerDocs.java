@@ -86,10 +86,13 @@ public interface ClickControllerDocs {
     @Operation(
             summary = "실시간 클릭수 dummy 데이터 발생 여부 조정용 토글 API",
             description = "해당 요청을 통해 isRunning = true가 된다면, 실시간 클릭수를 더미 데이터로 500ms마다 발생시켜 1분 단위로 집계 되게끔 할 수 있음. (결과는 실시간 데이터 조회 API 응답에서 확인)\n" +
-                    "- 사용을 끝낸 이후, 미사용 시 isRunning = false가 되게끔 토글시켜야 함. (불필요한 더미 데이터 발생 방지)"
+                    "- 사용을 끝낸 이후, 미사용 시 isRunning = false가 되게끔 토글시켜야 함. (불필요한 더미 데이터 발생 방지)\n" +
+                    "- 켜진 뒤 30분(click.dummy.max-running-minutes)이 지나면 자동으로 꺼짐.\n" +
+                    "- click.dummy.enabled=false 환경(운영)에서는 사용할 수 없음."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "성공")
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "403", description = "더미 클릭 생성기가 비활성화된 환경 (CLICK_403_2)")
     })
     ResponseEntity<DataResponse<String>> toggleDummyProducer(
     );
