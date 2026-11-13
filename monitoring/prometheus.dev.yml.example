@@ -13,3 +13,8 @@ scrape_configs:
       # (Prometheus는 이 파일 안에서 ${...} 환경변수 치환을 지원하지 않으므로 직접 값을 적어야 함)
       username: metrics
       password: REPLACE_ME
+
+  # 서버(EC2) 디스크·CPU·메모리 지표 (docker-compose.yml 의 node-exporter 컨테이너)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
