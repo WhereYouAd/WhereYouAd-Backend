@@ -226,6 +226,9 @@ click:
     active-set-ttl-seconds: 1800
   bot-summary:
     enabled: true
+  dummy:
+    enabled: ${CLICK_DUMMY_ENABLED:false}  # 더미 클릭 생성기 사용 여부 (운영은 false 유지)
+    max-running-minutes: 30                 # 켜진 뒤 자동 종료까지의 시간
 
 
 # 14. 모니터링 설정
