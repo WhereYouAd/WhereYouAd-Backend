@@ -144,7 +144,7 @@ services:
       # 메시지 저장 경로를 볼륨으로 분리 (기본값은 컨테이너 내부 /tmp 라 용량 파악·정리가 어려웠음)
       KAFKA_LOG_DIRS: /var/lib/kafka/data
       # 보관 정책: 기간·용량 중 먼저 도달한 기준으로 오래된 세그먼트 삭제 (디스크 고갈 방지)
-      KAFKA_LOG_RETENTION_HOURS: 24              # 24시간 지난 메시지 삭제
+      KAFKA_LOG_RETENTION_HOURS: 72              # 72시간 지난 메시지 삭제 (컨슈머 장애 시 주말 동안 복구 여유 확보)
       KAFKA_LOG_RETENTION_BYTES: 1073741824      # 파티션당 최대 1GB (토픽 전체 아님)
       KAFKA_LOG_SEGMENT_BYTES: 104857600         # 세그먼트 100MB (활성 세그먼트는 삭제 대상이 아니라 retention보다 작아야 함)
     volumes:
