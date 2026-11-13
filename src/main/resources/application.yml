@@ -24,10 +24,10 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update       # 테이블 자동 업데이트 (데이터 유지)
-    show-sql: true           # 실행 SQL 콘솔 출력
+    show-sql: ${JPA_SHOW_SQL:false}          # 실행 SQL 콘솔 출력 (운영은 false, 로컬은 .env에서 true)
     properties:
       hibernate:
-        format_sql: true     # SQL 예쁘게 출력
+        format_sql: ${JPA_FORMAT_SQL:false}  # SQL 여러 줄 정렬 출력 (운영은 false)
         generate_statistics: true  # Actuator/Micrometer hibernate 지표(N+1 검증용) 수집을 위해 필요
         jdbc:
           time_zone: Asia/Seoul
