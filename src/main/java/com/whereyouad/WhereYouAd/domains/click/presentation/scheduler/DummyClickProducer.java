@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import com.whereyouad.WhereYouAd.domains.advertisement.persistence.repository.AdContentRepository;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Status;
 import com.whereyouad.WhereYouAd.domains.advertisement.domain.constant.Provider;
-import java.util.ArrayList;
+
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 
@@ -28,45 +30,61 @@ public class DummyClickProducer {
     private final Random random = new Random();
 
     private static final String TOPIC = "ad-click-events";
-
-    private volatile List<Object[]> activeAds = new ArrayList<>();
     private static final String[] userAgents = {"UNKNOWN", "MOBILE", "PC"};
 
     // 더미 생성기 사용 가능 여부 (운영 기본값 false, 로컬 등 필요한 환경에서만 true)
     @Value("${click.dummy.enabled:false}")
     private boolean enabled;
 
+    // 켜진 뒤 자동으로 꺼지기까지의 시간 (끄는 것을 잊어도 메시지가 무한히 쌓이지 않도록)
+    @Value("${click.dummy.max-running-minutes:30}")
+    private long maxRunningMinutes;
+
     // 요청 스레드(toggle)와 스케줄러 스레드(generateDummyClick)가 함께 접근하므로 volatile
-    // 기본값 false (API를 통해 켤 때만 동작)
     private volatile boolean isRunning = false;
+    private volatile Instant startedAt;
+    private volatile List<Object[]> activeAds = List.of();
 
     public synchronized boolean toggle() {
         if (!enabled) {
             throw new ClickHandler(ClickErrorCode.DUMMY_PRODUCER_DISABLED);
         }
 
-        this.isRunning = !this.isRunning;
-        if (this.isRunning) {
-            this.activeAds = adContentRepository.findAllActiveAdOrgMappings(Status.ON_GOING);
-            log.info("통합 대시보드 실시간 클릭수 더미데이터: 활성 상태인 광고를 모두 가져옵니다. {}개", activeAds.size());
+        if (isRunning) {
+            stop("수동 종료");
+            return false;
         }
-        log.info("Dummy Click Producer is now {}", isRunning ? "RUNNING" : "STOPPED");
-        return isRunning;
+
+        this.activeAds = adContentRepository.findAllActiveAdOrgMappings(Status.ON_GOING);
+        this.startedAt = Instant.now();
+        this.isRunning = true;
+        log.info("통합 대시보드 실시간 클릭수 더미데이터: 활성 상태인 광고를 모두 가져옵니다. {}개", activeAds.size());
+        log.info("Dummy Click Producer is now RUNNING ({}분 후 자동 종료)", maxRunningMinutes);
+        return true;
     }
 
     // 500ms마다 실행
     @Scheduled(fixedRate = 500)
     public void generateDummyClick() {
-        if (!isRunning || activeAds.isEmpty()) {
+        if (!isRunning) {
+            return;
+        }
+        if (isExpired()) {
+            stop("최대 실행 시간 " + maxRunningMinutes + "분 경과로 자동 종료");
+            return;
+        }
+
+        List<Object[]> ads = this.activeAds;
+        if (ads.isEmpty()) {
             return;
         }
         // 0.5초마다 최대 30개의 클릭만 발생시키도록 Limit 설정 (서버 부하 방지)
-        int limit = Math.min(activeAds.size(), 30);
+        int limit = Math.min(ads.size(), 30);
 
         // 30개에 대하여 반복하여 mock 클릭수 생성
         for (int i = 0; i < limit; i++) {
             // 전체 활성 광고 중 무작위로 하나를 선택
-            Object[] adOrgPair = activeAds.get(random.nextInt(activeAds.size()));
+            Object[] adOrgPair = ads.get(random.nextInt(ads.size()));
             Long adContentId = (Long) adOrgPair[0];
             Long orgId = (Long) adOrgPair[1];
             Provider provider = (Provider) adOrgPair[2];
@@ -90,5 +108,21 @@ public class DummyClickProducer {
         }
 
         log.debug("Produced dummy clicks for {} sampled ads.", limit);
+    }
+
+    private boolean isExpired() {
+        Instant started = this.startedAt;
+        return started != null
+                && Instant.now().isAfter(started.plus(Duration.ofMinutes(maxRunningMinutes)));
+    }
+
+    private synchronized void stop(String reason) {
+        if (!isRunning) {
+            return;
+        }
+        this.isRunning = false;
+        this.startedAt = null;
+        this.activeAds = List.of();
+        log.info("Dummy Click Producer is now STOPPED ({})", reason);
     }
 }
