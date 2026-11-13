@@ -1,9 +1,12 @@
 package com.whereyouad.WhereYouAd.domains.click.presentation.scheduler;
 
 import com.whereyouad.WhereYouAd.domains.click.application.dto.ClickDto;
+import com.whereyouad.WhereYouAd.domains.click.exception.ClickHandler;
+import com.whereyouad.WhereYouAd.domains.click.exception.code.ClickErrorCode;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,11 +32,19 @@ public class DummyClickProducer {
     private volatile List<Object[]> activeAds = new ArrayList<>();
     private static final String[] userAgents = {"UNKNOWN", "MOBILE", "PC"};
 
+    // 더미 생성기 사용 가능 여부 (운영 기본값 false, 로컬 등 필요한 환경에서만 true)
+    @Value("${click.dummy.enabled:false}")
+    private boolean enabled;
+
     // 요청 스레드(toggle)와 스케줄러 스레드(generateDummyClick)가 함께 접근하므로 volatile
     // 기본값 false (API를 통해 켤 때만 동작)
     private volatile boolean isRunning = false;
 
     public synchronized boolean toggle() {
+        if (!enabled) {
+            throw new ClickHandler(ClickErrorCode.DUMMY_PRODUCER_DISABLED);
+        }
+
         this.isRunning = !this.isRunning;
         if (this.isRunning) {
             this.activeAds = adContentRepository.findAllActiveAdOrgMappings(Status.ON_GOING);
