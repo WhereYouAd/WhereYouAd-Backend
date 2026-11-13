@@ -1,0 +1,105 @@
+apiVersion: 1
+
+# 인프라 장애 알람 규칙
+# (주의) Grafana 프로비저닝 파일은 $VAR 를 환경변수로 치환하므로, 알림 템플릿의 $values 는 $$values 로 이스케이프
+# 2026년 10월 Kafka 디스크 고갈 장애를 아무도 모른 채 3주간 방치된 것을 계기로 추가
+groups:
+  - orgId: 1
+    name: infra
+    folder: WhereYouAd
+    interval: 1m
+    rules:
+      # 1. 서버 루트 디스크 사용률 80% 초과
+      - uid: disk-usage-high
+        title: 서버 디스크 사용률 80% 초과
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                (1 - node_filesystem_avail_bytes{mountpoint="/", fstype!~"tmpfs|overlay"}
+                / node_filesystem_size_bytes{mountpoint="/", fstype!~"tmpfs|overlay"}) * 100
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [80] }
+        for: 5m
+        noDataState: Alerting    # node_exporter 지표가 끊겨도 알림 (수집 자체가 죽은 상황)
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: 서버 디스크 사용률이 80%를 넘었습니다.
+          description: '현재 사용률 {{ printf "%.1f" $$values.B.Value }}%. Kafka 데이터 볼륨, Docker 로그·이미지 사용량을 확인하세요.'
+
+      # 2. Kafka 연결 끊김 (앱의 Kafka 컨슈머가 브로커에 연결되어 있지 않음)
+      - uid: kafka-down
+        title: Kafka 연결 끊김
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: max(kafka_consumer_connection_count)
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+        for: 2m
+        noDataState: Alerting    # 앱이 죽어 지표 자체가 없을 때도 알림
+        execErrState: Error
+        labels: { severity: critical }
+        annotations:
+          summary: 앱이 Kafka 브로커에 연결되어 있지 않습니다.
+          description: Kafka 컨테이너 상태(docker ps, docker logs where-you-ad-kafka)와 디스크 사용량을 확인하세요. 앱이 내려가 지표가 없을 때도 이 알람이 발생합니다.
+
+      # 3. Kafka 컨슈머 처리 지연 (Kafka는 살아 있지만 메시지가 처리되지 않고 쌓이는 상황)
+      - uid: kafka-consumer-lag-high
+        title: Kafka 컨슈머 처리 지연
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: max(kafka_consumer_fetch_manager_records_lag_max)
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1000] }
+        for: 10m
+        noDataState: OK          # 연결 끊김은 kafka-down 알람이 담당
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: Kafka 컨슈머에 처리되지 않은 메시지가 1,000건 넘게 쌓였습니다.
+          description: 메시지 보관 기간(72시간)이 지나면 처리되지 않은 클릭·알림이 삭제됩니다. 컨슈머 에러 로그와 DB·Redis 상태를 확인하세요.
