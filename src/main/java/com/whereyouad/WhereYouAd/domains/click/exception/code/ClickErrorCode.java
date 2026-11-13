@@ -11,6 +11,7 @@ public enum ClickErrorCode implements BaseErrorCode {
 
     // 403
     CLICK_UNAUTHORIZED(HttpStatus.FORBIDDEN, "CLICK_403_1", "해당 광고에 접근할 권한이 없습니다."),
+    DUMMY_PRODUCER_DISABLED(HttpStatus.FORBIDDEN, "CLICK_403_2", "더미 클릭 생성기가 비활성화된 환경입니다."),
 
     // 400
     CLICK_INVALID_MODE(HttpStatus.BAD_REQUEST, "CLICK_400_1", "mode는 'real' 또는 'dummy'만 허용됩니다."),
