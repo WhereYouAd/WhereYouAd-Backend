@@ -81,6 +81,9 @@ services:
       # Kafka
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
 
+      # 더미 클릭 생성기 사용 여부 (미설정 시 false, dev 서버에서 시연이 필요할 때만 .env에 true)
+      CLICK_DUMMY_ENABLED: ${CLICK_DUMMY_ENABLED:-false}
+
 # 모니터링 (Actuator Basic Auth - monitoring/prometheus.dev.yml 의 basic_auth 값과 일치해야 함)
       ACTUATOR_METRICS_USERNAME: ${ACTUATOR_METRICS_USERNAME}
       ACTUATOR_METRICS_PASSWORD: ${ACTUATOR_METRICS_PASSWORD}
