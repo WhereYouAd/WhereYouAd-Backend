@@ -26,13 +26,14 @@ public class DummyClickProducer {
 
     private static final String TOPIC = "ad-click-events";
 
-    private List<Object[]> activeAds = new ArrayList<>();
+    private volatile List<Object[]> activeAds = new ArrayList<>();
     private static final String[] userAgents = {"UNKNOWN", "MOBILE", "PC"};
 
+    // 요청 스레드(toggle)와 스케줄러 스레드(generateDummyClick)가 함께 접근하므로 volatile
     // 기본값 false (API를 통해 켤 때만 동작)
-    private boolean isRunning = false;
+    private volatile boolean isRunning = false;
 
-    public boolean toggle() {
+    public synchronized boolean toggle() {
         this.isRunning = !this.isRunning;
         if (this.isRunning) {
             this.activeAds = adContentRepository.findAllActiveAdOrgMappings(Status.ON_GOING);
