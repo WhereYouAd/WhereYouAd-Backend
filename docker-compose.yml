@@ -1,10 +1,19 @@
 version: '3.8'
 
+# 모든 컨테이너 공통 로그 설정: 컨테이너당 최대 10MB x 3개(30MB)까지만 보관
+# (기본값은 크기 제한이 없어 로그가 디스크를 계속 차지함)
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # 1. Spring Boot App
   app:
     image: ${DOCKER_USERNAME}/where-you-ad-backend:latest
     container_name: where-you-ad-backend
+    logging: *default-logging
     ports:
       - "8080:8080"  # Public EC2가 이 포트로 트래픽을 보냄
     environment:
@@ -93,6 +102,7 @@ services:
   mysqldb:
     image: mysql:8.0
     container_name: where-you-ad-db
+    logging: *default-logging
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: whereyouad
@@ -114,6 +124,7 @@ services:
   redis:
     image: redis:latest
     container_name: where-you-ad-redis
+    logging: *default-logging
     networks:
       - where-you-ad-network
     restart: always
@@ -124,6 +135,7 @@ services:
   kafka:
     image: apache/kafka:3.7.0
     container_name: where-you-ad-kafka
+    logging: *default-logging
     ports:
       - "9092:9092"
     environment:
@@ -164,6 +176,7 @@ services:
   prometheus:
     image: prom/prometheus:latest # 가장 최신 정보 가져옴
     container_name: where-you-ad-prometheus
+    logging: *default-logging
     ports:
       - "127.0.0.1:9090:9090" # Prometheus 자체는 인증이 없어서 외부 공개 금지 - SSH 터널/VPN으로만 접근
     volumes:
@@ -185,6 +198,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: where-you-ad-grafana
+    logging: *default-logging
     ports:
       - "127.0.0.1:3000:3000" # 외부 공개 대신 SSH 터널/VPN으로만 접근 (직접 공개하려면 "3000:3000"로 변경 + 보안그룹 IP 제한 필수)
     environment:
